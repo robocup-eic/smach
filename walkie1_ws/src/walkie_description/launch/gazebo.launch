@@ -1,0 +1,29 @@
+<launch>
+  <param name="/use_sim_time" value="true" />
+  <param name="/use_gui" value="true" />
+
+  <!-- start world -->  
+  <node name="gazebo" pkg="gazebo_ros" type="gazebo" 
+   args="$(find walkie_description)/worlds/test_zone.world" respawn="false" output="screen" />
+
+  <!-- start gui -->
+  <!-- <node name="gazebo_gui" pkg="gazebo" type="gui" respawn="false" output="screen"/> -->
+
+  <!-- include our robots -->
+  <param name="robot_description"
+  command="$(find xacro)/xacro $(find walkie_description)/urdf/robokrub.xacro" />
+    
+
+  <!-- BEGIN ROBOT 1-->
+  <node name='onebot_spawn' pkg="gazebo_ros" type="spawn_model" output="screen"
+   args="-urdf -param robot_description -model walkie -x -0 -y -0 -z 0"/>
+
+
+  <!-- <param name="use_gui" value="true"/> -->
+  <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" args="-rate 20"/> -->
+  <!-- <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" /> -->
+  <!-- <node name="rviz" pkg="rviz" required="true" type="rviz"/> -->
+  
+
+
+</launch>

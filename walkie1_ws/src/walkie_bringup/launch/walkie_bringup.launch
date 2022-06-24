@@ -1,0 +1,46 @@
+<launch>
+  <arg default="$(find walkie_description)/urdf/robokrub.xacro" name="model"/>
+  <arg default="false" name="gui"/>
+  <arg default="$(find walkie_description)/launch/urdf.rviz" name="rvizconfig"/>
+  <arg name="port" default="/dev/ttyACM0"/>
+  <param command="$(find xacro)/xacro $(arg model)" name="robot_description"/>
+  <param name="use_gui" value="$(arg gui)"/>
+  
+
+
+  <!-- Set up TF for the robot -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+      <remap from="/joint_states" to="/walkie/joint_states" />
+  </node>
+
+  <!-- Open rviz for monitoring -->
+  <!-- <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/> -->
+
+  <!-- Run serial_node -->
+  <node name="Arduino1" pkg="rosserial_python" type="serial_node.py">
+    <param name="port" value="/dev/ttyUSB1"/>
+    <param name="baud" value="115200"/> 
+  </node>
+
+  <node name="bringup" pkg="walkie_bringup" type="bringup"/>
+
+  <!-- Run LaserScan node -->
+  <node name="urg_node" pkg="urg_node" type="urg_node">
+    <param name="ip_address" value="192.168.5.4"/>
+    <param name="frame_id" value="Hokuyo_UST-10LX__2__v1_1"/>
+    <param name="angle_max" value="1.57"/>
+    <param name="angle_min" value="-1.57"/>
+    <remap from="/scan" to="/walkie/scan"/>
+  </node> 
+
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <arg name="camera" value="/walkie/camera"/>
+    <arg name="publish_tf" value="false"/>
+  </include>
+
+  <!-- <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="laser_filter">
+    <rosparam command="load" file="$(find walkie_bringup)/config/laser_filter.yaml" />
+  </node> -->
+
+
+</launch>

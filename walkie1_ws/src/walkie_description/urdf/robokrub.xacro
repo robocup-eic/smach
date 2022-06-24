@@ -1,0 +1,247 @@
+<?xml version="1.0" ?>
+<robot name="walkie" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:include filename="$(find walkie_description)/urdf/materials.xacro" />
+<xacro:include filename="$(find walkie_description)/urdf/robokrub.trans" />
+<xacro:include filename="$(find walkie_description)/urdf/robokrub.gazebo" />
+<link name="base_footprint"/>
+
+<joint name="base_joint" type="fixed">
+  <origin rpy="0 0 0" xyz="0 0 0"/>
+  <parent link="base_footprint"/>
+  <child link="base_link"/>
+</joint>
+
+<link name="base_link">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.009538022388619444 0.0020469906835618064 0.087820296886698"/>
+    <mass value="325.87742909126433"/>
+    <inertia ixx="21.63765" ixy="0.027042" ixz="3.508396" iyy="21.668393" iyz="-0.083103" izz="6.527635"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="0 0 0.4"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="acrylic_red"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="0 0 0.4"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<!-- <link name="realsense_base"> -->
+
+<link name="realsense_base_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.0027131980112908433 0.025082501528824214 0.021830441652814336"/>
+    <mass value="0.18079572348329903"/>
+    <inertia ixx="0.000645" ixy="-3.3e-05" ixz="-2e-06" iyy="7.5e-05" iyz="-3e-05" izz="0.000659"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="0.043071 0.002012 -0.903319"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/realsense_base_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="paint_enamel_glossy_yellow"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="0.043071 0.002012 -0.903319"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/realsense_base_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="realsense_mount_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.007046978576804915 -0.060193295927983254 -0.0006278458375479357"/>
+    <mass value="0.3031728458937249"/>
+    <inertia ixx="0.000619" ixy="7e-06" ixz="-0.0" iyy="6.6e-05" iyz="-7e-06" izz="0.000599"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="0.028221 -0.059756 -0.931967"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/realsense_mount_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="0.028221 -0.059756 -0.931967"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/realsense_mount_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="left_back_wheel_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-6.985816851379223e-07 0.03990565025821191 -0.00020828945902939822"/>
+    <mass value="0.5279092736345865"/>
+    <inertia ixx="0.002877" ixy="-0.0" ixz="0.0" iyy="0.005024" iyz="-2e-06" izz="0.002872"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="0.091537 -0.23228 0.276334"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/left_back_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="nylon_66_white"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="0.091537 -0.23228 0.276334"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/left_back_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="right_back_wheel_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="7.401248481170297e-07 -0.04009479747167047 -0.00020992648040152329"/>
+    <mass value="0.5279102095874385"/>
+    <inertia ixx="0.002877" ixy="0.0" ixz="0.0" iyy="0.005024" iyz="-2e-06" izz="0.002872"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="0.091537 0.237108 0.276334"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/right_back_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="nylon_66_white"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="0.091537 0.237108 0.276334"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/right_back_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="right_front_wheel_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-8.441077742338265e-08 0.020000028320605323 -5.260305313559144e-08"/>
+    <mass value="0.2736860294560353"/>
+    <inertia ixx="0.000513" ixy="0.0" ixz="-0.0" iyy="0.000989" iyz="0.0" izz="0.000513"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.361852 0.255643 0.328463"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/right_front_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="rubber_soft"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.361852 0.255643 0.328463"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/right_front_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="left_front_wheel_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-3.766810569016954e-08 -0.020000008606704422 9.616323459749054e-08"/>
+    <mass value="0.27368611154659667"/>
+    <inertia ixx="0.000513" ixy="-0.0" ixz="0.0" iyy="0.000989" iyz="0.0" izz="0.000513"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.361852 -0.250815 0.328463"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/left_front_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="rubber_soft"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.361852 -0.250815 0.328463"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/left_front_wheel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="Hokuyo_UST-10LX__2__v1_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.000648703140907092 4.1998308980724375e-06 0.029712495288845203"/>
+    <mass value="0.36783477848639723"/>
+    <inertia ixx="0.0002" ixy="0.0" ixz="1e-06" iyy="0.000206" iyz="0.0" izz="0.000127"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.349863 0.002451 0.1708"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/Hokuyo_UST-10LX__2__v1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="opaque2551648"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.349863 0.002451 0.1708"/>
+    <geometry>
+      <mesh filename="package://walkie_description/meshes/Hokuyo_UST-10LX__2__v1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="realsense_yaw_joint" type="continuous">
+  <origin rpy="0 0 0" xyz="-0.043071 -0.002012 1.303319"/>
+  <parent link="base_link"/>
+  <child link="realsense_base_1"/>
+  <axis xyz="-0.000175 0.002437 -0.999997"/>
+  <dynamics damping="0.0"/>
+</joint>
+
+<joint name="realsense_pitch_joint" type="continuous">
+  <origin rpy="0 0 0" xyz="0.01485 0.061768 0.028648"/>
+  <parent link="realsense_base_1"/>
+  <child link="realsense_mount_1"/>
+  <axis xyz="-0.004129 0.999989 0.002438"/>
+  <dynamics damping="0.0"/>
+</joint>
+
+<joint name="left_back_wheel_joint" type="continuous">
+  <origin rpy="0 0 0" xyz="-0.091537 0.23228 0.136334"/>
+  <parent link="base_link"/>
+  <child link="left_back_wheel_1"/>
+  <axis xyz="0.0 1.0 -0.0"/>
+</joint>
+
+<joint name="right_back_wheel_joint" type="continuous">
+  <origin rpy="0 0 0" xyz="-0.091537 -0.237108 0.136334"/>
+  <parent link="base_link"/>
+  <child link="right_back_wheel_1"/>
+  <axis xyz="-0.0 1.0 0.0"/>
+</joint>
+
+<joint name="right_front_wheel_joint" type="fixed">
+  <origin rpy="0 0 0" xyz="0.361852 -0.255643 0.088463"/>
+  <parent link="base_link"/>
+  <child link="right_front_wheel_1"/>
+</joint>
+
+<joint name="left_front_wheel_joint" type="fixed">
+  <origin rpy="0 0 0" xyz="0.361852 0.250815 0.088463"/>
+  <parent link="base_link"/>
+  <child link="left_front_wheel_1"/>
+</joint>
+
+<joint name="lidar_joint" type="fixed">
+  <origin rpy="0 0 0" xyz="0.349863 -0.002451 0.2308"/>
+  <parent link="base_link"/>
+  <child link="Hokuyo_UST-10LX__2__v1_1"/>
+</joint>
+
+<joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="imu_link"/>
+
+<!-- <xacro:include filename="$(find simplify_description)/urdf/_d435.urdf.xacro" />
+
+<xacro:sensor_d435 name="sensor_d435" parent="realsense_mount_1">
+    <origin xyz="0.01 -0.06 -0.01" rpy="0 0 0"/>
+</xacro:sensor_d435> -->
+
+</robot>

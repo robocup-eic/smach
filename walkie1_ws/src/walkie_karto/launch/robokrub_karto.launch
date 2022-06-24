@@ -1,0 +1,16 @@
+<launch>
+  <param name="/use_sim_time" value="true" />
+
+  <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find walkie_karto)/rviz/map.rviz"/>
+
+  <node name="cartographer_node" pkg="cartographer_ros"
+      type="cartographer_node" args="
+          -configuration_directory $(find walkie_karto)/config
+          -configuration_basename walkie_karto_2d.lua"
+      output="screen">
+    <remap from="scan" to="/walkie/scan" />
+    <remap from="odom" to="/walkie/odom" />
+  </node>
+
+  <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros" type="cartographer_occupancy_grid_node" args="-resolution 0.05" />
+</launch>

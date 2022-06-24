@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../../../robokrub_bringup_no_odom"
+		},
+		{
+			"name": "robokrub_nano_imu",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}

@@ -1,0 +1,4 @@
+<launch>
+  <arg default="$(find walkie_description)/launch/urdf.rviz" name="rvizconfig"/>
+  <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/>
+</launch>

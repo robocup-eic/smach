@@ -1,0 +1,19 @@
+<launch>
+  <param name="/use_sim_time" value="true" />
+  <!-- <param name="/use_gui" value="true" /> -->
+  <!-- include our robots -->
+  <param name="human_description"
+  command="$(find xacro)/xacro $(find walkie_description)/urdf/object.xacro" />
+    
+
+  <!-- BEGIN ROBOT 1-->
+  <node name='onebot_spawn' pkg="gazebo_ros" type="spawn_model" output="screen"
+   args="-urdf -param human_description -model human -x 5 -y -4 -z 0"/>
+
+
+  <!-- <param name="use_gui" value="true"/> -->
+  <!-- <node name="rviz" pkg="rviz" required="true" type="rviz"/> -->
+  
+
+
+</launch>

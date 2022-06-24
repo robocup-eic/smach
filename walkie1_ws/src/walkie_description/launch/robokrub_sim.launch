@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find walkie_description)/launch/gazebo.launch" />
+    <include file="$(find walkie_description)/launch/controller.launch" />
+</launch>

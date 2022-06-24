@@ -1,0 +1,7 @@
+image: robocup2_add_table.pgm
+resolution: 0.050000
+origin: [-5.594994, -5.136700, 0.000000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+

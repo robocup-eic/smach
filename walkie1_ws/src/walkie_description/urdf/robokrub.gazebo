@@ -1,0 +1,129 @@
+<?xml version="1.0" ?>
+<robot name="walkie" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+<xacro:property name="body_color" value="Gazebo/Silver" />
+<xacro:arg name="laser_visual" default="false"/>
+
+<gazebo>
+  <plugin filename="libgazebo_ros_control.so" name="control">
+    <robotNamespace>/walkie</robotNamespace>
+  </plugin>
+</gazebo>
+<gazebo reference="base_link">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+  <gravity>true</gravity>
+</gazebo>
+
+<gazebo reference="Hokuyo_UST-10LX__2__v1_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+   <sensor type="ray" name="lds_lfcd_sensor">
+    <pose>0 0 0 0 0 3.14</pose>
+    <visualize>$(arg laser_visual)</visualize>
+    <update_rate>20</update_rate>
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>360</samples>
+          <resolution>1</resolution>
+          <min_angle>0.0</min_angle>
+          <max_angle>6.28319</max_angle>
+        </horizontal>
+      </scan>
+      <range>
+        <min>0.10</min>
+        <max>20.0</max>
+        <resolution>0.01</resolution>
+      </range>
+      <!-- <noise>
+        <type>gaussian</type>
+        <mean>0.0</mean>
+        <mean>0.0</mean>
+        <stddev>0.01</stddev>
+      </noise> -->
+    </ray>
+    <plugin name="gazebo_ros_lds_lfcd_controller" filename="libgazebo_ros_laser.so">
+      <topicName>/walkie/scan</topicName>
+      <frameName>Hokuyo_UST-10LX__2__v1_1</frameName>
+    </plugin>
+  </sensor>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo reference="realsense_base_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo reference="realsense_mount_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo reference="left_back_wheel_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo reference="right_back_wheel_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo reference="right_front_wheel_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo reference="left_front_wheel_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo reference="Hokuyo_UST-10LX__2__v1_1">
+  <material>${body_color}</material>
+  <mu1>0.2</mu1>
+  <mu2>0.2</mu2>
+  <selfCollide>true</selfCollide>
+</gazebo>
+
+<gazebo>
+  <plugin name="walkie_controller" filename="libgazebo_ros_diff_drive.so">
+    <commandTopic>/walkie/cmd_vel</commandTopic>
+    <odometryTopic>/walkie/odom</odometryTopic>
+    <odometryFrame>odom</odometryFrame>
+    <odometrySource>world</odometrySource>
+    <publishOdomTF>true</publishOdomTF>
+    <robotBaseFrame>base_footprint</robotBaseFrame>
+    <publishWheelTF>false</publishWheelTF>
+    <publishTf>true</publishTf>
+    <publishWheelJointState>false</publishWheelJointState>
+    <legacyMode>false</legacyMode>
+    <updateRate>20</updateRate>
+    <leftJoint>left_back_wheel_joint</leftJoint>
+    <rightJoint>right_back_wheel_joint</rightJoint>
+    <wheelSeparation>0.547</wheelSeparation>
+    <wheelDiameter>0.25</wheelDiameter>
+    <wheelAcceleration>17.45</wheelAcceleration>
+    <wheelTorque>80</wheelTorque>
+    <rosDebugLevel>na</rosDebugLevel>
+  </plugin>
+</gazebo>
+
+</robot>
