@@ -1,6 +1,6 @@
 <launch>
     <!-- Arguments -->
-    <arg name="map_file" default="$(find walkie_navigation)/maps/map_test.yaml"/>
+    <arg name="map_file" default="$(find walkie_navigation)/maps/robocup2_add_table.yaml"/>
 
 
     <!-- Launch Map Server -->

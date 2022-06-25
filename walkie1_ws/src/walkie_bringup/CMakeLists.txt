@@ -123,6 +123,8 @@ include_directories(
 
 add_executable(bringup src/bringup.cpp)
 target_link_libraries(bringup ${catkin_LIBRARIES})
+add_executable(bringup_w_imu src/bringup_w_imu.cpp)
+target_link_libraries(bringup_w_imu ${catkin_LIBRARIES})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

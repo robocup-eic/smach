@@ -1,17 +1,22 @@
+"""
+sudo netstat -nlp | grep 3000
+kill -9 <pid_id>
+"""
+
 from flask import Flask, request
 import threading
+import time
 
 class SpeechToText():
-
 
     def __init__(self, name):
         self.app = Flask(name)
         self.app.add_url_rule("/", "index", self.greet)
-        self.app.add_url_rule("/intent", "intent", self.intent, methods=["POST"])
+        self.app.add_url_rule("/ros", "intent", self.intent, methods=["POST"])
         self.body = None
 
     def run(self):
-        self.app.run(host = "127.0.0.1", port = 3000,threaded = True)
+        self.app.run(host = "0.0.0.0", port = 5000, threaded = True)
 
     def greet(self):
         return "<h1>Hello World</h1>"
@@ -22,5 +27,11 @@ class SpeechToText():
         print(self.body)
         return {"success" : True}
 
-stt = SpeechToText("nlp")
-stt.run()
+if __name__=="__main__":
+    stt = SpeechToText("nlp")
+    t = threading.Thread(target = stt.run ,name="flask")
+    t.start()
+    while True:
+        print(stt.body)
+        time.sleep(0.1)
+    

@@ -18,15 +18,15 @@
 
   <!-- Run serial_node -->
   <node name="Arduino0" pkg="rosserial_python" type="serial_node.py">
-    <param name="port" value="/dev/ttyUSB0"/>
+    <param name="port" value="/dev/ttyACM0"/>
     <param name="baud" value="115200"/> 
   </node>
   <node name="Arduino1" pkg="rosserial_python" type="serial_node.py">
-    <param name="port" value="/dev/ttyUSB1"/>
+    <param name="port" value="/dev/ttyUSB0"/>
     <param name="baud" value="115200"/> 
   </node>
 
-  <node name="bringup" pkg="walkie_bringup" type="bringup">
+  <node name="bringup" pkg="walkie_bringup" type="bringup_w_imu">
     <remap from="walkie/odom" to="walkie/odom_raw"/>
   </node>
 
@@ -53,10 +53,10 @@
     <remap from="/scan" to="/walkie/scan"/>
   </node> 
 
-  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+  <!-- <include file="$(find realsense2_camera)/launch/rs_camera.launch">
     <arg name="camera" value="/walkie/camera"/>
     <arg name="publish_tf" value="false"/>
-  </include>
+  </include> -->
 
   <!-- <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="laser_filter">
     <rosparam command="load" file="$(find walkie_bringup)/config/laser_filter.yaml" />
