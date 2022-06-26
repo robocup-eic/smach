@@ -84,7 +84,7 @@ public:
     imu_pub = nh.advertise<sensor_msgs::Imu>("/imu/data_raw",50);
 
     odom_pub = nh.advertise<nav_msgs::Odometry>("/walkie2/odom", 50);
-    joint_states_pub = nh.advertise<sensor_msgs::JointState>("/joint_states", 50);
+    joint_states_pub = nh.advertise<sensor_msgs::JointState>("/walkie2/joint_states", 50);
 
     joint_states.header.frame_id = base_link_name;
     joint_states.name = joint_states_name;
@@ -92,7 +92,7 @@ public:
   }
   void velCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
   {
-    vel_left = (double) -1*msg->data[0];
+    vel_left = (double) msg->data[0];
     vel_right = (double) msg->data[1];
   }
 
@@ -154,7 +154,7 @@ public:
 
     odom_trans.transform.translation.x = odom_pose[0];
     odom_trans.transform.translation.y = odom_pose[1];
-    odom_trans.transform.translation.z = 0.4021;
+    odom_trans.transform.translation.z = 0;
 
     odom_quat.setRPY(0, 0, odom_pose[2]);
     odom_trans.transform.rotation.x = odom_quat.x();
@@ -170,7 +170,7 @@ public:
 
     odom.pose.pose.position.x = odom_pose[0];
     odom.pose.pose.position.y = odom_pose[1];
-    odom.pose.pose.position.z = 0.4021;
+    odom.pose.pose.position.z = 0.0;
     odom.pose.pose.orientation = odom_trans.transform.rotation;
     odom.header.stamp = ros::Time::now();
 
@@ -182,7 +182,7 @@ public:
   void update_joints()
   {
     //Radian per sec of each wheel
-    delta_pos_left = prev_pos_left - pos_left;
+    delta_pos_left = pos_left - prev_pos_left;
     delta_pos_right = pos_right - prev_pos_right ;
     
     prev_pos_left = pos_left;

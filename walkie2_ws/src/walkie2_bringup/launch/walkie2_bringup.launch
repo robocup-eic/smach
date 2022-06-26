@@ -6,6 +6,7 @@
   <param name="use_gui" value="$(arg gui)"/>
   <arg default="false" name="use_imu"/>
   <arg default="false" name="rviz"/>
+  <arg default="/dev/ttyACM0" name="port"/>
   
 
   <!-- Set up TF for the robot -->
@@ -14,18 +15,20 @@
   </node>
 
     <!-- Run LaserScan node -->
-  <node name="urg_node" pkg="urg_node" type="urg_node">
+  <!-- <node name="urg_node" pkg="urg_node" type="urg_node">
     <param name="ip_address" value="192.168.5.4"/>
     <param name="frame_id" value="hokuyo"/>
     <param name="angle_max" value="1.57"/>
     <param name="angle_min" value="-1.57"/>
     <remap from="/scan" to="/walkie2/scan"/>
-  </node> 
+  </node>  -->
 
-  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+  <!-- <include file="$(find realsense2_camera)/launch/rs_camera.launch">
     <arg name="camera" value="/walkie2/camera"/>
     <arg name="publish_tf" value="false"/>
-  </include>
+  </include> -->
+
+  <node name="odrive" pkg="walkie2_bringup" type="talker.py"/>
 
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>
@@ -39,7 +42,7 @@
 
     <!-- Run serial_node for IMU data -->
     <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
-      <param name="port" value="/dev/ttyUSB0"/>
+      <param name="port" value="$(arg port))"/>
       <param name="baud" value="115200"/>
     </node>
 
