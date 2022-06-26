@@ -1,0 +1,29 @@
+<launch>
+    <!-- Arguments -->
+    <arg name="map_file" default="$(find walkie2_navigation)/maps/robocup2_add_table.yaml"/>
+
+
+    <!-- Launch Map Server -->
+    <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+
+    <!-- Launch AMCL -->
+    <include file="$(find walkie2_navigation)/launch/amcl.launch"/>
+
+    <!-- Launch move_base -->
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+        <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>
+	<param name="base_global_planner" value="global_planner/GlobalPlanner"/>
+        <rosparam file="$(find walkie2_navigation)/params/costmap_common_params.yaml" command="load" ns="global_costmap" /> 
+        <rosparam file="$(find walkie2_navigation)/params/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find walkie2_navigation)/params/local_costmap_params.yaml" command="load" />
+        <rosparam file="$(find walkie2_navigation)/params/global_costmap_params.yaml" command="load" /> 
+        <rosparam file="$(find walkie2_navigation)/params/move_base_params.yaml" command="load" />
+        <rosparam file="$(find walkie2_navigation)/params/base_local_planner_params.yaml" command="load" />
+	<rosparam file="$(find walkie2_navigation)/params/base_global_planner_params.yaml" command="load" />
+        <remap from="/cmd_vel" to="/walkie2/cmd_vel"/>
+        <remap from="/odom" to="/walkie2/odom"/>
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find walkie2_navigation)/rviz/navigation.rviz"/>
+
+</launch>
