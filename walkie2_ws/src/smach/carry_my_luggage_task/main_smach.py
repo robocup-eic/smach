@@ -14,28 +14,13 @@ import threading
 # import for text-to-speech
 import requests
 import json
-
-class SpeechToText():
-    def __init__(self, name):
-        self.app = Flask(name)
-        self.app.add_url_rule("/", "index", self.greet)
-        self.app.add_url_rule("/intent", "intent", self.intent, methods=["POST"])
-        self.body = None
-
-    def run(self):
-        self.app.run(host = "127.0.0.1", port = 3000,threaded = True)
-
-    def intent(self):
-        body = request.get_json()
-        self.body = body
-        print(self.body)
-        return {"success" : True}
-
+from nlp_server import SpeechToText
+import time
 
 class Standby(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Standby')
-        smach.State.__init__(self, outcomes=['continue_follow','continue_request_luggage'])
+        smach.State.__init__(self, outcomes=['continue_follow'])
         # self.follow_command = True
         # self.request_command = False
         global stt
@@ -47,20 +32,27 @@ class Standby(smach.State):
         #     return 'continue_follow'
         # if self.request_command == True:
         #     return 'continue_request_luggage'
+        start_time = 0
         while True:
-            if self.stt.body["intent"] is not None:
-                print(self.stt.body["intent"])
+            if self.stt.body is not None:
+                print(self.stt.body)
+                if self.stt.body["intent"] == "follow_people": # waiting for "follow me" command
+                    self.stt.body["intent"] = None
+                    return "continue_follow"
 
-            if self.stt.body["intent"] == "follow_people": # waiting for "follow me" command
-                self.stt.body["intent"] = None
-                return "continue_follow"
-
-            if self.stt.body["intent"] == "carry_luggage": # waiting for "carry my luggage" command
-                self.stt.body["intent"] = None
-                return "continue_pointing"
+            if time.time() - start_time > 10:
+                speak("Please put your bag on my arm")
+                start_time = time.time()
 
             time.sleep(0.01)
 
+def speak(text) :
+    try :
+        url = 'http://localhost:5003/tts'
+        x = requests.post(url, json={'text':text})
+        return x
+    except :
+        print("error to connect speak api.")
 
 class Request_luggage(smach.State):
     def __init__(self):
@@ -208,11 +200,7 @@ if __name__ == '__main__':
     sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
     with sm:
         smach.StateMachine.add('Standby',Standby(),
-                                transitions={'continue_follow':'FOLLOW',
-                                             'continue_request_luggage':'Request_luggage'})
-
-        smach.StateMachine.add('Request_luggage',Request_luggage(),
-                                transitions={'continue_standby':'Standby'})
+                                transitions={'continue_follow':'FOLLOW'})
         
         
         smach.StateMachine.add('Ask_if_arrived',Ask_if_arrived(),

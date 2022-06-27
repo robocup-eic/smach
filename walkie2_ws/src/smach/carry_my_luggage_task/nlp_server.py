@@ -1,11 +1,12 @@
 """
-sudo netstat -nlp | grep 3000
+sudo netstat -nlp | grep 5000
 kill -9 <pid_id>
 """
 
 from flask import Flask, request
 import threading
 import time
+import json
 
 class SpeechToText():
 
@@ -23,7 +24,7 @@ class SpeechToText():
 
     def intent(self):
         body = request.get_json()
-        self.body = body
+        self.body = json.loads(body)
         print(self.body)
         return {"success" : True}
 
