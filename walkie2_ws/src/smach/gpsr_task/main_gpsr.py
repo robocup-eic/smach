@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import roslib
 import rospy
 import smach
@@ -6,7 +8,7 @@ import smach_ros
 
 class Standby(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['wait_GOTO','wait_FINDITEM','wait_BRINGIT','wait_FIND_PERSON'])
+        smach.State.__init__(self, outcomes=['continue_GOTO','wait_FINDITEM','wait_BRINGIT','wait_FIND_PERSON'])
         self.command_GOTO = True
         self.command_FINDITEM = False
         self.command_BRINGIT = False

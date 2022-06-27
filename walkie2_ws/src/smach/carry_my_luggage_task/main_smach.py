@@ -77,13 +77,12 @@ class Ask_if_arrived(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Ask_if_arrived')
-        print('Are we arrived?')
-        d = {"text" : "Are we arrived?"}
-        x = request.post('http://localhost:5003/tts', json=d) # ERROR !!!!!!!
+        speak("Are we arrived?")
         
         while True:
             if self.stt.body["intent"] is not None:
-                print(self.stt.body["intent"])
+                speak("Please say yes or no")
+                rospy.loginfo(self.stt.body["intent"])
 
             if self.stt.body["intent"] == "Yes": # waiting for "follow me" command
                 self.stt.body["intent"] = None
@@ -91,6 +90,7 @@ class Ask_if_arrived(smach.State):
 
             if self.stt.body["intent"] == "No": # waiting for "carry my luggage" command
                 self.stt.body["intent"] = None
+                speak("Please say follow me if you want me to follow me again")
                 return "continue_standby"
 
             time.sleep(0.01)
@@ -103,9 +103,7 @@ class Place_luggage(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Place_luggage')
-        print('Please pick your bag from my arm')
-        d = {"text" : "Please pick your bag from my arm"}
-        x = request.post('http://localhost:5003/tts', json=d) # ERROR !!!!!!
+        speak("Please pick your bag from my arm")
         time.sleep(10)
         return 'continue_standby'
         
