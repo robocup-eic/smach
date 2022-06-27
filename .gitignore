@@ -60,3 +60,6 @@ CATKIN_IGNORE
 
 data/
 yolov4-416/
+
+*.zip
+*.pyc
