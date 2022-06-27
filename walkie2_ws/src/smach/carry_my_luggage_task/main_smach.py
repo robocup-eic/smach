@@ -14,6 +14,7 @@ import requests
 import cv2
 from math import pi
 import pyrealsense2.pyrealsense2 as rs2
+
 # import for speed-to-text
 from flask import Flask, request
 import threading
@@ -27,28 +28,22 @@ import time
 #Bring in the simple action client
 import actionlib
 
-
 #Bring in the .action file and messages used by the move based action
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from custom_socket import CustomSocket
 from cv_bridge import CvBridge, CvBridgeError #
 from sensor_msgs.msg import Image, CameraInfo #
 
+
 class Standby(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Standby')
         smach.State.__init__(self, outcomes=['continue_follow'])
-        # self.follow_command = True
-        # self.request_command = False
         global stt
         self.stt = stt
         
     def execute(self, userdata):
         rospy.loginfo('Executing state Standby')
-        # if self.follow_command == True:    
-        #     return 'continue_follow'
-        # if self.request_command == True:
-        #     return 'continue_request_luggage'
         start_time = 0
         while True:
             if self.stt.body is not None:
@@ -63,6 +58,7 @@ class Standby(smach.State):
 
             time.sleep(0.01)
 
+
 def speak(text) :
     try :
         url = 'http://localhost:5003/tts'
@@ -71,40 +67,19 @@ def speak(text) :
     except :
         print("error to connect speak api.")
 
-class Request_luggage(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating state Request_luggage')
-        smach.State.__init__(self, outcomes=['continue_standby'])
-        # self.request = True
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state Request_luggage')
-        # if self.request == True:
-        #     return 'cotinue_standby'
-        print('Please put your bag on my arm')
-        d = {"text" : "Please put your bag on my arm"}
-        x = request.post('http://localhost:5003/tts', json=d)
-        time.sleep(10)
-        return 'continue_standby'
-
 
 class Ask_if_arrived(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Ask_if_arrived')
         smach.State.__init__(self, outcomes=['continue_standby','continue_place_luggage'])
-        # self.check = True
         global stt
         self.stt = stt
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Ask_if_arrived')
-        # if self.check == True:
-        #     return 'cotinue_standby'
-        # else:
-        #     return 'continue_place_luggage'
         print('Are we arrived?')
         d = {"text" : "Are we arrived?"}
-        x = request.post('http://localhost:5003/tts', json=d)
+        x = request.post('http://localhost:5003/tts', json=d) # ERROR !!!!!!!
         
         while True:
             if self.stt.body["intent"] is not None:
@@ -120,19 +95,17 @@ class Ask_if_arrived(smach.State):
 
             time.sleep(0.01)
 
+
 class Place_luggage(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Place_luggage')
         smach.State.__init__(self, outcomes=['continue_standby'])
-        # self.check = True
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Place_luggage')
-        # if self.check == True:
-        #     return 'cotinue_standby'
         print('Please pick your bag from my arm')
         d = {"text" : "Please pick your bag from my arm"}
-        x = request.post('http://localhost:5003/tts', json=d)
+        x = request.post('http://localhost:5003/tts', json=d) # ERROR !!!!!!
         time.sleep(10)
         return 'continue_standby'
         
@@ -141,9 +114,9 @@ class Stop_command(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Stop_command')
         smach.State.__init__(self, outcomes=['continue_stop','continue_find_person'])
-        #self.check = True
         global stt
         self.stt = stt
+
     def execute(self, userdata):
         rospy.loginfo('Executing state Stop_command')
         global target_lost
@@ -170,7 +143,6 @@ class Follow_person(smach.State):
        
         self.client.wait_for_server()
         rospy.loginfo("Action server is up, we can send new goal!")
-    
     
     def execute(self, userdata):
         rospy.loginfo('Executing state Follow_person')
@@ -299,7 +271,6 @@ class Get_bounding_box(smach.State):
                     t.transform.rotation.z = quat[2]
                     t.transform.rotation.w = quat[3]
 
-                    
                     tfm = tf2_msgs.msg.TFMessage([t])
                     self.pub_tf.publish(tfm)
 
@@ -311,7 +282,6 @@ class Get_bounding_box(smach.State):
         pass
 
     def yolo_callback(self, data): 
-
         global target_lost
         global person_id
         
@@ -383,17 +353,13 @@ class Get_bounding_box(smach.State):
         depth_sub = rospy.Subscriber("/camera/depth/image_rect_raw", Image , self.depth_callback)
         depth_info_sub = rospy.Subscriber("/camera/depth/camera_info", CameraInfo , self.info_callback)
         
-
         while True:
-            if  target_lost == True:
-                
+            if  target_lost == True:   
                 image_sub.unregister()
                 depth_info_sub.unregister()
                 depth_sub.unregister()
                 return 'continue_find_person'
-            
             elif is_stop == True:
-                
                 image_sub.unregister()
                 depth_info_sub.unregister()
                 depth_sub.unregister()
@@ -526,7 +492,6 @@ if __name__ == '__main__':
     stt = SpeechToText("nlp")
     t = threading.Thread(target = stt.run ,name="nlp")
     t.start()
-
 
     # start state machine
     sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
