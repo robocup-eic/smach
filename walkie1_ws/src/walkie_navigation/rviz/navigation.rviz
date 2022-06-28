@@ -314,6 +314,8 @@ Visualization Manager:
           Value: true
         camera_link:
           Value: true
+        human_frame:
+          Value: true
         imu_link:
           Value: true
         left_back_wheel_1:
@@ -352,7 +354,8 @@ Visualization Manager:
                   {}
                 realsense_base_1:
                   realsense_mount_1:
-                    {}
+                    human_frame:
+                      {}
                 right_back_wheel_1:
                   {}
                 right_front_wheel_1:
@@ -361,7 +364,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /camera/color/image_raw
+      Image Topic: /blob/image_blob
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -438,4 +441,4 @@ Window Geometry:
     collapsed: false
   Width: 1267
   X: 423
-  Y: 65
+  Y: 35

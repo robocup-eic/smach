@@ -7,6 +7,7 @@ from flask import Flask, request
 import threading
 import time
 import json
+import requests
 
 class SpeechToText():
 
@@ -27,6 +28,17 @@ class SpeechToText():
         self.body = json.loads(body)
         print(self.body)
         return {"success" : True}
+    
+    def clear(self):
+        self.body = None
+
+def speak(text) :
+    try :
+        url = 'http://localhost:5003/tts'
+        x = requests.post(url, json={'text':text})
+        return x
+    except :
+        print("error to connect speak api.")
 
 if __name__=="__main__":
     stt = SpeechToText("nlp")
