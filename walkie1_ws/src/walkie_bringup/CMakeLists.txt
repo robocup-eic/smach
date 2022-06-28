@@ -121,6 +121,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+generate_arduino_firmware(hello SRC chatter.cpp ${ROS_LIB_DIR}/time.cpp BOARD mega PORT /dev/ttyUBS0)
 add_executable(bringup src/bringup.cpp)
 target_link_libraries(bringup ${catkin_LIBRARIES})
 add_executable(bringup_w_imu src/bringup_w_imu.cpp)

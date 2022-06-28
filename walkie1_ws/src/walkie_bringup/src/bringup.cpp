@@ -151,7 +151,7 @@ public:
 
     odom_trans.transform.translation.x = odom_pose[0];
     odom_trans.transform.translation.y = odom_pose[1];
-    odom_trans.transform.translation.z = 0.4021;
+    odom_trans.transform.translation.z = 0;
 
     odom_quat.setRPY(0, 0, odom_pose[2]);
     odom_trans.transform.rotation.x = odom_quat.x();
@@ -167,7 +167,7 @@ public:
 
     odom.pose.pose.position.x = odom_pose[0];
     odom.pose.pose.position.y = odom_pose[1];
-    odom.pose.pose.position.z = 0.4021;
+    odom.pose.pose.position.z = 0;
     odom.pose.pose.orientation = odom_trans.transform.rotation;
     odom.header.stamp = ros::Time::now();
 

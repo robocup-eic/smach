@@ -380,8 +380,8 @@ class Get_bounding_box(smach.State):
         global target_lost
         global is_stop
         image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.yolo_callback)
-        depth_sub = rospy.Subscriber("/camera/depth/image_rect_raw", Image , self.depth_callback)
-        depth_info_sub = rospy.Subscriber("/camera/depth/camera_info", CameraInfo , self.info_callback)
+        depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image , self.depth_callback)
+        depth_info_sub = rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo , self.info_callback)
         
 
         while True:

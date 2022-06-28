@@ -14,7 +14,7 @@
   </node>
 
   <!-- Open rviz for monitoring -->
-  <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/>
+  <!-- <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/> -->
 
   <!-- Run serial_node -->
   <node name="Arduino1" pkg="rosserial_python" type="serial_node.py">
@@ -33,9 +33,15 @@
     <remap from="/scan" to="/walkie/scan"/>
   </node> 
 
-  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
-    <arg name="camera" value="/walkie/camera"/>
-    <arg name="publish_tf" value="false"/>
+  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+      <arg name="align_depth" value="true" />
+      <arg name="color_width" value="1280" />
+      <arg name="color_height" value="720" />
+      <arg name="color_fps" value="30" />
+      <arg name="depth_width" value="1280" />
+      <arg name="depth_height" value="720" />
+      <arg name="depth_fps" value="30" />
+      <arg name="filters" value="pointcloud"/>
   </include>
 
   <!-- <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="laser_filter">

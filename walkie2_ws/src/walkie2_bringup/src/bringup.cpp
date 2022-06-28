@@ -25,7 +25,7 @@ int WHEEL_NUM = 2;
 float WHEEL_RAD = 0.130; //was 0.125 poosibly wrong measurement
 float WHEEL_DIST = 0.467; //was 0.547 possibly wrong measurement
 
-#define TICKS_PER_REV 1530;
+#define TICKS_PER_REV 90;
 
 class WalkieBase
 {

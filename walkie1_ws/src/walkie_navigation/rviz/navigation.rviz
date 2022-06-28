@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Path1
         - /Image1
       Splitter Ratio: 0.5
     Tree Height: 355
@@ -174,7 +175,7 @@ Visualization Manager:
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /move_base/NavfnROS/plan
+      Topic: /move_base/DWAPlannerROS/global_plan
       Unreliable: false
       Value: true
     - Class: rviz/Group
@@ -301,6 +302,18 @@ Visualization Manager:
           Value: true
         base_link:
           Value: true
+        camera_aligned_depth_to_color_frame:
+          Value: true
+        camera_color_frame:
+          Value: true
+        camera_color_optical_frame:
+          Value: true
+        camera_depth_frame:
+          Value: true
+        camera_depth_optical_frame:
+          Value: true
+        camera_link:
+          Value: true
         imu_link:
           Value: true
         left_back_wheel_1:
@@ -348,7 +361,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /walkie/camera/color/image_raw
+      Image Topic: /camera/color/image_raw
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -425,4 +438,4 @@ Window Geometry:
     collapsed: false
   Width: 1267
   X: 423
-  Y: 95
+  Y: 65
