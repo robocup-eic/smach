@@ -24,8 +24,8 @@ odrv0 = odrive.find_any()
 rospy.loginfo("Initialise motors...")
 odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-odrv0.axis0.encoder.set_linear_count = 0
-odrv0.axis1.encoder.set_linear_count = 0
+odrv0.axis0.encoder.set_linear_count(0)
+odrv0.axis1.encoder.set_linear_count(0)
 
 
 def convert(forward,ccw):
@@ -36,18 +36,34 @@ def convert(forward,ccw):
 
 def cmd_vel_callback(msg):
     left_linear_val, right_linear_val = convert(msg.linear.x, msg.angular.z)
-    odrv0.axis0.controller.input_vel = -left_linear_val/60
-    odrv0.axis1.controller.input_vel = right_linear_val/60
+    try:
+        odrv0.axis0.controller.input_vel = -left_linear_val/60
+        odrv0.axis1.controller.input_vel = right_linear_val/60
+    except:
+        pass
+    
+
+    if (left_linear_val ==0) and (right_linear_val==0) and (odrv0.axis0.current_state!=1):
+        odrv0.axis0.requested_state = AXIS_STATE_IDLE
+        odrv0.axis1.requested_state = AXIS_STATE_IDLE
+    elif odrv0.axis0.current_state!=8:
+        odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+        odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+
 def start_odrive():
     vel_subscribe = rospy.Subscriber("/walkie2/cmd_vel", Twist, cmd_vel_callback, queue_size=2)
     rate = rospy.Rate(50) # 50hz
     while not rospy.is_shutdown():
-        vel[0] = -1*odrv0.axis0.encoder.vel_estimate * TYRE_CIRCUMFERENCE #vel left
-        vel[1] = odrv0.axis1.encoder.vel_estimate * TYRE_CIRCUMFERENCE #vel right
-        pos[0] = -1*odrv0.axis0.encoder.pos_estimate_counts #pos left
-        pos[1] = odrv0.axis1.encoder.pos_estimate_counts #pos right
-        raw_vel.data = vel
-        raw_pos.data = pos
+        # rospy.loginfo('{}'.format(vel))
+        try:
+            vel[0] = float(-1*odrv0.axis0.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel left
+            vel[1] = float(odrv0.axis1.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel right
+            pos[0] = -1*odrv0.axis0.encoder.pos_estimate_counts #pos left
+            pos[1] = odrv0.axis1.encoder.pos_estimate_counts #pos right
+        except:
+            pass
+        raw_vel.data = tuple(vel)
+        raw_pos.data = tuple(pos)
         vel_pub.publish(raw_vel)
         pos_pub.publish(raw_pos)
         rate.sleep()

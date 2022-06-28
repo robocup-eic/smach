@@ -83,6 +83,10 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        imu_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         left_wheel:
           Alpha: 1
           Show Axes: false
@@ -117,7 +121,11 @@ Visualization Manager:
           Value: true
         hokuyo:
           Value: true
+        imu_link:
+          Value: true
         left_wheel:
+          Value: true
+        odom:
           Value: true
         realsense:
           Value: true
@@ -129,25 +137,28 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        base_footprint:
-          base_link:
-            base_cr3:
-              {}
-            hokuyo:
-              {}
-            left_wheel:
-              {}
-            realsense:
-              {}
-            right_wheel:
-              {}
+        odom:
+          base_footprint:
+            base_link:
+              base_cr3:
+                {}
+              hokuyo:
+                {}
+              imu_link:
+                {}
+              left_wheel:
+                {}
+              realsense:
+                {}
+              right_wheel:
+                {}
       Update Interval: 0
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: base_link
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:
@@ -171,7 +182,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.5139243602752686
+      Distance: 5.7624616622924805
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -186,10 +197,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.46039697527885437
+      Pitch: 0.5503968000411987
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.593582272529602
+      Yaw: 0.9635828733444214
     Saved: ~
 Window Geometry:
   Displays:
@@ -208,4 +219,4 @@ Window Geometry:
     collapsed: false
   Width: 1267
   X: 653
-  Y: 168
+  Y: 138
