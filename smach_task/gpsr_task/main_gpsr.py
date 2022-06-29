@@ -326,7 +326,7 @@ class sm_howmany_Object_Detection(smach.State):
 def main():
     rospy.init_node('rospy_GPSR_state_machine')
     #delcare the global variable
-    ed = EnvironmentDescriptor()
+    ed = EnvironmentDescriptor("../config/fur_data.yaml")
     target_lost = False
     is_stop = False
     stop_rotate = False

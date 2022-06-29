@@ -28,5 +28,5 @@ class EnvironmentDescriptor:
                 return robot_pose
 
 if __name__ == "__main__":
-    ed = EnvironmentDescriptor()
+    ed = EnvironmentDescriptor("../config/fur_data.yaml")
     print(ed.get_robot_pose("table1"))
