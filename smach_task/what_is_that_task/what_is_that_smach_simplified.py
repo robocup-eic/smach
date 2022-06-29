@@ -2,7 +2,7 @@
 
 """
 kill flask in background
-kill $(lsof -t -i:5000)
+kill -9 $(lsof -t -i:5000)
 """
 # smach
 import roslib
@@ -102,8 +102,7 @@ class Follow_person(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Follow_person')
-        global target_lost
-        global is_stop
+        global target_lost, is_stop, last_pose
         pose = TransformStamped()
 
         goal_send_interval = 5 # send goal at least every 5 seconds or wait until previous goal.
@@ -112,18 +111,19 @@ class Follow_person(smach.State):
         while True:
             try:
                 if time.time() - start_time > goal_send_interval:
-                    pose = self.tfBuffer.lookup_transform('base_footprint','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
+                    pose = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
 
                     goal = MoveBaseGoal()
-                    goal.target_pose.header.frame_id = "base_footprint"
+                    goal.target_pose.header.frame_id = "map"
                     goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
                     goal.target_pose.pose.position.x = pose.transform.translation.x
                     goal.target_pose.pose.position.y = pose.transform.translation.y
                     goal.target_pose.pose.orientation = pose.transform.rotation
 
-                    # rospy.loginfo("Sending new goal: Quarternion is {}, {}, {}, {}".format(pose.transform.rotation.w,pose.transform.rotation.x,pose.transform.rotation.y,pose.transform.rotation.z))
-
                     self.client.send_goal(goal)
+                    last_pose = (pose.transform.translation.x, pose.transform.translation.y, pose.transform.translation.z)
+
+                    # rospy.loginfo("Sending new goal: Quarternion is {}, {}, {}, {}".format(pose.transform.rotation.w,pose.transform.rotation.x,pose.transform.rotation.y,pose.transform.rotation.z))
 
                     if  is_stop == True:
                         wait = self.client.cancel_goal()
@@ -186,7 +186,6 @@ class Get_bounding_box(smach.State):
 
         # condition variable
         self.found_target = False
-        self.last_pose = None
         self.lost_frame = 0
     
     def info_callback(self, cameraInfo):
@@ -253,8 +252,9 @@ class Get_bounding_box(smach.State):
             return (x, y)
 
         def detect():
-            global target_lost, person_id
-
+            global target_lost, person_id, last_pose
+            if self.frame is None:
+                return
             # scale image incase image size donot match cv server
             self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
@@ -299,9 +299,9 @@ class Get_bounding_box(smach.State):
             # check if person tracker can find any person
             if  lost==True:
                 self.lost_frame += 1
-                if self.last_pose is not None:
+                if last_pose is not None:
                     br = tf.TransformBroadcaster()
-                    br.sendTransform(self.last_pose,tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense_mount_1')
+                    br.sendTransform(last_pose, tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame', 'map')
             
             else:
                 # check if it lost forever
@@ -311,8 +311,7 @@ class Get_bounding_box(smach.State):
                 # 3d pose
                 if not self.intrinsics:
                     rospy.logerr("no camera intrinsics")
-                    return None
-
+                    return
                 # rescale pixel incase pixel donot match
                 self.depth_image = check_image_size_for_ros(self.depth_image)
                 pix = (self.x_pixel, self.y_pixel)
@@ -332,7 +331,6 @@ class Get_bounding_box(smach.State):
                     x = z_coord - 1 # set the goal point to be 1 meter away from person
                     y = -x_coord
                     z = -y_coord
-                    self.last_pose = (x, y, z)
                     br = tf.TransformBroadcaster()
                     br.sendTransform((x, y, z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense_mount_1')
 
@@ -379,8 +377,8 @@ class Pose(smach.State):
         
         self.bridge = CvBridge()
 
-        # initiate listObject and countFrame
-        self.listObject=[]
+        # initiate list_object and countFrame
+        self.list_object=[]
         self.countFrame=0
     
     def callback(self, data):
@@ -393,18 +391,18 @@ class Pose(smach.State):
         
         # add countFrame counter and append the object to the list
         self.countFrame += 1
-        if len(result['pointing_at']) != 0:
-            self.listObject.append(str(result['pointing_at'][0]))
+        if len(result['what_is_that']) > 0:
+            self.list_object.append(str(result['what_is_that'][0]))
         
         # Print list of detected objects
-        print("listObject = ",self.listObject)
+        # print("list_object = ",self.list_object)
         
         # check number of frame
-        print("counter frame = " + str(self.countFrame))
+        # print("counter frame = " + str(self.countFrame))
             
     def execute(self, userdata):
         rospy.loginfo('Executing state Pose')
-        self.listObject=[]
+        self.list_object=[]
         self.countFrame=0
 
         self.sub = rospy.Subscriber("/camera/color/image_raw", Image, self.callback)
@@ -417,13 +415,13 @@ class Pose(smach.State):
         self.sub.unregister()
         
         # if there is no object
-        if len(self.listObject) == 0:
+        if len(self.list_object) == 0:
             userdata.pose_output = 'no_object'
             return 'continue_text_to_speech'
         # if there is an object, find most common object
         else:
-            print('Most common object =', max(set(self.listObject), key=self.listObject.count))
-            userdata.pose_output = max(set(self.listObject), key=self.listObject.count)
+            print("You' =", max(set(self.list_object), key=self.list_object.count))
+            userdata.pose_output = max(set(self.list_object), key=self.list_object.count)
             return 'continue_text_to_speech'
 
 
@@ -451,6 +449,7 @@ if __name__ == '__main__':
     is_stop = False
     stop_rotate = False
     person_id = -1
+    last_pose = None
 
     # connect to server
     host = socket.gethostname()

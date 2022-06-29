@@ -1,7 +1,7 @@
 frequency: 30
 two_d_mode: true
 
-odom0: /walkie2/odom_raw
+odom0: /walkie/odom_raw
 odom0_config: [false, false, false,
                false, false, false,
                true, true, false,
