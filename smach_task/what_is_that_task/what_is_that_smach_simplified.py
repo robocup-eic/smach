@@ -253,7 +253,8 @@ class Get_bounding_box(smach.State):
 
         def detect():
             global target_lost, person_id, last_pose
-
+            if self.frame is None:
+                return
             # scale image incase image size donot match cv server
             self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
@@ -310,8 +311,7 @@ class Get_bounding_box(smach.State):
                 # 3d pose
                 if not self.intrinsics:
                     rospy.logerr("no camera intrinsics")
-                    return None
-
+                    return
                 # rescale pixel incase pixel donot match
                 self.depth_image = check_image_size_for_ros(self.depth_image)
                 pix = (self.x_pixel, self.y_pixel)
