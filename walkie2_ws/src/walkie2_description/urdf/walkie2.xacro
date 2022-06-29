@@ -159,7 +159,7 @@
   <parent link="base_link"/>
   <child link="base_cr3"/>
   <axis xyz="0.0 0.0 1.0"/>
-  <limit upper="0.0" lower="-0.4" effort="100" velocity="100"/>
+  <limit upper="0.0" lower="-0.3" effort="100" velocity="100"/>
 </joint>
 
 <joint name="hokuyo_joint" type="fixed">

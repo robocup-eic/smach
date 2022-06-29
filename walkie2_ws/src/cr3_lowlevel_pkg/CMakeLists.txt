@@ -168,7 +168,6 @@ catkin_install_python(PROGRAMS
   src/visual_servo_service.py
   src/cr3_controller_w_visual_servo_service.py
   src/detect3d.py
-  src/manipulation_pipeline.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -79,9 +79,6 @@ catkin_install_python(PROGRAMS
 
 include_directories(${catkin_INCLUDE_DIRS})
 
-add_executable(kan_algorithm_grasp src/kan_algorithm_grasp.cpp)
-target_link_libraries(kan_algorithm_grasp ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
-
 add_executable(robot_control_node_sim src/robot_control_node_sim.cpp)
 target_link_libraries(robot_control_node_sim ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
 
@@ -105,13 +102,16 @@ target_link_libraries(pick_service_adjust_yaw ${catkin_LIBRARIES})
 
 add_executable(pick_service_visual_servo src/pick_service_visual_servo.cpp)
 target_link_libraries(pick_service_visual_servo ${catkin_LIBRARIES})
+add_dependencies(pick_service_visual_servo cr3_moveit_control cr3_lowlevel_pkg)
 
 add_executable(place_algorithm_demo src/place_algorithm_demo.cpp)
+add_dependencies(place_algorithm_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(place_algorithm_demo ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
-add_dependencies(place_algorithm_demo cr3_moveit_control)
 
 add_executable(pick_client src/pick_client.cpp)
+add_dependencies(pick_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pick_client ${catkin_LIBRARIES})
+
 
 add_executable(constraint_publisher src/constraint_publisher.cpp)
 target_link_libraries(constraint_publisher ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
