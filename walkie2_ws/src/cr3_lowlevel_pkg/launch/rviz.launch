@@ -1,0 +1,8 @@
+<launch>
+	<param name="robot_description" textfile="$(find cr3_lowlevel_pkg)/urdf/cr3_robot_w_gripper_seperated.xacro"/>
+	<arg name="gui" default="True" />
+   	<param name="use_gui" value="$(arg gui)"/>
+   	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find cr3_lowlevel_pkg)/rviz/tesr_urdf.rviz" launch-prefix="bash -c 'sleep 5.0; $0 $@'"/>
+</launch>

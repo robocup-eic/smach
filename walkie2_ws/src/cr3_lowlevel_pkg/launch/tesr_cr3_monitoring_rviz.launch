@@ -1,0 +1,12 @@
+<launch>
+	<!-- robot ip's -->
+	<arg name="ip" doc="ip for Dobot CR3" default="192.168.5.6"/>
+
+	<node name="tesr_cr3" pkg="cr3_lowlevel_pkg" type="tesr_cr3_robot_follow_motion.py" output="screen">
+		<param name="ip_cr3" type="str" value="$(arg ip)"/>
+	</node>
+
+	<param name="robot_description" textfile="$(find cr3_lowlevel_pkg)/urdf/cr3_robot.urdf"/>
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find cr3_lowlevel_pkg)/rviz/tesr_urdf.rviz" launch-prefix="bash -c 'sleep 5.0; $0 $@'"/>
+</launch>

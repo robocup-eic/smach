@@ -1,0 +1,3 @@
+geometry_msgs/Pose geo_req
+---
+bool success_grasp

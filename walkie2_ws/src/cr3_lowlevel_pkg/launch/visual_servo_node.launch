@@ -1,0 +1,3 @@
+<launch>
+    <node name="visual_servo" pkg="cr3_lowlevel_pkg" type="visual_servo.py"/>
+</launch>
