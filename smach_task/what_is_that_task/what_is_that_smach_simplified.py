@@ -112,7 +112,6 @@ class Follow_person(smach.State):
             try:
                 if time.time() - start_time > goal_send_interval:
                     pose = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
-
                     goal = MoveBaseGoal()
                     goal.target_pose.header.frame_id = "map"
                     goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)

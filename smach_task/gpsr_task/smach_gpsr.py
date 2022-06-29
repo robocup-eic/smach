@@ -16,7 +16,7 @@ import tf2_msgs
 # for furniture marker
 import yaml
 from visualization_msgs.msg import Marker , MarkerArray
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Pose
 
 # SimpleActionClient
 import actionlib
@@ -254,6 +254,9 @@ class sm_go_to_Navigation(smach.State):
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
+        self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
     def execute(self, userdata):
         rospy.loginfo('execute navigation state')
         global is_stop, target_lost, person_id, yaml_data
@@ -261,9 +264,16 @@ class sm_go_to_Navigation(smach.State):
         target_lost = False
         person_id = -1
         self.location = userdata.sm_go_to_Navigation_in
-        self.x = yaml_data[self.location]['robo_pose']['position']['x']
-        self.y = yaml_data[self.location]['robo_pose']['position']['y']
-        self.z = yaml_data[self.location]['robo_pose']['position']['z']
+        self.robo_pose = Pose()
+        self.robo_pose.position.x = yaml_data[self.location]['robo_pose']['position']['x']
+        self.robo_pose.position.y = yaml_data[self.location]['robo_pose']['position']['y']
+        self.robo_pose.position.z = yaml_data[self.location]['robo_pose']['position']['z']
+        self.robo_pose.orientation.x = yaml_data[self.location]['robo_pose']['orientation']['x']
+        self.robo_pose.orientation.y = yaml_data[self.location]['robo_pose']['orientation']['y']
+        self.robo_pose.orientation.z = yaml_data[self.location]['robo_pose']['orientation']['z']
+        self.robo_pose.orientation.w = yaml_data[self.location]['robo_pose']['orientation']['w']
+        #use only this command to send the goal to the server    
+        self.client.send_goal(self.robo_pose)
         # execute the navigation part the destination has already declared as self.x self.y self.z 
         
         return 'continue_sm_go_to_Announce'
