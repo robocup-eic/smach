@@ -1,0 +1,36 @@
+<launch>
+
+    <!-- By default, we are not in debug mode -->
+    <arg name="debug" default="false" />
+
+    <!-- By default, use the urdf location provided from the package -->
+    <param name="robot_description" command="$(find xacro)/xacro $(find cr3_lowlevel_pkg)/urdf/cr3_robot_w_gripper_seperated.xacro" />
+    
+    <node name="trajectory_follower_server" pkg="cr3_lowlevel_pkg" type="trajectory_follower_server"/>
+    <!-- cr3 controller-->
+    <node name="cr3_controller" pkg="cr3_lowlevel_pkg" type="cr3_controller.py"/>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen">
+    </node>
+
+    <include file="$(find cr3_moveit_config)/launch/planning_context.launch">
+        <arg name="load_robot_description" value="true"/>
+    </include>
+
+    <include file="$(find cr3_moveit_config)/launch/move_group.launch">
+        <arg name="allow_trajectory_execution" value="true"/>
+        <arg name="fake_execution" value="false"/>
+        <arg name="info" value="true"/>
+        <arg name="debug" value="$(arg debug)"/>
+    </include>>
+
+    <include file="$(find cr3_moveit_config)/launch/moveit_rviz.launch" >
+        <arg name="rviz_config" value="$(find cr3_moveit_config)/launch/moveit_real.rviz"/>
+        <arg name="debug" value="$(arg debug)"/>
+    </include> 
+
+    <!-- launch robot control node for moveit motion planning -->
+    <node pkg="cr3_moveit_control" type="robot_control_node_real_catesian" name="robot_control_node_real_catesian" output="screen" />
+
+
+</launch>

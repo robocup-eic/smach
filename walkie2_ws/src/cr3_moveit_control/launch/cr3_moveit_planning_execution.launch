@@ -1,0 +1,56 @@
+<launch>
+
+  <!-- By default, we are not in debug mode -->
+  <arg name="debug" default="false" />
+
+  <!-- By default, we won't load or override the robot_description -->
+  <arg name="load_robot_description" default="false"/>
+
+  <arg name="sim" default="false"/>
+
+  <!--
+  By default, hide joint_state_publisher's GUI
+
+  MoveIt!'s "demo" mode replaces the real robot driver with the joint_state_publisher.
+  The latter one maintains and publishes the current joint configuration of the simulated robot.
+  It also provides a GUI to move the simulated robot around "manually".
+  This corresponds to moving around the real robot without the use of MoveIt.
+  -->
+
+  <!-- By default, use the urdf location provided from the package -->
+  <arg name="urdf_path" default="$(find cr3_lowlevel_pkg)/urdf/cr3_robot.xacro"/>
+
+  <group if="$(arg sim)">
+    <include file="$(find cr3_moveit_config)/launch/gazebo.launch" >
+      <arg name="paused" value="$(arg paused)"/>
+      <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
+      <arg name="urdf_path" value="$(arg urdf_path)"/>
+    </include>
+  </group>
+
+  <group unless="$(arg sim)">
+    <!-- send robot urdf to param server -->
+    <param name="robot_description" command="$(find xacro)/xacro '$(arg urdf_path)'"/>
+    <!-- cr3 trajectory action server-->
+    <node name="trajectory_follower_server" pkg="cr3_lowlevel_pkg" type="trajectory_follower_server"/>
+    <!-- cr3 controller-->
+    <node name="cr3_controller" pkg="cr3_lowlevel_pkg" type="cr3_controller.py"/>
+
+  </group>
+
+
+  <!-- Given the published joint states, publish tf for the robot links -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+
+  <!-- Run the main MoveIt! executable without trajectory execution (we do not have controllers configured by default) -->
+  <include file="$(find cr3_moveit_config)/launch/move_group.launch">
+    <arg name="publish_monitored_planning_scene" value="true" />
+  </include>
+
+  <!-- Run Rviz and load the default config to see the state of the move_group node -->
+  <include file="$(find cr3_moveit_config)/launch/moveit_rviz.launch">
+    <arg name="rviz_config" value="$(find cr3_moveit_config)/launch/moveit.rviz"/>
+    <arg name="debug" value="$(arg debug)"/>
+  </include>
+
+</launch>

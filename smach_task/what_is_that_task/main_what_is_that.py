@@ -41,6 +41,7 @@ from client.nlp_server import SpeechToText, speak
 import time
 import threading
 
+
 class Standby(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_follow','continue_pointing'])
@@ -71,6 +72,7 @@ class Standby(smach.State):
 
             time.sleep(0.01)
 
+
 class Stop_command(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_stop'])
@@ -86,11 +88,13 @@ class Stop_command(smach.State):
             if stt.body is not None:
                 if stt.body["intent"] == "stop":
                     is_stop = True
+                    stt.clear()
                     return "continue_stop"
 
                 if target_lost:
                     return "continue_stop"
             time.sleep(0.01)
+
 
 class Follow_person(smach.State):  
     def __init__(self):
@@ -121,11 +125,11 @@ class Follow_person(smach.State):
 
                     self.client.send_goal(goal)
                     last_pose = (pose.transform.translation.x, pose.transform.translation.y, pose.transform.translation.z)
-
+                    start_time = time.time()
                     # rospy.loginfo("Sending new goal: Quarternion is {}, {}, {}, {}".format(pose.transform.rotation.w,pose.transform.rotation.x,pose.transform.rotation.y,pose.transform.rotation.z))
 
                     if  is_stop == True:
-                        wait = self.client.cancel_goal()
+                        self.client.cancel_goal()
 
                         cancel = Twist()
                         stop_pub = rospy.Publisher("/walkie/cmd_vel",Twist,queue_size=1)
@@ -142,7 +146,7 @@ class Follow_person(smach.State):
 
                     elif target_lost == True:
 
-                        wait = self.client.cancel_goal()
+                        self.client.cancel_goal()
 
                         cancel = Twist()
                         stop_pub = rospy.Publisher("/walkie/cmd_vel",Twist,queue_size=1)
