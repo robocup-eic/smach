@@ -38,7 +38,7 @@ from sensor_msgs.msg import Image, CameraInfo #
 class Standby(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Standby')
-        smach.State.__init__(self, outcomes=['continue_follow'])
+        smach.State.__init__(self, outcomes=['continue_follow'],)
         global stt
         self.stt = stt
         

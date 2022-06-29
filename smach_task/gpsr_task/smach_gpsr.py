@@ -1,17 +1,58 @@
 #!/usr/bin/env python
+
+# smach
 import roslib
 import rospy
 import smach
 import smach_ros
+
+# navigation
+import tf2_ros
+from nav_msgs.msg import Odometry
+from math import pi
+import tf
+import tf2_msgs
 
 # for furniture marker
 import yaml
 from visualization_msgs.msg import Marker , MarkerArray
 from geometry_msgs.msg import Point
 
+# SimpleActionClient
+import actionlib
+
+# realsense and computer vision
+import requests
+import cv2
+import numpy as np
+import pyrealsense2.pyrealsense2 as rs2
+from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped
+from std_msgs.msg import Bool,Int64
+import socket
+
+# import for text-to-speech
+import requests
+import json
+from nlp_server import SpeechToText
+import time
+
+# ros pub sub
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from std_msgs.msg import Bool
+from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import Image, CameraInfo
+
+# other utility
+from client.custom_socket import CustomSocket
+from client.nlp_server import SpeechToText
+from client.nlp_server import speak
+import time
+import threading
+
 def read_yaml():
-    with open("/home/tanas/robocup-manipulation/cr3_ws/src/cr3_moveit_control/config/fur_data.yaml", "r") as f:
+    with open("/home/kann121nemesis/robocup-manipulation/cr3_ws/src/cr3_moveit_control/config/fur_data.yaml", "r") as f:
         try:
+            global yaml_data 
             yaml_data = yaml.safe_load(f)
         except yaml.YAMLError as exc:
             print(exc)
@@ -192,20 +233,44 @@ class sm_find_person_Tell_Where_Is_Person(smach.State):
 class sm_go_to_Check_Object_Location(smach.State):
     def __init__(self):
         rospy.loginfo('initiating check object location state')
-        smach.State.__init__(self, outcomes = ['continue_sm_go_to_Navigation'])
+        smach.State.__init__(self, outcomes = ['continue_sm_go_to_Navigation'],output_keys=['sm_go_to_Check_Object_Location_out'],)
+        global stt
+        self.stt = stt
+        self.location = ''
     def execute(self, userdata):
-        return 'continue_sm_go_to_Navigation'
+        rospy.loginfo('execute check object location state')
+        global yaml_data
+        while True:
+            if self.stt.body is not None:
+                self.location = self.stt.body["intent"]
+                userdata.sm_go_to_Check_Object_Location_out = self.location
+                return 'continue_sm_go_to_Navigation'
 
 class sm_go_to_Navigation(smach.State):
     def __init__(self):
         rospy.loginfo('initiating navigation state')
-        smach.State.__init__(self, outcomes = ['continue_sm_go_to_Object_Detection'])
+        smach.State.__init__(self, outcomes = ['continue_sm_go_to_Announce'], input_keys=['sm_go_to_Navigation_in'])
+        self.location = ''
+        self.x = 0.0
+        self.y = 0.0
+        self.z = 0.0
     def execute(self, userdata):
-        return 'continue_sm_go_to_Object_Detection'
+        rospy.loginfo('execute navigation state')
+        global is_stop, target_lost, person_id, yaml_data
+        is_stop = False
+        target_lost = False
+        person_id = -1
+        self.location = userdata.sm_go_to_Navigation_in
+        self.x = yaml_data[self.location]['robo_pose']['position']['x']
+        self.y = yaml_data[self.location]['robo_pose']['position']['y']
+        self.z = yaml_data[self.location]['robo_pose']['position']['z']
+        # execute the navigation part the destination has already declared as self.x self.y self.z 
+        
+        return 'continue_sm_go_to_Announce'
 
-class sm_go_to_Object_Detection(smach.State):
+class sm_go_to_Announce(smach.State):
     def __init__(self):
-        rospy.loginfo('initiating object detection state')
+        rospy.loginfo('initiating announce state')
         smach.State.__init__(self, outcomes = ['continue_succeeded', 'continue_aborted'])
         self.x = 1
     def execute(self, userdata):
@@ -225,13 +290,13 @@ class sm_howmany_Check_Location(smach.State):
 class sm_howmany_Navigation(smach.State):
     def __init__(self):
         rospy.loginfo('initiating navigation state')
-        smach.State.__init__(self, outcomes = ['continue_sm_howmany_Announce'])
+        smach.State.__init__(self, outcomes = ['continue_sm_howmany_Object_Detection'])
     def execute(self, userdata):
-        return 'continue_sm_howmany_Announce'
+        return 'continue_sm_howmany_Object_Detection'
 
-class sm_howmany_Announce(smach.State):
+class sm_howmany_Object_Detection(smach.State):
     def __init__(self):
-        rospy.loginfo('initiating announce state')
+        rospy.loginfo('initiating object detection state')
         smach.State.__init__(self, outcomes = ['continue_aborted', 'continue_succeeded'])
         self.x = 1
     def execute(self, userdata):
@@ -241,8 +306,31 @@ class sm_howmany_Announce(smach.State):
             return 'continue_succeeded'
 def main():
     rospy.init_node('rospy_GPSR_state_machine')
-    #read yaml file
-    global yaml_data
+    #delcare the global variable
+    yaml_data = None
+    target_lost = False
+    is_stop = False
+    stop_rotate = False
+    person_id = -1
+    last_pose = None
+
+    # connect to server
+    host = socket.gethostname()
+    port = 11000
+    c = CustomSocket(host,port)
+    c.clientConnect()
+
+    pose_port = 10002
+    pose_c = CustomSocket(host,pose_port)
+    pose_c.clientConnect()
+    
+    
+    # Flask nlp server
+    stt = SpeechToText("nlp")
+    stt.clear()
+    t = threading.Thread(target = stt.run ,name="flask")
+    t.start()
+
     read_yaml()
 
     sm_top = smach.StateMachine(outcomes = ['succeeded','aborted'])
@@ -311,12 +399,16 @@ def main():
         smach.StateMachine.add('SM_FIND_PERSON', sm_find_person,
                                transitions = {'succeeded':'STAND_BY'})
         sm_go_to = smach.StateMachine(outcomes = ['succeeded', 'aborted'])
+        sm_go_to.userdata.sm_go_to_location = ''
+        #sm_go_to.userdata.sm_go_to_coordinate = []
         with sm_go_to:
             smach.StateMachine.add('sm_go_to_CHECK_OBJECT_LOCATION', sm_go_to_Check_Object_Location(),
-                                   transitions = {'continue_sm_go_to_Navigation':'sm_go_to_NAVIGATION'})
+                                   transitions = {'continue_sm_go_to_Navigation':'sm_go_to_NAVIGATION'},
+                                   remapping = {'sm_go_to_Check_Object_Location_out':'sm_go_to_location'})
             smach.StateMachine.add('sm_go_to_NAVIGATION', sm_go_to_Navigation(),
-                                   transitions = {'continue_sm_go_to_Object_Detection':'sm_go_to_OBJECT_DETECTION'})
-            smach.StateMachine.add('sm_go_to_OBJECT_DETECTION', sm_go_to_Object_Detection(),
+                                   transitions = {'continue_sm_go_to_Announce':'sm_go_to_ANNOUNCE'},
+                                   remapping = {'sm_go_to_Navigation_in':'sm_go_to_location'})
+            smach.StateMachine.add('sm_go_to_ANNOUNCE', sm_go_to_Announce(),
                                    transitions = {'continue_aborted':'aborted',
                                                   'continue_succeeded':'succeeded'})
         smach.StateMachine.add('SM_GO_TO', sm_go_to,
@@ -326,8 +418,8 @@ def main():
             smach.StateMachine.add('sm_howmany_CHECK_LOCATION', sm_howmany_Check_Location(),
                                    transitions = {'continue_sm_howmany_Navigation':'sm_howmany_NAVIGATION'})
             smach.StateMachine.add('sm_howmany_NAVIGATION', sm_howmany_Navigation(),
-                                   transitions = {'continue_sm_howmany_Announce':'sm_howmany_ANNOUNCE'})
-            smach.StateMachine.add('sm_howmany_ANNOUNCE', sm_howmany_Announce(),
+                                   transitions = {'continue_sm_howmany_Object_Detection':'sm_howmany_OBJECT_DETECTION'})
+            smach.StateMachine.add('sm_howmany_OBJECT_DETECTION', sm_howmany_Object_Detection(),
                                    transitions = {'continue_aborted':'aborted',
                                                   'continue_succeeded':'succeeded'})
         smach.StateMachine.add('SM_HOWMANY', sm_howmany,
