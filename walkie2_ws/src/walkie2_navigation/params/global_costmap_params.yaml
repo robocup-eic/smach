@@ -5,3 +5,4 @@ global_costmap:
   static_map: true
   inflation_radius: 1.75
   cost_scaling_factore: 2.58
+
