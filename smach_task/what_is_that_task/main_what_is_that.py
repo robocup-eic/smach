@@ -253,9 +253,12 @@ class Get_bounding_box(smach.State):
             x = int(x*self.intrinsics.width/1280)
             y = int(y*self.intrinsics.height/720)
             return (x, y)
+        
+        def find_closest_person():
+            pass
 
         def detect():
-            global target_lost, person_id, last_pose
+            global target_lost, person_id, last_pose, person_id
             if self.frame is None:
                 return
             # scale image incase image size donot match cv server
@@ -266,36 +269,34 @@ class Get_bounding_box(smach.State):
             self.frame = check_image_size_for_ros(self.frame)
 
             lost = True
+
+            # not found person yet
+            if person_id == -1:
+                center_pixel_list = []
+                for track in result["result"]:
+                    self.depth_image = check_image_size_for_ros(self.depth_image)
+                    x_pixel = int((track[2][0]+track[2][2])/2)
+                    y_pixel = int((track[2][1]+track[2][3])/2)
+                    depth = self.depth_image[y_pixel, x_pixel] # numpy array
+                    center_pixel_list.append((x_pixel, y_pixel, depth, track[0])) # (x, y, depth, perons_id)
+                
+                person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
+
             for track in result["result"]:
                 # track : [id, class_name, [x1,y1,x2,y2]]
                 # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
-
-                # first time found person
-                if not self.found_target:
-                    person_id = track[0]
+                if track[0] == person_id:
                     self.x_pixel = int((track[2][0]+track[2][2])/2)
                     self.y_pixel = int((track[2][1]+track[2][3])/2)
+
                     lost = False
-                    self.found_target = True
                     self.lost_frame = 0
-                    rospy.loginfo("Found person: target id is {}".format(track[0]))
+                    # rospy.loginfo("Found Target")
+            
                     # visualize purpose
                     self.frame = cv2.circle(self.frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
                     self.frame = cv2.rectangle(self.frame, rescale_pixel(track[2][0], track[2][1]), rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
                     self.frame = cv2.putText(self.frame, str(person_id), (track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-                else:
-                    if track[0] == person_id:
-                        self.x_pixel = int((track[2][0]+track[2][2])/2)
-                        self.y_pixel = int((track[2][1]+track[2][3])/2)
-
-                        lost = False
-                        self.lost_frame = 0
-                        # rospy.loginfo("Found Target")
-                
-                        # visualize purpose
-                        self.frame = cv2.circle(self.frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
-                        self.frame = cv2.rectangle(self.frame, rescale_pixel(track[2][0], track[2][1]), rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
-                        self.frame = cv2.putText(self.frame, str(person_id), (track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
             
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
 
