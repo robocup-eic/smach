@@ -163,7 +163,7 @@ public:
     odom_trans.transform.rotation.w = odom_quat.w();
     odom_trans.header.stamp = ros::Time::now();
 
-    odom_broadcaster.sendTransform(odom_trans);
+    //odom_broadcaster.sendTransform(odom_trans);
 
     odom.header.frame_id = odom_header_frame;
     odom.child_frame_id = odom_child_frame;
