@@ -33,7 +33,6 @@ import socket
 # import for text-to-speech
 import requests
 import json
-from nlp_server import SpeechToText
 import time
 
 # ros pub sub
@@ -44,19 +43,11 @@ from sensor_msgs.msg import Image, CameraInfo
 from actionlib_msgs import GoalStatus
 
 # other utility
-from client.custom_socket import CustomSocket
-from client.nlp_server import SpeechToText
-from client.nlp_server import speak
+from util.custom_socket import CustomSocket
+from util.nlp_server import SpeechToText, speak
+from util.environment_descriptor import EnvironmentDescriptor
 import time
 import threading
-
-def read_yaml():
-    with open("/home/kann121nemesis/robocup-manipulation/cr3_ws/src/cr3_moveit_control/config/fur_data.yaml", "r") as f:
-        try:
-            global yaml_data 
-            yaml_data = yaml.safe_load(f)
-        except yaml.YAMLError as exc:
-            print(exc)
 
 class Stand_by(smach.State):
     def __init__(self):
@@ -275,13 +266,13 @@ class sm_go_to_Navigation(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing Navigation state')
-        global yaml_data
+        global ed
         location = userdata.sm_go_to_Navigation_in
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
-        goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
-        goal.target_pose.pose = yaml_data[location]["robo_pose"] 
+        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+        goal.target_pose.pose = ed.get_robot_pose(location)
         self.move_base_client.send_goal(goal)
 
         self.move_base_client.wait_for_result()
@@ -335,7 +326,7 @@ class sm_howmany_Object_Detection(smach.State):
 def main():
     rospy.init_node('rospy_GPSR_state_machine')
     #delcare the global variable
-    yaml_data = None
+    ed = EnvironmentDescriptor("../config/fur_data.yaml")
     target_lost = False
     is_stop = False
     stop_rotate = False
@@ -358,8 +349,6 @@ def main():
     stt.clear()
     t = threading.Thread(target = stt.run ,name="flask")
     t.start()
-
-    read_yaml()
 
     sm_top = smach.StateMachine(outcomes = ['succeeded','aborted'])
     with sm_top:
