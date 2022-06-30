@@ -39,14 +39,6 @@ class Input(smach.State):
     def execute(self, userdata):
         return 'continue_GetObjectPoseList'
 
-class GetObjectPoseList(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating get object pose list state')
-        smach.State.__init__(self, outcomes=['continue_Place', 'continue_aborted'])
-    
-    def execute(self, userdata):
-        return 'continue_Place'
-
 class Place(smach.State):
     def __init__(self) :
         rospy.loginfo('initiating place state')
@@ -75,8 +67,8 @@ class Place(smach.State):
 
         point_goal11.x = -0.99
         point_goal12.x = -0.99
-        point_goal21.x = -0.35
-        point_goal22.x = -0.35
+        point_goal21.x = -0.40
+        point_goal22.x = -0.40
 
         point_goal11.y = -0.45
         point_goal12.y = 0.42
@@ -92,10 +84,10 @@ class Place(smach.State):
         c2 = Pose()
         c3 = Pose()
 
-        c1.position.x = -0.45
+        c1.position.x = -0.50
         c1.position.y = -0.30
 
-        c2.position.x = -0.45
+        c2.position.x = -0.50
         c2.position.y = -0.15
 
         collision_object_pos = [c1, c2]
@@ -104,8 +96,8 @@ class Place(smach.State):
         success = place_service(point_goal11, point_goal12, point_goal21, point_goal22, high, collision_object_pos)
         print(success)
 
-        return 'continue_succeeded'
-
+        if (success) : return 'continue_succeeded'
+        else : return 'continue_aborted'
 
 def main():
     
@@ -133,10 +125,8 @@ def main():
     rospy.spin()
     sis.stop()
 
-
 if __name__ == '__main__':
     main()
-
 
 # class GetObjectPoseList(smach.State):
 #     def __init__(self):
