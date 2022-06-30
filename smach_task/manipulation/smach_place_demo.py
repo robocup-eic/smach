@@ -82,7 +82,6 @@ class Place(smach.State):
 
         c1 = Pose()
         c2 = Pose()
-        c3 = Pose()
 
         c1.position.x = -0.50
         c1.position.y = -0.30
@@ -98,6 +97,237 @@ class Place(smach.State):
 
         if (success) : return 'continue_succeeded'
         else : return 'continue_aborted'
+
+class GetObjectPoseList(smach.State):
+    def __init__(self):
+        rospy.loginfo('initiating get object pose list state')
+        smach.State.__init__(self, outcomes=['continue_Place', 'continue_aborted']
+                                 , input_keys=['objectname_input', 'objectpose_output']
+                                 , output_keys=['objectlist_output'])
+        # initiate variables
+        # self.object_name = ""
+        self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
+        self.object_pose_list = [] # [(x1, y1, z1, id), (x1, y1, z1, id), ...] im meters
+        self.intrinsics = None
+        self.bridge = CvBridge()
+        self.frame = None
+        self.object_pose = Pose()
+        self.tf_stamp = None
+
+        # connect to CV server
+        host = "192.168.8.99"
+        port = 10001
+        self.c = CustomSocket(host, port)
+        self.c.clientConnect()
+        rospy.loginfo("connected object detection server")
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing state GetObjectPose')
+
+        def run_once():
+            while self.intrinsics is None:
+                rospy.loginfo('massage rospy for debug')
+                time.sleep(0.1)
+            rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
+            self.c.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
+
+        def reset():
+            rospy.loginfo("Reseting the value")
+            self.frame = None
+            rospy.sleep(0.1)
+            rospy.loginfo("Finished reseting")
+            self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, yolo_callback, queue_size=1, buff_size=52428800)
+            self.depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, depth_callback, queue_size=1, buff_size=52428800)
+
+        def detect():
+            rospy.loginfo("Start detecting")
+            # send frame to server and recieve the result
+            result = self.c.req(self.frame)
+            self.frame = check_image_size_for_ros(self.frame)
+            rospy.loginfo("result {}".format(result))
+            if result['n'] == 0:
+                return None 
+            # object detection bounding box 2d
+            for bbox in result['bbox_list']:
+                
+                # receive xyxy
+                x_pixel = int(bbox[0] + (bbox[2]-bbox[0])/2)
+                y_pixel = int(bbox[1] + (bbox[3]-bbox[1])/2)
+                (x_pixel, y_pixel) = rescale_pixel(x_pixel, y_pixel)
+                object_id = 1 # TODO change to object tracker
+                self.center_pixel_list.append((x_pixel, y_pixel, object_id))
+                # visualize purpose
+                self.frame = cv2.circle(self.frame, (x_pixel, y_pixel), 5, (0, 255, 0), 2)
+                self.frame = cv2.rectangle(self.frame, rescale_pixel(bbox[0], bbox[1]), rescale_pixel(bbox[2], bbox[3]), (0, 255, 0), 2)
+            
+            self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
+
+            # 3d pose
+            if not self.intrinsics:
+                rospy.logerr("no camera intrinsics")
+                return None
+            for center_pixel in self.center_pixel_list:
+                rospy.loginfo("found {}".format(center_pixel))
+                depth = self.depth_image[center_pixel[1], center_pixel[0]] # [y, x] for numpy array
+                result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [center_pixel[0], center_pixel[1]], depth) # [x, y] for realsense lib
+                x_coord, y_coord, z_coord = result[0]/1000, result[1]/1000, result[2]/1000
+
+                # filter only object with more than 50 cm
+                if z_coord >= 0.5:
+                    rospy.sleep(0.1)
+                    self.object_pose_list.append((x_coord, y_coord, z_coord, center_pixel[2]))
+
+                    self.tf_stamp = TransformStamped()
+                    self.tf_stamp.header.frame_id = "/camera_link"
+                    self.tf_stamp.header.stamp = rospy.Time.now()
+                    self.tf_stamp.child_frame_id = "/object_frame_{}".format(center_pixel[2]) # object_id
+                    self.tf_stamp.transform.translation.x = z_coord
+                    self.tf_stamp.transform.translation.y = -x_coord
+                    self.tf_stamp.transform.translation.z = -y_coord
+
+                    quat = tf.transformations.quaternion_from_euler(
+                        float(0), float(0), float(0))
+
+                    self.tf_stamp.transform.rotation.x = quat[0]
+                    self.tf_stamp.transform.rotation.y = quat[1]
+                    self.tf_stamp.transform.rotation.z = quat[2]
+                    self.tf_stamp.transform.rotation.w = quat[3]
+
+            self.image_sub.unregister()
+            self.depth_sub.unregister()
+            rospy.loginfo("Object found!")
+            # self.object_pose = find_closest_object()
+
+        # function used in callback functions
+        def check_image_size_for_cv(frame):
+            if frame.shape[0] != 720 and frame.shape[1] != 1280:
+                frame = cv2.resize(frame, (1280, 720))
+            return frame
+
+        def check_image_size_for_ros(frame):
+            if frame.shape[0] != self.intrinsics.height and frame.shape[1] != self.intrinsics.width:
+                frame = cv2.resize(frame, (self.intrinsics.width, self.intrinsics.height))
+            return frame
+
+        def rescale_pixel(x, y):
+            x = int(x*self.intrinsics.width/1280)
+            y = int(y*self.intrinsics.height/720)
+            return (x, y)
+
+        def find_closest_object():
+            object_pose_z_min = None
+            z_min = 10000000000
+            for object_pose in self.object_pose_list:
+                if object_pose[2] < z_min:
+                    object_pose_z_min = object_pose
+                    z_min = object_pose[2]
+                    
+            return xyz_to_pose(object_pose_z_min[0], object_pose_z_min[1], object_pose_z_min[2])
+
+        def xyz_to_pose(x, y, z):
+            """
+            transform xyz in realsense coord to camera_link coord
+            """
+            # set object pose
+            object_pose = Pose()
+            object_pose.position.x = z
+            object_pose.position.y = -x
+            object_pose.position.z = -y
+            object_pose.orientation.x = 0
+            object_pose.orientation.y = 0
+            object_pose.orientation.z = 0
+            object_pose.orientation.w = 1
+            return object_pose
+
+        # all call_back functions
+        def info_callback(cameraInfo):
+            try:
+                if self.intrinsics:
+                    return
+                self.intrinsics = rs2.intrinsics()
+                self.intrinsics.width = cameraInfo.width
+                self.intrinsics.height = cameraInfo.height
+                self.intrinsics.ppx = cameraInfo.K[2]
+                self.intrinsics.ppy = cameraInfo.K[5]
+                self.intrinsics.fx = cameraInfo.K[0]
+                self.intrinsics.fy = cameraInfo.K[4]
+                if cameraInfo.distortion_model == 'plumb_bob':
+                    self.intrinsics.model = rs2.distortion.brown_conrady
+                elif cameraInfo.distortion_model == 'equidistant':
+                    self.intrinsics.model = rs2.distortion.kannala_brandt4
+                self.intrinsics.coeffs = [i for i in cameraInfo.D]
+            except CvBridgeError as e:
+                print(e)
+                return
+
+        def yolo_callback(data):
+            try:
+                # change subscribed data to numpy.array and save it as "frame"
+                self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
+                # scale image incase image size donot match cv server
+                self.frame = check_image_size_for_cv(self.frame)
+            except CvBridgeError as e:
+                print(e)
+
+        def depth_callback(frame):
+            """
+                                +Z           
+            -y   realsense frame|                
+            | +z                |    
+            |/                  |      
+            o---> +x            |  +X    
+                                | / 
+            +Y -----------------o camera_link frame tf/
+
+            """
+            try:
+                if self.tf_stamp is not None:
+                    # rospy.loginfo("publishing tf")
+                    self.tf_stamp.header.stamp = rospy.Time.now()
+                    self.pub_tf.publish(tf2_msgs.msg.TFMessage([self.tf_stamp]))
+
+                self.depth_image = self.bridge.imgmsg_to_cv2(frame, frame.encoding)
+                # rescale pixel incase pixel donot match
+                self.depth_image = check_image_size_for_ros(self.depth_image)
+
+            except CvBridgeError as e:
+                print(e)
+                return
+            except ValueError as e:
+                return
+            pass
+
+        # ----------------------------------------------start-----------------------------------------------------
+        # subscribe topics
+        rospy.Subscriber(
+            "/camera/aligned_depth_to_color/camera_info", CameraInfo, info_callback)
+        self.image_sub = rospy.Subscriber(
+            "/camera/color/image_raw", Image, yolo_callback, queue_size=1, buff_size=52428800)
+        self.depth_sub = rospy.Subscriber(
+            "/camera/aligned_depth_to_color/image_raw", Image, depth_callback, queue_size=1, buff_size=52428800)
+        self.image_pub = rospy.Publisher(
+            "/blob/image_blob", Image, queue_size=1)
+        self.pub_tf = rospy.Publisher(
+            "/tf", tf2_msgs.msg.TFMessage, queue_size=1)
+
+        # recieving object name from GetObjectName state
+        # self.object_name = userdata.objectname_input
+        # rospy.loginfo(self.object_name)
+
+        # run_once function
+        run_once()
+        while not rospy.is_shutdown():
+            command = raw_input("Press Enter :")
+            if command == 'q':
+                break
+            rospy.loginfo("------ Running 3D detection ------")
+            reset()
+            detect()
+            userdata.objectlist_output = self.object_pose_list
+            rospy.loginfo(self.object_pose_list)
+            # userdata.objectpose_output = self.object_pose
+            return 'continue_Place'
+        return 'continue_aborted'
 
 def main():
     

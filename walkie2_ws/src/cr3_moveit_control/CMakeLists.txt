@@ -104,9 +104,9 @@ add_executable(pick_service_visual_servo src/pick_service_visual_servo.cpp)
 target_link_libraries(pick_service_visual_servo ${catkin_LIBRARIES})
 add_dependencies(pick_service_visual_servo cr3_moveit_control cr3_lowlevel_pkg)
 
-add_executable(place_algorithm_demo src/place_algorithm_demo.cpp)
-add_dependencies(place_algorithm_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(place_algorithm_demo ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
+add_executable(place_service src/place_service.cpp)
+add_dependencies(place_service ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(place_service ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
 
 add_executable(pick_client src/pick_client.cpp)
 add_dependencies(pick_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
