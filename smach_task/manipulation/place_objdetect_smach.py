@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-roslaunch cr3_moveit_control manipulation_pipeline_real.launch
+roslaunch realsense2_camera rs_rgbd.launch align_depth:=true color_width:=1280 color_height:=720 color_fps:=30 depth_width:=1280 depth_height:=720 depth_fps:=30 filters:=pointcloud
+kill -9 $(lsof -t -i:10001)
 """
 
 import rospy
