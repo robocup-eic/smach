@@ -109,8 +109,5 @@ if __name__=='__main__':
         client.execute()
     except rospy.ROSInterruptException:
         rospy.loginfo("Navigation test finished.")
-            
-        
-        
-        
+                    
     rospy.spin()
