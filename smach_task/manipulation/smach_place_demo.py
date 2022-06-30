@@ -2,13 +2,11 @@ import roslib
 import rospy
 import smach
 import smach_ros
-from geometry_msgs.msg import Pose, Point
+from geometry_msgs.msg import Pose, Point, TransformStamped
+import tf
 from tf.transformations import quaternion_from_euler
 import math
 import time
-
-# pick service
-from cr3_moveit_control.srv import PickWithSide
 
 # realsense
 import pyrealsense2 as rs2
@@ -18,16 +16,11 @@ from cv_bridge import CvBridge, CvBridgeError
 
 # # tf for visualization
 import tf2_msgs
-import tf
-from geometry_msgs.msg import TransformStamped
 
 # # computer vision
 # import socket
 from custom_socket import CustomSocket
 import numpy as np
-
-# # output
-from geometry_msgs.msg import Pose
 
 # transform to from cameralink to base link
 import tf2_ros
@@ -35,63 +28,15 @@ import tf2_geometry_msgs
 
 from visualization_msgs.msg import Marker , MarkerArray
 
+from cr3_moveit_control.srv import cr3_place
+
+# /home/tanas/smach/walkie2_ws/src/cr3_moveit_control/srv/cr3_place.srv
 class Input(smach.State):
     def __init__(self):
         rospy.loginfo('initiating input state')
-        smach.State.__init__(self, outcomes = ['continue_GetPoseEnvironment'])
+        smach.State.__init__(self, outcomes = ['continue_GetObjectPoseList'])
 
     def execute(self, userdata):
-        return 'continue_GetPoseEnvironment'
-
-# --- sm_place -------
-
-class GetPoseEnvironment(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating create environment state')
-        smach.State.__init__(self, outcomes = ['continue_GetObjectPoseList']
-                                 , output_keys = ['corner11_output', 'corner12_output', 'corner21_output', 'corner22_output', 'high_output'])
-        self.sub_line_min_dist = None
-        self.corner11 = Pose()
-        self.corner12 = Pose()
-        self.corner21 = Pose()
-        self.corner22 = Pose()
-        self.high = Pose()
-
-    def execute(self, userdata):
-
-        def transform_pose(input_pose, from_frame, to_frame):
-            # **Assuming /tf2 topic is being broadcasted
-            tf_buffer = tf2_ros.Buffer()
-            listener = tf2_ros.TransformListener(tf_buffer)
-
-            pose_stamped = tf2_geometry_msgs.PoseStamped()
-            pose_stamped.pose = input_pose
-            pose_stamped.header.frame_id = from_frame
-            # pose_stamped.header.stamp = rospy.Time.now()
-
-            try:
-                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
-                return output_pose_stamped.pose
-
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                raise
-
-        def cb_furniture(marker_array) :
-            self.corner11.position = marker_array.markers[0].points[0]
-            self.corner12.position = marker_array.markers[0].points[1]
-            self.corner21.position = marker_array.markers[0].points[3]
-            self.corner22.position = marker_array.markers[0].points[2]
-            self.high.position = marker_array.markers[0].points[0].z
-
-            userdata.corner11_output = transform_pose(self.corner11, "world", "base_link")
-            userdata.corner12_output = transform_pose(self.corner12, "world", "base_link")
-            userdata.corner21_output = transform_pose(self.corner21, "world", "base_link")
-            userdata.corner22_output = transform_pose(self.corner22, "world", "base_link")
-            userdata.high_output = self.high
-
-        self.sub_line_min_dist = rospy.Subscriber('furniture_marker', MarkerArray, cb_furniture)
-        
         return 'continue_GetObjectPoseList'
 
 class GetObjectPoseList(smach.State):
@@ -105,16 +50,59 @@ class GetObjectPoseList(smach.State):
 class Place(smach.State):
     def __init__(self) :
         rospy.loginfo('initiating place state')
-        smach.State.__init__(self, outcomes = ['continue_aborted','continue_succeeded']
-                                 , input_keys = ['corner11_input', 'corner12_input', 'corner21_input', 'corner22_input', 'high_input'])
+        smach.State.__init__(self, outcomes = ['continue_aborted','continue_succeeded'])
 
     def execute(self, userdata):
-        corner11 = userdata.corner11_input
-        corner12 = userdata.corner12_input
-        corner21 = userdata.corner21_input
-        corner22 = userdata.corner22_input
-        high = userdata.high_input
-        rospy.loginfo(corner22)
+
+        def place_service(corner11, corner12, corner21, corner22, high, current_collision_object_pos):
+            rospy.wait_for_service('cr3_place')
+            try:
+                place = rospy.ServiceProxy('cr3_place', cr3_place)
+                res = place(corner11, corner12, corner21, corner22, high, current_collision_object_pos)
+                return res.success_place
+            except rospy.ServiceException as e:
+                print("Service call failed: %s"%e)
+
+        # ed = EnvironmentDescriptor("../config/fur_data.yaml")
+        # corner11 = ed.get_pose_environment("....")
+
+        raw_input("Press enter")
+
+        point_goal11 = Point()
+        point_goal12 = Point()
+        point_goal21 = Point()
+        point_goal22 = Point()
+
+        point_goal11.x = -0.99
+        point_goal12.x = -0.99
+        point_goal21.x = -0.35
+        point_goal22.x = -0.35
+
+        point_goal11.y = -0.45
+        point_goal12.y = 0.42
+        point_goal21.y = -0.45
+        point_goal22.y = 0.42
+
+        # high = abs(table - base_link)
+        high = Point()
+        high.z = 0.20
+
+
+        c1 = Pose()
+        c2 = Pose()
+        c3 = Pose()
+
+        c1.position.x = -0.45
+        c1.position.y = -0.30
+
+        c2.position.x = -0.45
+        c2.position.y = -0.15
+
+        collision_object_pos = [c1, c2]
+
+        # rospy.loginfo(point_goal11, point_goal12, point_goal21, point_goal22, high, collision_object_pos)
+        success = place_service(point_goal11, point_goal12, point_goal21, point_goal22, high, collision_object_pos)
+        print(success)
 
         return 'continue_succeeded'
 
@@ -123,54 +111,24 @@ def main():
     
     rospy.init_node('smach_sm_place_state_machine')
 
-    sm_top = smach.StateMachine(outcomes = ['succeeded1', 'aborted1'])
-    sm_top.userdata.sm_corner11 = Pose()
-    sm_top.userdata.sm_corner12 = Pose()
-    sm_top.userdata.sm_corner21 = Pose()
-    sm_top.userdata.sm_corner22 = Pose()
-    sm_top.userdata.sm_high = Pose()
+    sm = smach.StateMachine(outcomes = ['succeeded', 'aborted'])
 
-    with sm_top:
+    with sm:
         smach.StateMachine.add('INPUT', Input(),
-                                transitions = {'continue_GetPoseEnvironment':'GETPOSEENVIRONMENT'})
+                                transitions = {'continue_GetObjectPoseList':'GETOBJECTPOSELIST'})
         
-        smach.StateMachine.add('GETPOSEENVIRONMENT', GetPoseEnvironment(),
-                                transitions = {'continue_GetObjectPoseList':'SM_PLACE'},
-                                remapping = {'corner11_output':'sm_corner11',
-                                             'corner12_output':'sm_corner12',
-                                             'corner21_output':'sm_corner21',
-                                             'corner22_output':'sm_corner22',
-                                             'high_output':'sm_high'})
+        smach.StateMachine.add('GETOBJECTPOSELIST', GetObjectPoseList(),
+                                transitions = {'continue_Place':'PLACE',
+                                               'continue_aborted':'aborted'})
 
-        sm_place = smach.StateMachine(outcomes = ['succeeded', 'aborted'])
-        sm_place.userdata.sm_corner11 = sm_top.userdata.sm_corner11
-        sm_place.userdata.sm_corner12 = sm_top.userdata.sm_corner12
-        sm_place.userdata.sm_corner21 = sm_top.userdata.sm_corner21
-        sm_place.userdata.sm_corner22 = sm_top.userdata.sm_corner22
-        sm_place.userdata.sm_high = sm_top.userdata.sm_high
-        with sm_place:
+        smach.StateMachine.add('PLACE', Place(),
+                                transitions = {'continue_aborted':'aborted',
+                                                'continue_succeeded':'succeeded'})
 
-            smach.StateMachine.add('GETOBJECTPOSELIST', GetObjectPoseList(),
-                                   transitions = {'continue_Place':'PLACE',
-                                                  'continue_aborted':'aborted'})
-
-            smach.StateMachine.add('PLACE', Place(),
-                                   transitions = {'continue_aborted':'aborted',
-                                                  'continue_succeeded':'succeeded'},
-                                   remapping = {'corner11_input':'sm_corner11',
-                                                'corner12_input':'sm_corner12',
-                                                'corner21_input':'sm_corner21',
-                                                'corner22_input':'sm_corner22',
-                                                'high_input':'sm_high'})
-
-        smach.StateMachine.add('SM_PLACE', sm_place,
-                               transitions = {'aborted':'aborted1',
-                                              'succeeded':'succeeded1'})
-
-    sis = smach_ros.IntrospectionServer('sm_place_server', sm_top, '/SM_PLACE')
+    sis = smach_ros.IntrospectionServer('sm_place_server', sm, '/PLACE')
     sis.start()
     
-    outcome = sm_top.execute()
+    outcome = sm.execute()
 
     rospy.spin()
     sis.stop()
@@ -441,3 +399,59 @@ if __name__ == '__main__':
     #         return "continue_aborted"
     #     else :
     #         return "continue_succeeded"
+
+
+
+
+
+
+
+
+    # class GetPoseEnvironment(smach.State):
+    # def __init__(self):
+    #     rospy.loginfo('initiating create environment state')
+    #     smach.State.__init__(self, outcomes = ['continue_GetObjectPoseList']
+    #                              , output_keys = ['corner11_output', 'corner12_output', 'corner21_output', 'corner22_output', 'high_output'])
+    #     self.sub_line_min_dist = None
+    #     self.corner11 = Pose()
+    #     self.corner12 = Pose()
+    #     self.corner21 = Pose()
+    #     self.corner22 = Pose()
+    #     self.high = Pose()
+
+    # def execute(self, userdata):
+
+    #     def transform_pose(input_pose, from_frame, to_frame):
+    #         # **Assuming /tf2 topic is being broadcasted
+    #         tf_buffer = tf2_ros.Buffer()
+    #         listener = tf2_ros.TransformListener(tf_buffer)
+
+    #         pose_stamped = tf2_geometry_msgs.PoseStamped()
+    #         pose_stamped.pose = input_pose
+    #         pose_stamped.header.frame_id = from_frame
+    #         # pose_stamped.header.stamp = rospy.Time.now()
+
+    #         try:
+    #             # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+    #             output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+    #             return output_pose_stamped.pose
+
+    #         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+    #             raise
+
+    #     def cb_furniture(marker_array) :
+    #         self.corner11.position = marker_array.markers[0].points[0]
+    #         self.corner12.position = marker_array.markers[0].points[1]
+    #         self.corner21.position = marker_array.markers[0].points[3]
+    #         self.corner22.position = marker_array.markers[0].points[2]
+    #         self.high.position = marker_array.markers[0].points[0].z
+
+    #         userdata.corner11_output = transform_pose(self.corner11, "world", "base_link")
+    #         userdata.corner12_output = transform_pose(self.corner12, "world", "base_link")
+    #         userdata.corner21_output = transform_pose(self.corner21, "world", "base_link")
+    #         userdata.corner22_output = transform_pose(self.corner22, "world", "base_link")
+    #         userdata.high_output = self.high
+
+    #     self.sub_line_min_dist = rospy.Subscriber('furniture_marker', MarkerArray, cb_furniture)
+        
+    #     return 'continue_GetObjectPoseList'

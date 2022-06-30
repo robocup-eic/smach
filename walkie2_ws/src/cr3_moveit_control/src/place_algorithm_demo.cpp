@@ -53,7 +53,7 @@ double smallest_distance(geometry_msgs::Pose target_pose1, std::vector<geometry_
   for (int i=0;i<number_of_collision_object;i++)
   { all_distance[i] = distance(target_pose1, current_collision_object_pos[i]); }
 
-  std::sort(all_distance, all_distance + 3);
+  std::sort(all_distance, all_distance + number_of_collision_object);
   ROS_INFO_STREAM(all_distance[0]);
   return all_distance[0];
 }
@@ -87,7 +87,6 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
     double distance = smallest_distance(target_pose1, current_collision_object_pos);
     if(0.1 < distance)
     {
-      printf("%f\n\n\n", distance);
       move_group_interface.setPoseTarget(target_pose1);
       success= (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
     }
@@ -277,6 +276,7 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   //                     v
   //                     x
     // x axis
+  // move cartesian along z axis
     // condition --> corner.x are in -x axis
   double creat_collision_table11_x, creat_collision_table12_x, creat_collision_table21_x, creat_collision_table22_x;
   double place_within11_x, place_within12_x, place_within21_x, place_within22_x;
@@ -341,7 +341,6 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   }
 
   // find pose to preplace
-
   geometry_msgs::Pose pose;
   tf2::Quaternion myQuaternion;
 
@@ -361,7 +360,7 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   if (!success){
     return false;
   }
-
+  
   // move cartesian along z axis
   move_cartesian(pose, 0, 0, -0.1);
   if (!success){
@@ -378,13 +377,16 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   if (!success){
     return false;
   }
+  ROS_INFO_STREAM(pose);
+  ROS_INFO_STREAM(pose);
+  ROS_INFO_STREAM(pose);
+
+  // set home walkie2
+  set_home_walkie2();
 
   // close gripper
   gripper_command_msg.data = true;
   gripper_command_publisher.publish(gripper_command_msg);
-
-  // set home walkie2
-  set_home_walkie2();
 
   // check whether it is true then return "success value"
   res.success_place = success;

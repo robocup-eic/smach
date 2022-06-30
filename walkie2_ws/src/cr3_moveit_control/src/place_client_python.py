@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
         # high = abs(table - base_link)
         high = Point()
-        high.z = 0.15
+        high.z = 0.10
 
 
         c1 = Pose()
