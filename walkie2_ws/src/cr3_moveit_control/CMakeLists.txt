@@ -34,6 +34,7 @@ find_package(catkin REQUIRED
                         rosapi
                         tf2_web_republisher
                         moveit_servo
+                        cr3_lowlevel_pkg
 			)
 
 # System dependencies are found with CMake's conventions
@@ -77,6 +78,7 @@ catkin_install_python(PROGRAMS
                       src/furniture_marker.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
+# include lowlevel pkg too
 include_directories(${catkin_INCLUDE_DIRS})
 
 add_executable(robot_control_node_sim src/robot_control_node_sim.cpp)
@@ -102,7 +104,7 @@ target_link_libraries(pick_service_adjust_yaw ${catkin_LIBRARIES})
 
 add_executable(pick_service_visual_servo src/pick_service_visual_servo.cpp)
 target_link_libraries(pick_service_visual_servo ${catkin_LIBRARIES})
-add_dependencies(pick_service_visual_servo cr3_moveit_control cr3_lowlevel_pkg)
+add_dependencies(pick_service_visual_servo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(place_algorithm_demo src/place_algorithm_demo.cpp)
 add_dependencies(place_algorithm_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -1,5 +1,5 @@
 import yaml
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Point
 
 class EnvironmentDescriptor:
     def __init__(self, yaml_path = "../config/fur_data.yaml"):
@@ -26,6 +26,19 @@ class EnvironmentDescriptor:
                 robot_pose.orientation.z = data["robot_pose"]["orientation"]["z"]
                 robot_pose.orientation.w = data["robot_pose"]["orientation"]["w"]
                 return robot_pose
+
+    def get_corner_list(self, name):
+        corner_list = []
+        for data in self.data_yaml:
+            if data["name"] == name:
+                for i in range(4):
+                    corner_list.append(data["corner{}".format(i+1)])
+        return corner_list
+
+    def get_height(self, name):
+        for data in self.data_yaml:
+            if data["name"] == name:
+                return data["height"]
 
 if __name__ == "__main__":
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
