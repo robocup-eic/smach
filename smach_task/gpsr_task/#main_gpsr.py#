@@ -155,7 +155,7 @@ def main():
             smach.StateMachine.add('sm_finditem_NAVIGATE_TO_ROOM', sm_finditem_Navigate_To_Room(),
                                    transitions = {'continue_sm_finditem_Find_Object':'sm_finditem_FIND_OBJECT',
                                                   'continue_aborted':'aborted'})
-            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(),
+            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(host, Object_tracker),
                                    transitions = {'continue_sm_finditem_Announce':'sm_finditem_ANNOUNCE'})
             smach.StateMachine.add('sm_finditem_ANNOUNCE', sm_finditem_Announce(),
                                    transitions = {'continue_succeeded':'succeeded'})

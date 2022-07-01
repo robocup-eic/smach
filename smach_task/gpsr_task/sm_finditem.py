@@ -29,6 +29,7 @@ import pyrealsense2.pyrealsense2 as rs2
 from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped
 from std_msgs.msg import Bool,Int64
 import socket
+from http.client import responses
 
 # import for text-to-speech
 import requests
@@ -73,10 +74,46 @@ class sm_finditem_Navigate_To_Room(smach.State):
 
 
 class sm_finditem_Find_Object(smach.State):
-    def __init__(self):
+    def __init__(self, host, port):
         rospy.loginfo('initiating find object state')
         smach.State.__init__(self, outcomes = ['continue_sm_finditem_Announce'])
+        self.host = host
+        self.port = port
+        
     def execute(self, userdata):
+        self.c = CustomSocket(host, port):
+        self.clientConnect()
+        #cap = cv2.VideoCapture(2)
+        self.cap.set(4,720)
+        self.cap.set(3,1280)
+        self.cap = cv2.VideoCapture(2)
+
+        while self.cap.isOpened():
+	
+            self.ret, self.frame = self.cap.read()
+            if not self.ret:
+                print("Ignoring empty camera frame.")
+                continue
+    
+            self.cv2.imshow('test', self.frame)
+
+            print("Send")
+
+            # WIT yolov5 person-tracker, object-tracker
+            self.msg = self.c.req(frame)
+            print(self.msg)
+
+
+            # Face-recog
+            # image = cv2.imread("elon.jpeg")
+            # c.register(image, "elon") #hide this
+            # c.detect(frame)
+
+            if self.cv2.waitKey(1) == ord("q"):
+                self.cap.release()
+        
+        self.cv2.destroyAllWindows()
+
         rospy.loginfo('executing find object')
         return 'continue_sm_finditem_Announce'
 
