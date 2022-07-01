@@ -84,41 +84,12 @@ class sm_finditem_Find_Object(smach.State):
         rospy.loginfo('executing find object')
         self.c = CustomSocket(self.host, self.port)
         self.c.clientConnect()
-        #cap = cv2.VideoCapture(2)
-        cap = cv2.VideoCapture(2)
-        cap.set(4,720)
-        cap.set(3,1280)
-        cap = cv2.VideoCapture(2)
-
-        while cap.isOpened():
-	
-            ret, frame = cap.read()
-            if not ret:
-                print("Ignoring empty camera frame.")
-                continue
-    
-            cv2.imshow('test', frame)
-
-            print("Send")
-
-            # WIT yolov5 person-tracker, object-tracker
-            msg = c.req(frame)
-            rospy.loginfo(msg)
-            if msg[1] == 4:
-                return 'continue_sm_finditem_Announce'
-
-            # Face-recog
-            # image = cv2.imread("elon.jpeg")
-            # c.register(image, "elon") #hide this
-            # c.detect(frame)
-
-            if cv2.waitKey(1) == ord("q"):
-                cap.release()
-        
-        cv2.destroyAllWindows()
+        image_sub = rospy
+        while True:
+            det
 
         
-        return 'continue_sm_finditem_Announce'
+            return 'continue_sm_finditem_Announce'
 
 
 class sm_finditem_Announce(smach.State):

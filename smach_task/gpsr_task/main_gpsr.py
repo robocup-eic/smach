@@ -66,14 +66,17 @@ class Stand_by(smach.State):
         smach.State.__init__(self, outcomes =['continue_SM_BRINGIT','continue_SM_FINDITEM','continue_SM_FIND_PERSON', 'continue_SM_GO_TO', 'continue_SM_HOWMANY'])
         self.x = 4
         self.stt = stt
+        self.stt.body = "find_object"
     def execute(self, userdata):
         rospy.loginfo("Executing Standby state")
+        if self.x == 4:
+            return "continue_SM_FINDITEM"
         while True:
             if self.stt.body is not None:
                 if self.stt.body["intent"] == "bring_desc_to_someone":
                     return 'continue_SM_BRINGIT'
-                if self.stt.body["intent"] == "find_object":
-                    return 'continue_SM_FINDITEM'
+                #if self.stt.body["intent"] == "find_object":
+                #    return 'continue_SM_FINDITEM'
                 if self.stt.body["intent"] == "find_people":
                     return 'continue_SM_FIND_PERSON'
                 if self.stt.body["intent"] == "move_to":
@@ -155,7 +158,7 @@ def main():
             smach.StateMachine.add('sm_finditem_NAVIGATE_TO_ROOM', sm_finditem_Navigate_To_Room(),
                                    transitions = {'continue_sm_finditem_Find_Object':'sm_finditem_FIND_OBJECT',
                                                   'continue_aborted':'aborted'})
-            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(),
+            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(host, Object_Tracker),
                                    transitions = {'continue_sm_finditem_Announce':'sm_finditem_ANNOUNCE'})
             smach.StateMachine.add('sm_finditem_ANNOUNCE', sm_finditem_Announce(),
                                    transitions = {'continue_succeeded':'succeeded'})
