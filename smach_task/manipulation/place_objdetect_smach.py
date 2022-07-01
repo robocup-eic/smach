@@ -63,6 +63,7 @@ class GetObjectBBX(smach.State):
                 time.sleep(0.1)
             rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
             self.c.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
+            print('yeahhhhhhh')
 
         def reset():
             rospy.loginfo("Reseting the value")
@@ -74,6 +75,9 @@ class GetObjectBBX(smach.State):
 
         def detect():
             rospy.loginfo("Start detecting")
+
+            # scale image incase image size donot match cv server
+            self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
             result = self.c.req(self.frame)
             self.frame = check_image_size_for_ros(self.frame)
@@ -110,6 +114,9 @@ class GetObjectBBX(smach.State):
             if not self.intrinsics:
                 rospy.logerr("no camera intrinsics")
                 return None
+
+            # rescale pixel incase pixel donot match
+            self.depth_image = check_image_size_for_ros(self.depth_image)
 
             self.image_sub.unregister()
             self.depth_sub.unregister()
@@ -155,8 +162,7 @@ class GetObjectBBX(smach.State):
             try:
                 # change subscribed data to numpy.array and save it as "frame"
                 self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
-                # scale image incase image size donot match cv server
-                self.frame = check_image_size_for_cv(self.frame)
+
             except CvBridgeError as e:
                 print(e)
 
@@ -168,8 +174,7 @@ class GetObjectBBX(smach.State):
                 #     self.pub_tf.publish(tf2_msgs.msg.TFMessage([self.tf_stamp]))
 
                 self.depth_image = self.bridge.imgmsg_to_cv2(frame, frame.encoding)
-                # rescale pixel incase pixel donot match
-                self.depth_image = check_image_size_for_ros(self.depth_image)
+
 
             except CvBridgeError as e:
                 print(e)
@@ -191,13 +196,18 @@ class GetObjectBBX(smach.State):
 
         # run_once function
         run_once()
+        print("wdafgeshrgsfadf")
         while not rospy.is_shutdown():
+            print("safaafafa")
             command = raw_input("Press Enter :")
             if command == 'q':
                 break
             rospy.loginfo("------ Running 3D detection ------")
             reset()
             detect()
+            print(self.bbx_pixel_list)
+            print(self.intrinsics.height)
+            print(self.intrinsics.width)
             userdata.ListBBX_output = self.bbx_pixel_list
             userdata.CameraIntrinsics_output = self.intrinsics
             userdata.DepthImage_output = self.depth_image
@@ -294,11 +304,12 @@ class GetObjectProperties(smach.State):
             Rfactor = 0.6
 
             posture = ("parallel","perpendicular")
-            print(objsize.y)
-            print(objsize.z)
+            
 
             objstance_list = []
             for objsize in objsize_list:
+                print(objsize.y)
+                print(objsize.z)
                 if objsize.y/objsize.z >= Rfactor:
                     objstance_list.append(posture[0])
                 else:
@@ -329,6 +340,12 @@ class GetObjectProperties(smach.State):
             ymax_pixel = int(bbx[3])
             xcen_pixel = int(bbx[0] + (bbx[2]-bbx[0])/2)
             ycen_pixel = int(bbx[1] + (bbx[3]-bbx[1])/2)
+            print(bbx[0])
+            print(bbx[1])
+            print(bbx[2])
+            print(bbx[3])
+            print(xcen_pixel)
+            print(ycen_pixel)
 
             rospy.loginfo("found {}".format(xcen_pixel,ycen_pixel))
             depth = self.depth_image[ycen_pixel,  xcen_pixel] # [y, x] for numpy array
@@ -341,9 +358,11 @@ class GetObjectProperties(smach.State):
             corner22_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmax_pixel, ymax_pixel], depth)
 
             all_result = (center00_result, corner11_result, corner12_result, corner21_result, corner22_result)
+            print(all_result)
 
             # depth of camera to plane
             z = center00_result[2]/1000
+            print(z)
 
             # set list of point
             checkpoint = []
@@ -374,6 +393,8 @@ class GetObjectProperties(smach.State):
             tuple(checkpoint)
 
             self.bbxc_point_list.append((checkpoint,objname))
+        
+        print(checkpoint)
         
         self.ObjPoseList = GetPose(self.bbxc_point_list)
         self.ObjSizeList = GetSize(self.bbxc_point_list)
