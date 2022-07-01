@@ -36,7 +36,7 @@
     </node>
 
     <!-- launch robot control node for moveit motion planning -->
-    <node pkg="cr3_moveit_control" type="place_algorithm_demo" name="place_algorithm_demo" output="screen" />
+    <node pkg="cr3_moveit_control" type="place_service" name="place_service" output="screen" />
 
 
 </launch>
