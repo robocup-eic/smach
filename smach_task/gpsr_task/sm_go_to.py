@@ -57,7 +57,7 @@ class sm_go_to_Check_Object_Location(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Executing Check_object_location state')
         while True:
-            print(self.stt.None)
+            #print(self.stt.body)
             if self.stt.body is not None:
                 # TODO check again with nlp
                 print(self.stt.body)

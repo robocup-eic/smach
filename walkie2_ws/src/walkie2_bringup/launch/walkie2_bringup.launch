@@ -15,13 +15,13 @@
   </node>
 
     <!-- Run LaserScan node -->
-  <node name="urg_node" pkg="urg_node" type="urg_node">
+  <!--<node name="urg_node" pkg="urg_node" type="urg_node">
     <param name="ip_address" value="192.168.5.4"/>
     <param name="frame_id" value="hokuyo"/>
     <param name="angle_max" value="1.57"/>
     <param name="angle_min" value="-1.57"/>
     <remap from="/scan" to="/walkie2/scan"/>
-  </node> 
+  </node> -->
 
   <!-- <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
       <arg name="align_depth" value="true" />
