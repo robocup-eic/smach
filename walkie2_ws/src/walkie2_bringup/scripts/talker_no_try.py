@@ -37,43 +37,31 @@ def convert(forward,ccw):
 
 def cmd_vel_callback(msg):
     left_linear_val, right_linear_val = convert(msg.linear.x, msg.angular.z)
-    try:
-        if (left_linear_val ==0) and (right_linear_val==0) and (odrv0.axis0.current_state!=1):
-            odrv0.axis0.requested_state = AXIS_STATE_IDLE
-            odrv0.axis1.requested_state = AXIS_STATE_IDLE
-        elif odrv0.axis0.current_state!=8 and odrv0.axis1.current_state!=8:
-            odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-            odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-        if odrv0.axis0.current_state==8 and odrv0.axis1.current_state==8:
-            odrv0.axis0.controller.input_vel = -left_linear_val/60
-            odrv0.axis1.controller.input_vel = right_linear_val/60
-    except:
-        pass
-    
-
-    
+    if (left_linear_val ==0) and (right_linear_val==0) and (odrv0.axis0.current_state!=1) and (odrv0.axis1.current_state!=1):
+        odrv0.axis0.requested_state = AXIS_STATE_IDLE
+        odrv0.axis1.requested_state = AXIS_STATE_IDLE
+    elif odrv0.axis0.current_state!=8 and odrv0.axis1.current_state!=8:
+        odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+        odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    if odrv0.axis0.current_state==8 and odrv0.axis1.current_state==8:
+        odrv0.axis0.controller.input_vel = -left_linear_val/60
+        odrv0.axis1.controller.input_vel = right_linear_val/60
 
 def start_odrive():
     vel_subscribe = rospy.Subscriber("/walkie2/cmd_vel", Twist, cmd_vel_callback, queue_size=2)
     rate = rospy.Rate(50) # 50hz
-    try:
-        while not rospy.is_shutdown():
-            # rospy.loginfo('{}'.format(vel))
-                vel[0] = float(-1*odrv0.axis0.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel left
-                vel[1] = float(odrv0.axis1.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel right
-                pos[0] = -1*odrv0.axis0.encoder.pos_estimate_counts #pos left
-                pos[1] = odrv0.axis1.encoder.pos_estimate_counts #pos right
-            except:
-                pass
-            raw_vel.data = tuple(vel)
-            raw_pos.data = tuple(pos)
-            vel_pub.publish(raw_vel)
-            pos_pub.publish(raw_pos)
-            rate.sleep()
-    except KeyboardInterrupt:
-        odrv0.reboot()
-        quit()
-
+    while not rospy.is_shutdown():
+        # rospy.loginfo('{}'.format(vel))
+        vel[0] = float(-1*odrv0.axis0.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel left
+        vel[1] = float(odrv0.axis1.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel right
+        pos[0] = -1*odrv0.axis0.encoder.pos_estimate_counts #pos left
+        pos[1] = odrv0.axis1.encoder.pos_estimate_counts #pos right
+        raw_vel.data = tuple(vel)
+        raw_pos.data = tuple(pos)
+        vel_pub.publish(raw_vel)
+        pos_pub.publish(raw_pos)
+        rate.sleep()
+        
 if __name__ == '__main__':
     try:
         rospy.loginfo("Done...")
