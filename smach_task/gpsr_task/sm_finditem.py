@@ -79,44 +79,37 @@ class sm_finditem_Find_Object(smach.State):
         smach.State.__init__(self, outcomes = ['continue_sm_finditem_Announce'])
         self.host = host
         self.port = port
-        
+        self.frame = None
+
+    def yolo_callback(self, data):
+        try:
+            # change subscribed data to numpy.array and save it as "frame"
+            self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
+        except CvBridgeError as e:
+            print(e)
     def execute(self, userdata):
         rospy.loginfo('executing find object')
-        self.c = CustomSocket(self.host, self.port)
-        self.c.clientConnect()
-        #cap = cv2.VideoCapture(2)
-        cap = cv2.VideoCapture(2)
-        cap.set(4,720)
-        cap.set(3,1280)
-        cap = cv2.VideoCapture(2)
+        c = CustomSocket(self.host, self.port)
+        c.clientConnect()
+        print("-------")
+        print(self.host)
+        print(self.port)
+        print("-------")
+        image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.yolo_callback)
+        print("-fish fish fish fish")
+        result = c.req(self.frame)
+        rospy.loginfo("-----executing the callback state-----")
+        print(result)
+        rospy.loginfo("-----executing the callback state-----")
 
-        while cap.isOpened():
-	
-            ret, frame = cap.read()
-            if not ret:
-                print("Ignoring empty camera frame.")
-                continue
-    
-            cv2.imshow('test', frame)
 
-            print("Send")
+        ##### do algorithm confition?
 
-            # WIT yolov5 person-tracker, object-tracker
-            msg = c.req(frame)
-            rospy.loginfo(msg)
-            if msg[1] == 4:
-                return 'continue_sm_finditem_Announce'
+        rospy.loginfo(self.yolo_callback)
+        rospy.sleep(0.8)
 
-            # Face-recog
-            # image = cv2.imread("elon.jpeg")
-            # c.register(image, "elon") #hide this
-            # c.detect(frame)
 
-            if cv2.waitKey(1) == ord("q"):
-                cap.release()
-        
-        cv2.destroyAllWindows()
-
+        image_sub.unregister()
         
         return 'continue_sm_finditem_Announce'
 

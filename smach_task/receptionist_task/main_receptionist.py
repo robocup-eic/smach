@@ -5,120 +5,131 @@ import rospy
 import smach
 import smach_ros
 
-class Standby(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Detect_guest'])
-    def execute(self, userdata):
-        return 'continue_Detect_guest'
 
-class Detect_guest(smach.State):
+class Start_signal(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_SM_GUEST','guest_not_found'])
-        self.check_guest = True
-    def execute(self, userdata):
-        if self.check_guest == True:
-            return 'continue_SM_GUEST'
-        else:
-            return 'guest_not_found'
-
-class Navigate_to_door(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Standby'])
-    def execute(self, userdata):
+        rospy.loginfo('Initiating Start_signal state')
+        smach.State.__init__(self,outcomes=['continue_Standby'])
+    def execute(self,userdata):
+        rospy.loginfo('Executing Start_signal state')
         return 'continue_Standby'
 
-#################################################################
-######################## SM_GUEST ###############################
 
-class Ask_guest(smach.State):
+class Standby(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Navigate_to_seat'])
-    def execute(self, userdata):
-        return 'continue_Navigate_to_seat'
+        rospy.loginfo('Initiating Standby state')
+        smach.State.__init__(self,outcomes=['continue_Ask'])
+    def execute(self,userdata):
+        rospy.loginfo('Executing Standby state')
+        return 'continue_Ask'
 
-class Navigate_to_seat(smach.State):
+
+class Ask(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Point_seat','continue_No_seat'])
-        self.check_seat = True
-    def execute(self, userdata):
-        if self.check_seat == True:
-            return 'continue_Point_seat'
-        else:
+        rospy.loginfo('Initiating Ask state')
+        smach.State.__init__(self,outcomes=['continue_Navigation'])
+    def execute(self,userdata):
+        rospy.loginfo('Executing Ask state')
+        return 'continue_Navigation'
+
+
+class Navigation(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating Navigation state')
+        smach.State.__init__(self,outcomes=['continue_No_seat','continue_Seat'])
+        self.case = 0
+    def execute(self,userdata):
+        rospy.loginfo('Executing Navigation state')
+        if self.case == 0:
             return 'continue_No_seat'
+        else:
+            return 'continue_Seat'
 
-class Point_seat(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Introduce_guest'])
-    def execute(self, userdata):
-        return 'continue_Introduce_guest'
 
 class No_seat(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Introduce_guest'])
-    def execute(self, userdata):
+        rospy.loginfo('Initiating No_seat state')
+        smach.State.__init__(self,outcomes=['continue_Introduce_guest'])
+    def execute(self,userdata):
+        rospy.loginfo('Executing No_seat state')
         return 'continue_Introduce_guest'
+
+
+class Seat(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating Seat state')
+        smach.State.__init__(self,outcomes=['continue_Introduce_guest'])
+    def execute(self,userdata):
+        rospy.loginfo('Executing Seat state')
+        return 'continue_Introduce_guest'
+
 
 class Introduce_guest(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Introduce_host'])
-    def execute(self, userdata):
+        rospy.loginfo('Initiating Introduce_guest state')
+        smach.State.__init__(self,outcomes=['continue_Introduce_host'])
+    def execute(self,userdata):
+        rospy.loginfo('Executing Introduce_guest state')
         return 'continue_Introduce_host'
 
+    
 class Introduce_host(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_Succeeded'])
-    def execute(self, userdata):
-        return 'continue_Succeeded'
+        rospy.loginfo('Initiating Introduce_host state')
+        smach.State.__init__(self,outcomes=['continue_Navigate_to_start'])
+    def execute(self,userdata):
+        rospy.loginfo('Executing Introduce_host state')
+        return 'continue_Navigate_to_start'
+
+
+class Navigate_to_start(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating Navigate_to_start state')
+        smach.State.__init__(self,outcomes=['continue_Standby', 'continue_SUCCEEDED'])
+        self.case = 0
+    def execute(self,userdata):
+        rospy.loginfo('Executing Navigate_to_start state')
+        if self.case == 0:
+            return 'continue_Standby'
+        else:
+            return 'continue_SUCCEEDED'
+
 
 def main():
-    rospy.init_node('Reception')
+    rospy.init_node('initiating receptionist node')
 
-    sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
+    # Create a SMACH state machine
+    sm_top = smach.StateMachine(outcomes=['SUCCEEDED'])
 
-    with sm:
-        smach.StateMachine.add('Standby',Standby(),
-                                transitions={'continue_Detect_guest':'Detect_guest'})
-        
-        smach.StateMachine.add('Detect_guest',Detect_guest(),
-                                transitions = {'continue_SM_GUEST':'SM_GUEST','guest_not_found':'Standby'})
-        
-        sm_guest = smach.StateMachine(outcomes = ['Succeeded'])
+    # Open the container
+    with sm_top:
+        # Add states to the container
+        smach.StateMachine.add('Start_signal', Start_signal(),
+                               transitions={'continue_Standby':'Standby'})
+        smach.StateMachine.add('Standby', Standby(),
+                               transitions={'continue_Ask':'Ask'})
+        smach.StateMachine.add('Ask', Ask(),
+                               transitions={'continue_Navigation':'Navigation'})
+        smach.StateMachine.add('Navigation', Navigation(),
+                               transitions={'continue_No_seat':'No_seat',
+                                            'continue_Seat':'Seat'})
+        smach.StateMachine.add('No_seat', No_seat(),
+                               transitions={'continue_Introduce_guest':'Introduce_guest'})
+        smach.StateMachine.add('Seat', Seat(),
+                               transitions={'continue_Introduce_guest':'Introduce_guest'})
+        smach.StateMachine.add('Introduce_guest', Introduce_guest(),
+                               transitions={'continue_Introduce_host':'Introduce_host'})
+        smach.StateMachine.add('Introduce_host', Introduce_host(),
+                               transitions={'continue_Navigate_to_start':'Navigate_to_start'})
+        smach.StateMachine.add('Navigate_to_start', Navigate_to_start(),
+                               transitions={'continue_Standby':'Standby',
+                                            'continue_SUCCEEDED':'SUCCEEDED'})
 
-        with sm_guest:
-
-            smach.StateMachine.add('Ask_guest',Ask_guest(),
-                                    transitions = {'continue_Navigate_to_seat':'Navigate_to_seat'})
-
-            smach.StateMachine.add('Navigate_to_seat',Navigate_to_seat(),
-                                    transitions = {'continue_Point_seat':'Point_seat','continue_No_seat':'No_seat'})
-
-            smach.StateMachine.add('Point_seat',Point_seat(),
-                                    transitions = {'continue_Introduce_guest':'Introduce_guest'})
-            
-            smach.StateMachine.add('No_seat',No_seat(),
-                                    transitions = {'continue_Introduce_guest':'Introduce_guest'})
-
-            smach.StateMachine.add('Introduce_guest',Introduce_guest(),
-                                    transitions = {'continue_Introduce_host':'Introduce_host'})
-
-            smach.StateMachine.add('Introduce_host',Introduce_host(),
-                                    transitions = {'continue_Succeeded':'Succeeded'})
-
-        smach.StateMachine.add('SM_GUEST', sm_guest,
-                                transitions = {'Succeeded':'Navigate_to_door'})                                 
-
-        smach.StateMachine.add('Navigate_to_door',Navigate_to_door(),
-                                transitions = {'continue_Standby':'Succeeded'})   
-
-# Set up                                                    
-        
-        sis = smach_ros.IntrospectionServer('Server_name',sm,'/ArchRoot')
-        sis.start()
-        
-        outcome = sm.execute()
-
-        rospy.spin()
-        sis.stop()
-
+    sis = smach_ros.IntrospectionServer('Server_name', sm_top, '/Receptionist')
+    sis.start()
+    # Execute SMACH plan
+    outcome = sm_top.execute()
+    rospy.spin()
+    sis.stop()
 if __name__ == '__main__':
     main()

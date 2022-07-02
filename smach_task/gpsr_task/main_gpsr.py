@@ -70,7 +70,7 @@ class Stand_by(smach.State):
     def execute(self, userdata):
         rospy.loginfo("Executing Standby state")
         if self.x == 4:
-            return "continue_SM_FINDITEM"
+            return "continue_SM_BRINGIT"
         while True:
             if self.stt.body is not None:
                 if self.stt.body["intent"] == "bring_desc_to_someone":
@@ -102,19 +102,12 @@ def main():
     last_pose = None
 
     # connect to server
-    host = socket.gethostname()
+    host = "192.168.8.99"
+    # an important port
     WIT_lolov5 = 10002
     Face_recog = 10006
     Person_tracker = 10000
     Object_Tracker = 10008
-    port = 11000
-    c = CustomSocket(host,port)
-    c.clientConnect()
-
-    pose_port = 10002
-    pose_c = CustomSocket(host,pose_port)
-    pose_c.clientConnect()
-    
     
     # Flask nlp server
     stt = SpeechToText("nlp")
