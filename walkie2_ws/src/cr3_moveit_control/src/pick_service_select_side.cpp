@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+// service
 #include "cr3_moveit_control/PickWithSide.h"
 //===============================================================
 static const std::string PLANNING_GROUP_ARM = "arm";
@@ -112,7 +113,7 @@ void set_home_walkie2()
   std::vector<double> joint_group_positions;
   current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
 
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  moveit_visual_tools::MoveItVisualTools visual_tools("cr3_base_link");
   visual_tools.deleteAllMarkers();
 
   // Now, let's modify one of the joints, plan to the new joint space goal and visualize the plan.
@@ -149,7 +150,7 @@ void retreat()
   std::vector<double> joint_group_positions;
   current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
 
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  moveit_visual_tools::MoveItVisualTools visual_tools("cr3_base_link");
   visual_tools.deleteAllMarkers();
 
   // Now, let's modify one of the joints, plan to the new joint space goal and visualize the plan.

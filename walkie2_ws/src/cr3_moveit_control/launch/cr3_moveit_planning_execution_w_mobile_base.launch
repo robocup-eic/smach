@@ -18,7 +18,7 @@
   -->
 
   <!-- By default, use the urdf location provided from the package -->
-  <!-- <arg name="urdf_path" default="$(find cr3_lowlevel_pkg)/urdf/cr3_robot_w_gripper_seperated.xacro"/> -->
+  <!-- <arg name="urdf_path" default="$(find cr3_lowlevel_pkg)/urdf/cr3_robot_w_gripper_for_walkie2.xacro"/> -->
   <arg name="urdf_path" default="$(find walkie2_description)/urdf/walkie2.xacro"/>
 
   <group if="$(arg sim)">
@@ -39,9 +39,8 @@
 
   </group>
 
-
   <!-- Given the published joint states, publish tf for the robot links -->
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen"/>
 
   <!-- Run the main MoveIt! executable without trajectory execution (we do not have controllers configured by default) -->
   <include file="$(find cr3_moveit_config)/launch/move_group.launch">

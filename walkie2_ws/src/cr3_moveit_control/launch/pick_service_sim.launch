@@ -1,6 +1,6 @@
 <launch>
 
-    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find cr3_lowlevel_pkg)/urdf/cr3_robot_w_gripper_seperated.xacro" />
+    <param name="robot_description" command="$(find xacro)/xacro $(find walkie2_description)/urdf/walkie2.xacro" />
 
    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
@@ -9,14 +9,11 @@
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen">
     </node> 
 
-    <include file="$(find cr3_moveit_config)/launch/planning_context.launch">
-        <arg name="load_robot_description" value="true"/>
-    </include>
-
     <include file="$(find cr3_moveit_config)/launch/move_group.launch">
         <arg name="allow_trajectory_execution" value="true"/>
         <arg name="fake_execution" value="true"/>
         <arg name="info" value="true"/>
+        <arg name="load_robot_description" value="false"/>
     </include>
 
     <include file="$(find cr3_moveit_config)/launch/moveit_rviz.launch" >
@@ -24,12 +21,12 @@
     </include>
 
     <!-- publish constraint collision object -->
-    <node pkg="cr3_moveit_control" type="constraint_publisher" name="constraint_publisher" output="screen">
+    <!-- <node pkg="cr3_moveit_control" type="constraint_publisher" name="constraint_publisher" output="screen">
         <param name="constraints_dir" type="str" value="$(find cr3_moveit_control)/config/constraints"/>
         <remap from="/constraint_publisher/planning_scene" to="/planning_scene"/>
-    </node>
+    </node> -->
 
     <!-- launch robot control node for moveit motion planning -->
-    <node pkg="cr3_moveit_control" type="pick_service" name="pick_service" output="screen" />
+    <node pkg="cr3_moveit_control" type="pick_service_adjust_yaw" name="pick_service_adjust_yaw" output="screen" />
 
 </launch>

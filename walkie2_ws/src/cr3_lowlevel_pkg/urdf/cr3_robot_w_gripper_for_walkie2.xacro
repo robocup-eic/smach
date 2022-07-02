@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="walkie2">
+  <xacro:macro name="cr3_robot" params="parent_link">
+
+  <xacro:macro name="arm_gazebo" params="link">
+            <gazebo reference="${link}">
+                <material>Gazebo/White</material>
+                <mu1>0.2</mu1>
+                <mu2>0.2</mu2>
+            </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="arm_control" params="transmission joint motor">
+    <transmission name="${transmission}">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${joint}">
+        <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${motor}">
+        <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+  </xacro:macro>
+
+  <link name="cr3_base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="3.06" />
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 -1.57" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/base_link.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 -1.57" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="cr3_base_joint" type="fixed">
+    <parent link="${parent_link}" />
+    <child link="cr3_base_link" />
+    <origin xyz="0.20 0.0 0.0" rpy="0.0 0.0 3.14" />
+  </joint>
+
+  <link name="Link1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="3.06" />
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link1.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint1" type="revolute">
+    <origin xyz="0 0 0.1283" rpy="0 0 0" />
+    <parent link="cr3_base_link" />
+    <child link="Link1" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14" upper="3.14" effort="1000" velocity="100" />
+    <!-- <dynamics damping="${damping_value}" friction="${friction_value}"/> -->
+  </joint>
+  <link name="Link2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="3.06" />
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link2.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint2" type="revolute">
+    <origin xyz="0 0 0" rpy="1.5708 1.5708 0" />
+    <parent link="Link1" />
+    <child link="Link2" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14" upper="3.14" effort="1000" velocity="100" />
+    <!-- <dynamics damping="${damping_value}" friction="${friction_value}"/> -->
+  </joint>
+  <link name="Link3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="3.06" />
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link3.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint3" type="revolute">
+    <origin xyz="-0.274 0 0" rpy="0 0 0" />
+    <parent link="Link2" />
+    <child link="Link3" />
+    <axis xyz="0 0 1" />
+    <limit lower="-2.70" upper="2.70" effort="1000" velocity="100" />
+     <!-- <dynamics damping="${damping_value}" friction="${friction_value}"/> -->
+  </joint>
+  <link name="Link4">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="3.06" />
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link4.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint4" type="revolute">
+    <origin xyz="-0.23 0 0.1283" rpy="0 0 -1.5708" />
+    <parent link="Link3" />
+    <child link="Link4" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14" upper="3.14" effort="1000" velocity="100" />
+    <!-- <dynamics damping="${damping_value}" friction="${friction_value}"/> -->
+  </joint>
+  <link name="Link5">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="3.06" />
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link5.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link5.STL" scale="1.1 1.3 1.3"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint5" type="revolute">
+    <origin xyz="0 -0.116 0" rpy="1.5708 0 0" />
+    <parent link="Link4" />
+    <child link="Link5" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14" upper="3.14" effort="1000" velocity="100" />
+    <!-- <dynamics damping="${damping_value}" friction="${friction_value}"/> -->
+  </joint>
+  <link name="Link6">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="3.06" />
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link6.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link6.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint6" type="revolute">
+    <origin xyz="0 0.105 0" rpy="-1.5708 0 0" />
+    <parent link="Link5" />d
+    <child link="Link6" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14" upper="3.14" effort="1000" velocity="100" />
+    <!-- <dynamics damping="${damping_value}" friction="${friction_value}"/> -->
+  </joint>
+
+  <link name="hand">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.6" />
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
+    </inertial>
+    <visual>
+      <origin xyz="0.010 0.065 0.05" rpy="1.54 0 0.77" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/base_gripper.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.053 0.035 0.05" rpy="1.54 0 0.77" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/base_gripper.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint7" type="fixed">
+    <parent link="Link6" />
+    <child link="hand" />
+  </joint>
+  <link name="finger_l">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.3" />
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.05 -0.010" rpy="1.54 0 0.77" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/FingerL.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.01 0.05 -0.010" rpy="1.54 0 0.77" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/FingerL.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint8" type="revolute">
+    <parent link="hand" />
+    <child link="finger_l" />
+    <origin rpy="0 0 0" xyz="0 0 0.0584"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000" lower="-0.785" upper="0.0" velocity="0.2"/>
+  </joint>
+  <link name="finger_r">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.6" />
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
+    </inertial>
+    <visual>
+      <origin xyz="0.0050 0.070 -0.005" rpy="1.54 0 0.77" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/FingerR v1.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0050 0.070 -0.005" rpy="1.54 0 0.77" />
+      <geometry>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/FingerR v1.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint9" type="revolute">
+    <parent link="hand" />
+    <child link="finger_r" />
+    <origin rpy="0 0 0" xyz="0 0 0.0584"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000" lower="0.0" upper="0.785" velocity="0.2"/>
+  </joint>
+
+    <!-- for Depth Camera -->
+  <xacro:property name="deg_to_rad" value="0.01745329251994329577"/>
+  <xacro:include filename="$(find cr3_lowlevel_pkg)/urdf/_d435.xacro"/>
+  <xacro:sensor_d435 name="sensor_d435" topics_ns="sensor_d435" parent="Link6">
+    <origin xyz="0.031 -0.031 0.0" rpy="1.57 -1.57 0.77"/>
+    <!-- <origin xyz="0 0 0" rpy="${-90.0 * deg_to_rad} 0 ${-90.0 * deg_to_rad}"/> -->
+  </xacro:sensor_d435>
+  <!-- xacro implement-->
+  
+  <xacro:arm_control transmission="tran_1" joint="joint1" motor="motor_1" />
+  <xacro:arm_control transmission="tran_2" joint="joint2" motor="motor_2" />
+  <xacro:arm_control transmission="tran_3" joint="joint3" motor="motor_3" />
+  <xacro:arm_control transmission="tran_4" joint="joint4" motor="motor_4" />
+  <xacro:arm_control transmission="tran_5" joint="joint5" motor="motor_5" />
+  <xacro:arm_control transmission="tran_6" joint="joint6" motor="motor_6" />
+  <xacro:arm_control transmission="tran_7" joint="joint8" motor="motor_7" />
+  <xacro:arm_control transmission="tran_8" joint="joint9" motor="motor_8" />
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so" />
+  </gazebo>
+
+  <xacro:arm_gazebo link="link0"/>
+        <xacro:arm_gazebo link="link1"/>
+        <xacro:arm_gazebo link="link2"/>
+        <xacro:arm_gazebo link="link3"/>
+        <xacro:arm_gazebo link="link4"/>
+        <xacro:arm_gazebo link="link5"/>
+        <xacro:arm_gazebo link="link6"/>
+        <xacro:arm_gazebo link="hand"/>
+        <xacro:arm_gazebo link="finger_l"/>
+        <xacro:arm_gazebo link="finger_r"/>
+
+</xacro:macro>
+</robot>
