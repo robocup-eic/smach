@@ -1,13 +1,1 @@
--
-  name: john
-  role: host
-  fav_drink: coke
--
-  name: peter
-  role: guest_1
-  fav_drink: water
--
-  name: james
-  role: guest_2
-  fav_drink: sprite
--
+- {fav_drink: coke, name: john, role: host}

@@ -221,6 +221,7 @@ class Ask(smach.State):
         # ask the guest to register's his/her face to the robot
         # ask name and favorite drink
         # save name and favorite drink in dictionary
+        global person_count
         global stt
         # register face
         speak("Please show your face to the robot's camera")
@@ -228,16 +229,27 @@ class Ask(smach.State):
         speak("What is your name?")
         while True:
             if stt.body is not None:
-                print(stt.body)
-                if stt.body["intent"] == "favorite":
-                    print("Pass")
+                if stt.body["intent"] == "my_name" and "people" in stt.body.keys():
+                    print(stt.body["people"])
+                    if person_count == 1:    
+                        gm.add_guest_name("guest_1", stt.body["people"])
+                    if person_count == 2:
+                        gm.add_guest_name("guest_2", stt.body["people"])
                     # add guest name to database accordingly to the person_count
                     stt.clear()
                     break
         # listening to the person and save his his/her fav_drink to the file
         speak("What is your favorite drink?")
-        
-
+        while True:
+            if stt.body is not None:
+                if stt.body["intent"] == "favorite" and "object" in stt.body.keys():
+                    print(stt.body["object"])
+                    if person_count == 1:
+                        gm.add_guest_fav_drink("guest_1", stt.body["object"])
+                    if person_count == 2:
+                        gm.add_guest_fav_drink("guest_2", stt.body["object"])
+                    stt.clear()
+                    break
         return 'continue_Navigation'
 
 
@@ -340,11 +352,12 @@ if __name__ == '__main__':
     rospy.init_node('receptionist_task')
 
     gm = GuestNameManager("../config/receptionist_database.yaml")
-
+    gm.reset()
     person_count = 0
 
     # connect to server
-    host = socket.gethostname()
+    host = "192.168.8.99"
+    # host = socket.gethostname()
     # face recognition model
     port_faceRec = 10006
     faceRec = CustomSocket(host,port_faceRec)
