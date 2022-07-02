@@ -26,6 +26,7 @@
 <!-- Lidar odometry-->
  <node name="Lidar_odom" pkg="rtabmap_ros" type="icp_odometry">
  <param name="publish_tf" value="false"/>
+ <param name="scan_voxel_size" value="0.1"/>
 	<remap from="/scan" to="/walkie2/scan"/>
   <remap from="/odom" to="/walkie2/odom_lidar"/>
 </node>
