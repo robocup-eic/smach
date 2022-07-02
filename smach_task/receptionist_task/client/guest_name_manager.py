@@ -1,7 +1,7 @@
 import yaml
 
 class GuestNameManager:
-    def __init__(self, yaml_path = "../../config/fur_data.yaml"):
+    def __init__(self, yaml_path = "../config/fur_data.yaml"):
         self.yaml_path = yaml_path
         self.data_yaml = self.read_yaml()
 
@@ -26,5 +26,5 @@ class GuestNameManager:
                 return data["fav_drink"]
 
 if __name__ == "__main__":
-    ed = GuestNameManager("../../config/receptionist_database.yaml")
+    ed = GuestNameManager("../config/receptionist_database.yaml")
     print(ed.get_guest_fav_drink("guest_1"))

@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+"""
+kill flask in background
+kill -9 $(lsof -t -i:5000)
+"""
+
 import roslib
 import rospy
 import smach
@@ -51,8 +56,8 @@ class Standby(smach.State):
         smach.State.__init__(self,outcomes=['continue_Ask'])
 
         # computer vision socker
-        global c
-        self.c = c
+        global personTrack
+        self.personTrack = personTrack
 
         # image
         self.frame = None
@@ -61,6 +66,7 @@ class Standby(smach.State):
         self.y_pixel = None
         self.intrinsics = None
         self.bridge = CvBridge()
+        self.person_id = -1
 
     def execute(self,userdata):
         def check_image_size_for_cv(frame):
@@ -77,91 +83,68 @@ class Standby(smach.State):
             x = int(x*self.intrinsics.width/1280)
             y = int(y*self.intrinsics.height/720)
             return (x, y)
-        
-        def find_closest_person():
-            pass
 
         def detect():
-            global target_lost, person_id, last_pose, person_id
+            # print(self.frame)
             if self.frame is None:
+                rospy.logerr("no frame receive")
                 return
             # scale image incase image size donot match cv server
             self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
-            result = self.c.req(self.frame)
+            result = self.personTrack.req(self.frame)
+            if len(result["result"]) == 0:
+                self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
+                return
+            if not self.intrinsics:
+                rospy.logerr("no camera intrinsics")
+                return
             # rescale pixel incase pixel donot match
             self.frame = check_image_size_for_ros(self.frame)
-
-            lost = True
-
             # not found person yet
-            if person_id == -1:
+            if self.person_id == -1:
                 center_pixel_list = []
                 for track in result["result"]:
                     self.depth_image = check_image_size_for_ros(self.depth_image)
                     x_pixel = int((track[2][0]+track[2][2])/2)
                     y_pixel = int((track[2][1]+track[2][3])/2)
+                    x_pixel, y_pixel = rescale_pixel(x_pixel, y_pixel)
                     depth = self.depth_image[y_pixel, x_pixel] # numpy array
                     center_pixel_list.append((x_pixel, y_pixel, depth, track[0])) # (x, y, depth, perons_id)
                 
-                person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
+                self.person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
 
             for track in result["result"]:
                 # track : [id, class_name, [x1,y1,x2,y2]]
                 # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
-                if track[0] == person_id:
+                if track[0] == self.person_id:
                     self.x_pixel = int((track[2][0]+track[2][2])/2)
                     self.y_pixel = int((track[2][1]+track[2][3])/2)
-
-                    lost = False
-                    self.lost_frame = 0
-                    # rospy.loginfo("Found Target")
-            
+                    self.x_pixel, self.y_pixel = rescale_pixel(self.x_pixel, self.y_pixel)
                     # visualize purpose
                     self.frame = cv2.circle(self.frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
                     self.frame = cv2.rectangle(self.frame, rescale_pixel(track[2][0], track[2][1]), rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
-                    self.frame = cv2.putText(self.frame, str(person_id), (track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    self.frame = cv2.putText(self.frame, str(self.person_id), rescale_pixel(track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
             
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
 
-            # check if person tracker can find any person
-            if  lost==True:
-                self.lost_frame += 1
-                if last_pose is not None:
-                    br = tf.TransformBroadcaster()
-                    br.sendTransform(last_pose, tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame', 'map')
+            # 3d pose
+
+            # rescale pixel incase pixel donot match
+            self.depth_image = check_image_size_for_ros(self.depth_image)
+            pix = (self.x_pixel, self.y_pixel)
+            depth = self.depth_image[pix[1], pix[0]] # [y, x] for numpy array
+            result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [pix[0], pix[1]], depth)  # [x, y] for realsense lib
             
-            else:
-                # check if it lost forever
-                if self.lost_frame >= 100:
-                    target_lost = True
+            # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
+            x_coord, y_coord, z_coord = result[0]/1000, result[1]/1000, result[2]/1000
 
-                # 3d pose
-                if not self.intrinsics:
-                    rospy.logerr("no camera intrinsics")
-                    return
-                # rescale pixel incase pixel donot match
-                self.depth_image = check_image_size_for_ros(self.depth_image)
-                pix = (self.x_pixel, self.y_pixel)
-                depth = self.depth_image[pix[1], pix[0]] # [y, x] for numpy array
-                result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [pix[0], pix[1]], depth)  # [x, y] for realsense lib
-                
-                # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
-                x_coord, y_coord, z_coord = result[0]/1000, result[1]/1000, result[2]/1000
-
-                if 1 < z_coord < 8:
-                    # rospy.loginfo("Target is at: ({}, {})".format(self.x_pixel, self.y_pixel))
-                    # rospy.loginfo("Depth is {}".format(depth))
-                    # rospy.loginfo("Detected at (x,y,z): {}".format([r/1000 for r in result]))
-                    rospy.sleep(0.1)
-                    
-                    # camera frame for tf x is point toward and y is point left.
-                    x = z_coord - 1 # set the goal point to be 1 meter away from person
-                    y = -x_coord
-                    z = -y_coord
-                    br = tf.TransformBroadcaster()
-                    br.sendTransform((x, y, z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense_mount_1')
-                    return True
+            if 0.75 < z_coord < 1.5:
+                # rospy.loginfo("Target is at: ({}, {})".format(self.x_pixel, self.y_pixel))
+                # rospy.loginfo("Depth is {}".format(depth))
+                # rospy.loginfo("Detected at (x,y,z): {}".format([r/1000 for r in result]))
+                rospy.sleep(0.1)
+                return True
             return False
         
         rospy.loginfo('Executing Standby state')
@@ -170,18 +153,26 @@ class Standby(smach.State):
         # before continue to the next state count the number of person
         global person_count
         person_count += 1
-        rospy.loginfo("Guest count : ", person_count)
 
         # start person tracker
         image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.yolo_callback)
         depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image , self.depth_callback)
         depth_info_sub = rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo , self.info_callback)
         self.image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
-        
+        rospy.sleep(0.5)
         while True:
             if detect() == True:
+                self.frame = None
+                self.depth_image = None
+                self.x_pixel = None
+                self.y_pixel = None
+                self.intrinsics = None
+                self.person_id = -1
+                image_sub.unregister()
+                depth_sub.unregister()
+                depth_info_sub.unregister()
                 break
-            return 'continue_Ask'
+        return 'continue_Ask'
 
     def yolo_callback(self, data):
         try:
@@ -238,7 +229,8 @@ class Ask(smach.State):
         while True:
             if stt.body is not None:
                 print(stt.body)
-                if stt.body["intent"] == "name":
+                if stt.body["intent"] == "favorite":
+                    print("Pass")
                     # add guest name to database accordingly to the person_count
                     stt.clear()
                     break
@@ -347,7 +339,7 @@ class Navigate_to_start(smach.State):
 if __name__ == '__main__':
     rospy.init_node('receptionist_task')
 
-    gm = GuestNameManager("../../config/receptionist_database.yaml")
+    gm = GuestNameManager("../config/receptionist_database.yaml")
 
     person_count = 0
 
