@@ -5,6 +5,11 @@ import rospy
 import smach
 import smach_ros
 
+# import for text-to-speech
+import requests
+import json
+from nlp_server import SpeechToText, speak
+import time
 
 class Start_signal(smach.State):
     def __init__(self):
@@ -12,6 +17,7 @@ class Start_signal(smach.State):
         smach.State.__init__(self,outcomes=['continue_Standby'])
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
+        # Detect door opening
         return 'continue_Standby'
 
 
@@ -19,8 +25,14 @@ class Standby(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Standby state')
         smach.State.__init__(self,outcomes=['continue_Ask'])
+        global person_count 
     def execute(self,userdata):
         rospy.loginfo('Executing Standby state')
+        # run person detection constantly
+        # wait untill the robot finds a person then continue to the next state
+        # before continue to the next state count the number of person
+        person_count += 1
+        print("Number of guest : ", person_count)
         return 'continue_Ask'
 
 
@@ -30,6 +42,17 @@ class Ask(smach.State):
         smach.State.__init__(self,outcomes=['continue_Navigation'])
     def execute(self,userdata):
         rospy.loginfo('Executing Ask state')
+        # ask the guest to register's his/her face to the robot
+        # ask name and favorite drink
+        # save name and favorite drink in dictionary
+        
+        speak("Please show your face to the robot's camera")
+        # register face
+        speak("What is your name?")
+        # listening to the person and save his/her name to the file
+        speak("What is your favorite drink?")
+        # listening to the person and save his his/her fav_drink to the file
+
         return 'continue_Navigation'
 
 
@@ -40,6 +63,8 @@ class Navigation(smach.State):
         self.case = 0
     def execute(self,userdata):
         rospy.loginfo('Executing Navigation state')
+        # navigate to seat
+        # detect available
         if self.case == 0:
             return 'continue_No_seat'
         else:
@@ -52,6 +77,8 @@ class No_seat(smach.State):
         smach.State.__init__(self,outcomes=['continue_Introduce_guest'])
     def execute(self,userdata):
         rospy.loginfo('Executing No_seat state')
+        # announce that there is no seat available
+        speak("Sorry, there is no available seat")
         return 'continue_Introduce_guest'
 
 
@@ -61,6 +88,9 @@ class Seat(smach.State):
         smach.State.__init__(self,outcomes=['continue_Introduce_guest'])
     def execute(self,userdata):
         rospy.loginfo('Executing Seat state')
+        # announce that there is available seat
+        # point to the furniture
+        speak("There is an available seat here")
         return 'continue_Introduce_guest'
 
 
@@ -68,8 +98,16 @@ class Introduce_guest(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Introduce_guest state')
         smach.State.__init__(self,outcomes=['continue_Introduce_host'])
+        global person_count
     def execute(self,userdata):
         rospy.loginfo('Executing Introduce_guest state')
+        # find the host and face the robot to the host
+        # clearly identify the person being introduced and state their name and favorite drink
+        if person_count == 1:
+            speak("Hello {host_name}, the guest who is on the {furtinure} is {guest_1} and the favorite drink is {fav_drink1}  ".format(host_name = "John", furniture = "Couch", guest_1 = "Peter", fav_drink1 = "coke" ))
+        if person_count == 2:
+            speak("Hello {host_name}, the new guest is {guest_2} and the favorite drink is {fav_drink2}  ".format(host_name = "John", guest_2 = "James", fav_drink2 = "sprite"))
+        
         return 'continue_Introduce_host'
 
     
@@ -77,8 +115,17 @@ class Introduce_host(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Introduce_host state')
         smach.State.__init__(self,outcomes=['continue_Navigate_to_start'])
+        global person_count
     def execute(self,userdata):
         rospy.loginfo('Executing Introduce_host state')
+        # find the guest and face the robot to the guest
+        # clearly identify the person being introduced annd state their name and favorite drink
+        if person_count == 1:
+            # find the guest1 and face the robot to the guest1
+            speak("The host is next to the {host_furniture} his name is {host_name} and his favorite drink is {fav_drink_host}".format(host_furniture = "Table", host_name = "John", fav_drink_host = "water"))
+        if person_count == 2:
+            # find the guest_2 and face the robot the the guest_2
+            speak("The host is next to the {host_furniture} his name is {host_name} and his favorite drink is {fav_drink_host}".format(host_furniture = "Table", host_name = "John", fav_drink_host = "water"))
         return 'continue_Navigate_to_start'
 
 
@@ -86,17 +133,21 @@ class Navigate_to_start(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigate_to_start state')
         smach.State.__init__(self,outcomes=['continue_Standby', 'continue_SUCCEEDED'])
-        self.case = 0
+        global person_count
     def execute(self,userdata):
         rospy.loginfo('Executing Navigate_to_start state')
-        if self.case == 0:
-            return 'continue_Standby'
-        else:
+        # navigate back to the door to wait for the next guest
+        if person_count == 2:
             return 'continue_SUCCEEDED'
+        else:
+            # navigate back to the door
+            return 'continue_Standby'
 
 
 def main():
     rospy.init_node('initiating receptionist node')
+
+    person_count = 0
 
     # Create a SMACH state machine
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED'])
