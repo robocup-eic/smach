@@ -2,7 +2,7 @@ import yaml
 from geometry_msgs.msg import Pose, Point
 
 class EnvironmentDescriptor:
-    def __init__(self, yaml_path = "../config/fur_data.yaml"):
+    def __init__(self, yaml_path = "../../config/fur_data.yaml"):
         self.yaml_path = yaml_path
         self.data_yaml = self.read_yaml()
 
@@ -41,5 +41,5 @@ class EnvironmentDescriptor:
                 return data["height"]
 
 if __name__ == "__main__":
-    ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed = EnvironmentDescriptor("../../config/fur_data.yaml")
     print(ed.get_robot_pose("table1"))
