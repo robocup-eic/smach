@@ -116,3 +116,5 @@ target_link_libraries(pick_client ${catkin_LIBRARIES})
 add_executable(constraint_publisher src/constraint_publisher.cpp)
 target_link_libraries(constraint_publisher ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
 
+add_executable(tf_test src/tf_test.cpp)
+target_link_libraries(tf_test ${catkin_LIBRARIES})

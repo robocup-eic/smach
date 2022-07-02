@@ -16,6 +16,7 @@
 // include quaternian transformation
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,27 @@ const double LEFT_ORIENT[3] = {0, -M_PI / 2.0, -M_PI / 2.0};
 const double RIGHT_ORIENT[3] = {0, -M_PI / 2.0, M_PI / 2.0};
 const double GRIPPER_ORIENT = -M_PI / 4.0; // Please use -M_PI / 4.0
 //===========================================================================================
+
+// transform pose
+void transform_pose(geometry_msgs::Pose &goal_pose){
+  tf2_ros::Buffer tf_buffer;
+  tf2_ros::TransformListener tf2_listener(tf_buffer);
+  geometry_msgs::TransformStamped base_link_to_base_link_cr3;
+  // get transform from base_link to cr3_base_link
+  base_link_to_base_link_cr3 = tf_buffer.lookupTransform("base_link", "cr3_base_link", ros::Time(0), ros::Duration(1.0));
+  
+  goal_pose.position.x += -1*base_link_to_base_link_cr3.transform.translation.x; // x of cr3_base_link is in opposite
+  goal_pose.position.y += base_link_to_base_link_cr3.transform.translation.y;
+  goal_pose.position.z += base_link_to_base_link_cr3.transform.translation.z;
+
+  tf2::Quaternion q_orig, q_rot, q_new;
+  tf2::convert(goal_pose.orientation, q_orig); // calcultate the q_orig from the requested geo_request orientation.
+  tf2::convert(base_link_to_base_link_cr3.transform.rotation, q_rot); // use rotation from tf
+  q_new = q_rot * q_orig;
+  q_new.normalize();
+  tf2::convert(q_new, goal_pose.orientation);
+
+}
 
 // Move the arm
 
@@ -53,6 +75,7 @@ void move(geometry_msgs::Pose goal_pose)
   target_pose.position.y = goal_pose.position.y;
   target_pose.position.z = goal_pose.position.z;
 
+  transform_pose(target_pose);
   move_group_interface.setPoseTarget(target_pose);
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
   success = (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
