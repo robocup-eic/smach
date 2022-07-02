@@ -61,7 +61,7 @@ class Navigation(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigation state')
         smach.State.__init__(self,outcomes=['continue_No_seat','continue_Seat'])
-        self.case = 0
+        self.case = 1
     def execute(self,userdata):
         rospy.loginfo('Executing Navigation state')
         # navigate to seat
@@ -105,10 +105,11 @@ class Introduce_guest(smach.State):
         # find the host and face the robot to the host
         # clearly identify the person being introduced and state their name and favorite drink
         if person_count == 1:
-            speak("Hello {host_name}, the guest who is on the {furtinure} is {guest_1} and the favorite drink is {fav_drink1}  ".format(host_name = "John", furniture = "Couch", guest_1 = "Peter", fav_drink1 = "coke" ))
+            speak("Hello {host_name}, the guest who is on the {furniture} is {guest_1}".format(host_name = "John", furniture = "Couch", guest_1 = "Peter"))
+            
         if person_count == 2:
-            speak("Hello {host_name}, the new guest is {guest_2} and the favorite drink is {fav_drink2}  ".format(host_name = "John", guest_2 = "James", fav_drink2 = "sprite"))
-        
+            speak("Hello {host_name}, the new guest is {guest_2}".format(host_name = "John", guest_2 = "James"))
+            speak("His favorite drink is {fav_drink2}".format(fav_drink2 = "sprite"))
         return 'continue_Introduce_host'
 
     
@@ -123,10 +124,12 @@ class Introduce_host(smach.State):
         # clearly identify the person being introduced annd state their name and favorite drink
         if person_count == 1:
             # find the guest1 and face the robot to the guest1
-            speak("The host is next to the {host_furniture} his name is {host_name} and his favorite drink is {fav_drink_host}".format(host_furniture = "Table", host_name = "John", fav_drink_host = "water"))
+            speak("Hello {guest_1}, the host's name is {host_name}".format(guest_1 = "Peter", host_name = "John"))
+            speak("His favorite drink is {fav_drink_host}".format(fav_drink_host = "coke"))
         if person_count == 2:
             # find the guest_2 and face the robot the the guest_2
-            speak("The host is next to the {host_furniture} his name is {host_name} and his favorite drink is {fav_drink_host}".format(host_furniture = "Table", host_name = "John", fav_drink_host = "water"))
+            speak("Hello {guest_2}, the host's name is {host_name}".format(guest_2 = "James", host_name = "John"))
+            speak("His favorite drink is {fav_drink_host}".format(fav_drink_host= "coke"))
         return 'continue_Navigate_to_start'
 
 
@@ -146,7 +149,7 @@ class Navigate_to_start(smach.State):
 
 
 if __name__ == '__main__':
-    rospy.init_node('initiating receptionist node')
+    rospy.init_node('receptionist_task')
 
     person_count = 0
 
