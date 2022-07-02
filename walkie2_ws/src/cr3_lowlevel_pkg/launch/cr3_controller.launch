@@ -1,3 +1,0 @@
-<launch>
-    <node name="cr3_controller" pkg="cr3_lowlevel_pkg" type="cr3_controller.py"/>
-</launch>

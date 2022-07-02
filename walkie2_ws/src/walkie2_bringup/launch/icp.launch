@@ -1,0 +1,47 @@
+<launch>
+  <arg default="$(find walkie2_description)/urdf/walkie2.xacro" name="model"/>
+  <arg default="false" name="gui"/>
+  <arg default="$(find walkie2_description)/launch/urdf.rviz" name="rvizconfig"/>
+  <param command="$(find xacro)/xacro $(arg model)" name="robot_description"/>
+  <param name="use_gui" value="$(arg gui)"/>
+  <arg default="false" name="use_imu"/>
+  <arg default="true" name="rviz"/>
+  <arg default="/dev/ttyACM0" name="port"/>
+  
+
+  <!-- Set up TF for the robot -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+      <remap from="/joint_states" to="/walkie2/joint_states" />
+  </node>
+
+    <!-- Run LaserScan node -->
+  <!--<node name="urg_node" pkg="urg_node" type="urg_node">
+    <param name="ip_address" value="192.168.5.4"/>
+    <param name="frame_id" value="hokuyo"/>
+    <param name="angle_max" value="1.57"/>
+    <param name="angle_min" value="-1.57"/>
+    <remap from="/scan" to="/walkie2/scan"/>
+  </node> -->
+
+ <node name="Lidar_odom" pkg="rtabmap_ros" type="icp_odometry">
+	<remap from="/scan" to="/walkie2/scan"/>
+</node>
+
+<node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen" respawn="false" >
+          <param name="fixed_frame" value="base_link" />
+          <param name="use_mag" value="false" />
+          <param name="publish_tf" value="true" />
+          <param name="world_frame" value="enu"/>
+	  <remap from="/imu/data_raw" to="/Arduino/raw_imu"/>
+    </node>
+
+  <group if="$(arg rviz)">
+    
+    <!-- Open rviz for monitoring -->
+    <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/>
+
+  </group>
+
+  
+</launch>
+

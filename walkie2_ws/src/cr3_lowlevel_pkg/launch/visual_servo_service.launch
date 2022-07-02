@@ -1,9 +1,0 @@
-<launch>
-    <node name="simple_color_detection" pkg="cr3_lowlevel_pkg" type="simple_color_detection.py"/>
-    <node name="visual_servo_service" pkg="cr3_lowlevel_pkg" type="visual_servo_service.py"/>
-    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" respawn="true">
-        <param name="video_device" value="/dev/video2" />
-        <param name="pixel_format" value="yuyv"/>
-    </node>
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cr3_lowlevel_pkg)/rviz/visual_servo.rviz" launch-prefix="bash -c 'sleep 5.0; $0 $@'"/>
-</launch>
