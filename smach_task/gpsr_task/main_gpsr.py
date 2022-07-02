@@ -58,7 +58,7 @@ from sm_find_person import sm_find_person_Go_To_Room_2, sm_find_person_Go_To_Spe
 from sm_find_person import sm_find_person_Find_Item, sm_find_person_Back_To_Start, sm_find_person_Tell_Where_Is_Person
 from sm_go_to import sm_go_to_Check_Object_Location, sm_go_to_Navigation, sm_go_to_Announce
 from sm_howmany import sm_howmany_Check_Location, sm_howmany_Navigation, sm_howmany_Object_Detection
-
+# LAN local network
 # import smach 
 class Stand_by(smach.State):
     def __init__(self, stt):
@@ -70,7 +70,7 @@ class Stand_by(smach.State):
     def execute(self, userdata):
         rospy.loginfo("Executing Standby state")
         if self.x == 4:
-            return "continue_SM_BRINGIT"
+            return "continue_SM_FINDITEM"
         while True:
             if self.stt.body is not None:
                 if self.stt.body["intent"] == "bring_desc_to_someone":

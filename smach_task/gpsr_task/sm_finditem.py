@@ -80,11 +80,12 @@ class sm_finditem_Find_Object(smach.State):
         self.host = host
         self.port = port
         self.frame = None
-
+        self.bridge = CvBridge()
     def yolo_callback(self, data):
         try:
             # change subscribed data to numpy.array and save it as "frame"
             self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
+            print(type(self.frame))
         except CvBridgeError as e:
             print(e)
     def execute(self, userdata):
@@ -97,6 +98,8 @@ class sm_finditem_Find_Object(smach.State):
         print("-------")
         image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.yolo_callback)
         print("-fish fish fish fish")
+        while self.frame is None:
+            rospy.sleep(0.1)
         result = c.req(self.frame)
         rospy.loginfo("-----executing the callback state-----")
         print(result)
