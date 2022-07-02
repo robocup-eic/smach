@@ -8,7 +8,7 @@ import smach_ros
 # import for text-to-speech
 import requests
 import json
-from nlp_server import SpeechToText, speak
+from client.nlp_server import SpeechToText, speak
 import time
 
 class Start_signal(smach.State):
@@ -25,9 +25,10 @@ class Standby(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Standby state')
         smach.State.__init__(self,outcomes=['continue_Ask'])
-        global person_count 
+        #global person_count 
     def execute(self,userdata):
         rospy.loginfo('Executing Standby state')
+        global person_count
         # run person detection constantly
         # wait untill the robot finds a person then continue to the next state
         # before continue to the next state count the number of person
@@ -144,7 +145,7 @@ class Navigate_to_start(smach.State):
             return 'continue_Standby'
 
 
-def main():
+if __name__ == '__main__':
     rospy.init_node('initiating receptionist node')
 
     person_count = 0
@@ -182,5 +183,6 @@ def main():
     outcome = sm_top.execute()
     rospy.spin()
     sis.stop()
-if __name__ == '__main__':
-    main()
+    
+    
+
