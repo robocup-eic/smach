@@ -15,7 +15,7 @@ from geometry_msgs.msg import Twist, Point
 from std_msgs.msg import String
 
 
-LINEAR_THRESHOLD = 1
+LINEAR_THRESHOLD = 1.3
 K_LAT_DIST_TO_STEER     = 0.001
 K_LAT_DIST_TO_THROTTLE     = 0.1
 
@@ -52,7 +52,7 @@ class ChasePerson():
         self._message = Twist()
         
     @property
-    def is_detected(self): return(time.time() - self._time_detected < 15.0)
+    def is_detected(self): return(time.time() - self._time_detected < 1.0)
 
     def set_cmd(self,message):
         self.cmd = message.data
@@ -62,7 +62,7 @@ class ChasePerson():
         self.rel_x = message.x
         self.rel_y = message.y
         self._time_detected = time.time()
-        rospy.loginfo("Human detected: %.1f  %.1f "%(self.rel_x, self.rel_y))
+        # rospy.loginfo("Human detected: %.1f  %.1f "%(self.rel_x, self.rel_y))
 
     def abs_update_coor(self, message):
         self.abs_x = message.x
@@ -83,7 +83,7 @@ class ChasePerson():
         
         if self.is_detected:
             #--- Apply steering, proportional to how close is the object
-            steer_action   = K_LAT_DIST_TO_STEER*self.rel_x
+            steer_action   = -1*K_LAT_DIST_TO_STEER*self.rel_x
             steer_action   = saturate(steer_action, -0.5, 0.5)
 
             if self.abs_z > LINEAR_THRESHOLD:

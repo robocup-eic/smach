@@ -88,7 +88,8 @@ class FindPerson:
                     depth = self.depth_image[y_pixel, x_pixel] # numpy array
                     center_pixel_list.append((x_pixel, y_pixel, depth, track[0])) # (x, y, depth, perons_id)
                 self.person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
-                rospy.loginfo("Found person ID : {}".format(self.person_id)) 
+                rospy.loginfo("Found person ID : {}".format(self.person_id))
+            self.detected = False
             for track in result["result"]:
                 # track : [id, class_name, [x1,y1,x2,y2]]
                 # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
@@ -102,8 +103,6 @@ class FindPerson:
                     self.frame = cv2.rectangle(self.frame, rescale_pixel(track[2][0], track[2][1]), rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
                     self.frame = cv2.putText(self.frame, str(self.person_id), rescale_pixel(track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-                else:
-                    self.detected = False
             
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
 
