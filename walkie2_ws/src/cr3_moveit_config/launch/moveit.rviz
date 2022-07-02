@@ -8,6 +8,8 @@ Panels:
         - /MotionPlanning1
         - /MotionPlanning1/Planning Request1
         - /MarkerArray1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.7425600290298462
     Tree Height: 254
   - Class: rviz/Help
@@ -390,23 +392,120 @@ Visualization Manager:
       Marker Topic: /rviz_visual_tools
       Name: MarkerArray
       Namespaces:
-        {}
+        Path: true
+        Sphere: true
+        Text: true
+        pose 1: true
       Queue Size: 100
       Value: true
     - Class: rviz/TF
-      Enabled: false
+      Enabled: true
       Frame Timeout: 15
       Frames:
-        All Enabled: true
+        All Enabled: false
+        Link1:
+          Value: false
+        Link2:
+          Value: false
+        Link3:
+          Value: false
+        Link4:
+          Value: false
+        Link5:
+          Value: false
+        Link6:
+          Value: false
+        base_cr3:
+          Value: false
+        base_footprint:
+          Value: false
+        base_link:
+          Value: true
+        cr3_base_link:
+          Value: true
+        finger_l:
+          Value: false
+        finger_r:
+          Value: false
+        hand:
+          Value: false
+        hokuyo:
+          Value: false
+        imu_link:
+          Value: false
+        left_wheel:
+          Value: false
+        realsense:
+          Value: false
+        right_wheel:
+          Value: false
+        sensor_d435_bottom_screw_frame:
+          Value: false
+        sensor_d435_color_frame:
+          Value: false
+        sensor_d435_color_optical_frame:
+          Value: false
+        sensor_d435_depth_frame:
+          Value: false
+        sensor_d435_depth_optical_frame:
+          Value: false
+        sensor_d435_left_ir_frame:
+          Value: false
+        sensor_d435_left_ir_optical_frame:
+          Value: false
+        sensor_d435_link:
+          Value: false
+        sensor_d435_right_ir_frame:
+          Value: false
+        sensor_d435_right_ir_optical_frame:
+          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        base_footprint:
+          base_link:
+            base_cr3:
+              cr3_base_link:
+                Link1:
+                  Link2:
+                    Link3:
+                      Link4:
+                        Link5:
+                          Link6:
+                            hand:
+                              finger_l:
+                                {}
+                              finger_r:
+                                {}
+                            sensor_d435_bottom_screw_frame:
+                              sensor_d435_link:
+                                sensor_d435_depth_frame:
+                                  sensor_d435_color_frame:
+                                    sensor_d435_color_optical_frame:
+                                      {}
+                                  sensor_d435_depth_optical_frame:
+                                    {}
+                                  sensor_d435_left_ir_frame:
+                                    sensor_d435_left_ir_optical_frame:
+                                      {}
+                                  sensor_d435_right_ir_frame:
+                                    sensor_d435_right_ir_optical_frame:
+                                      {}
+            hokuyo:
+              {}
+            imu_link:
+              {}
+            left_wheel:
+              {}
+            realsense:
+              {}
+            right_wheel:
+              {}
       Update Interval: 0
-      Value: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -423,25 +522,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 3.8485403060913086
+      Distance: 3.6846659183502197
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.22210156917572021
-        Y: 0.45363742113113403
-        Z: 4.6193656544346595e-7
+        X: 0.30880963802337646
+        Y: -0.4251863360404968
+        Z: 7.003551445450285e-7
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9247967004776001
+      Pitch: 0.4697970449924469
       Target Frame: world
       Value: XYOrbit (rviz)
-      Yaw: 0.8999429941177368
+      Yaw: 1.0399428606033325
     Saved: ~
 Window Geometry:
   Displays:

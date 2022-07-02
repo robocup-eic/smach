@@ -42,17 +42,19 @@ void transform_pose(geometry_msgs::Pose &goal_pose){
   geometry_msgs::TransformStamped base_link_to_base_link_cr3;
   // get transform from base_link to cr3_base_link
   base_link_to_base_link_cr3 = tf_buffer.lookupTransform("base_link", "cr3_base_link", ros::Time(0), ros::Duration(1.0));
-  
-  goal_pose.position.x += -1*base_link_to_base_link_cr3.transform.translation.x; // x of cr3_base_link is in opposite
-  goal_pose.position.y += base_link_to_base_link_cr3.transform.translation.y;
-  goal_pose.position.z += base_link_to_base_link_cr3.transform.translation.z;
 
-  tf2::Quaternion q_orig, q_rot, q_new;
-  tf2::convert(goal_pose.orientation, q_orig); // calcultate the q_orig from the requested geo_request orientation.
-  tf2::convert(base_link_to_base_link_cr3.transform.rotation, q_rot); // use rotation from tf
-  q_new = q_rot * q_orig;
-  q_new.normalize();
-  tf2::convert(q_new, goal_pose.orientation);
+  geometry_msgs::PoseStamped robot_pose;
+  robot_pose.pose.position.x = goal_pose.position.x;
+  robot_pose.pose.position.y = goal_pose.position.y;
+  robot_pose.pose.position.z = goal_pose.position.z;
+  robot_pose.pose.orientation.x = goal_pose.orientation.x;
+  robot_pose.pose.orientation.y = goal_pose.orientation.y;
+  robot_pose.pose.orientation.z = goal_pose.orientation.z;
+  robot_pose.pose.orientation.w = goal_pose.orientation.w;
+
+  tf2::doTransform(robot_pose, robot_pose, base_link_to_base_link_cr3); // robot_pose is the PoseStamped I want to transform
+
+  goal_pose = robot_pose.pose;
 
 }
 
@@ -75,7 +77,7 @@ void move(geometry_msgs::Pose goal_pose)
   target_pose.position.y = goal_pose.position.y;
   target_pose.position.z = goal_pose.position.z;
 
-  transform_pose(target_pose);
+  ROS_INFO_STREAM(target_pose);
   move_group_interface.setPoseTarget(target_pose);
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
   success = (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
@@ -102,8 +104,8 @@ void move_cartesian(geometry_msgs::Pose &current_pose, float x, float y, float z
   waypoints.push_back(current_pose);
 
   geometry_msgs::Pose target_pose = current_pose;
-  target_pose.position.x += x;
-  target_pose.position.y += y;
+  target_pose.position.x += -1*x; // cr3_base_link opposite with base_link
+  target_pose.position.y += -1*y; // cr3_base_link opposite with base_link
   target_pose.position.z += z;
   waypoints.push_back(target_pose);
 
@@ -239,7 +241,10 @@ bool pick_server(cr3_moveit_control::PickWithSide::Request &req,
     pose.orientation.y = new_pose.orientation.y;
     pose.orientation.z = new_pose.orientation.z;
     pose.orientation.w = new_pose.orientation.w;
+
+    transform_pose(pose);
     move(pose);
+
     if (!success)
     {
       return false;
