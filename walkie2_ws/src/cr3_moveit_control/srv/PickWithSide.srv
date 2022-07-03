@@ -1,4 +1,0 @@
-geometry_msgs/Pose geo_req
-string pick_side
----
-bool success_grasp

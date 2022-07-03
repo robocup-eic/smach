@@ -15,13 +15,21 @@
   </node>
 
     <!-- Run LaserScan node -->
-  <!--<node name="urg_node" pkg="urg_node" type="urg_node">
+  <node name="urg_node" pkg="urg_node" type="urg_node">
     <param name="ip_address" value="192.168.5.4"/>
     <param name="frame_id" value="hokuyo"/>
     <param name="angle_max" value="1.57"/>
     <param name="angle_min" value="-1.57"/>
     <remap from="/scan" to="/walkie2/scan"/>
-  </node> -->
+  </node>
+
+<!-- Lidar odometry-->
+ <node name="Lidar_odom" pkg="rtabmap_ros" type="icp_odometry">
+ <param name="publish_tf" value="false"/>
+ <param name="scan_voxel_size" value="0.1"/>
+	<remap from="/scan" to="/walkie2/scan"/>
+  <remap from="/odom" to="/walkie2/odom_lidar"/>
+</node>
 
   <!-- <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
       <arg name="align_depth" value="true" />
@@ -34,8 +42,6 @@
       <arg name="filters" value="pointcloud"/>
   </include> -->
 
-  <node name="odrive" pkg="walkie2_bringup" type="talker.py"/>
-
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>
   </group>
@@ -47,10 +53,9 @@
     </node>
 
     <!-- Run serial_node for IMU data -->
-    <!-- <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
-      <param name="port" value="$(arg port))"/>
-      <param name="baud" value="115200"/>
-    </node> -->
+    <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+      <param name="port" value="$(arg port)"/>
+    </node>
 
     <!-- Filter and fuse raw imu data -->
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen" respawn="false" >
