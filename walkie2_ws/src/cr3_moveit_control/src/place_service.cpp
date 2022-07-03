@@ -81,11 +81,12 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
 
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
 
+  geometry_msgs::Pose base_link_pose;
   while(!success)
   {
     target_pose1.position.y += 0.05;
-    double distance = smallest_distance(target_pose1, current_collision_object_pos);
-    if(0.1 < distance)
+    double distance_between_obj = smallest_distance(target_pose1, current_collision_object_pos);
+    if((0.1 < distance_between_obj) && (distance(base_link_pose, target_pose1) < 0.63))
     {
       move_group_interface.setPoseTarget(target_pose1);
       success= (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
@@ -377,16 +378,13 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   if (!success){
     return false;
   }
-  ROS_INFO_STREAM(pose);
-  ROS_INFO_STREAM(pose);
-  ROS_INFO_STREAM(pose);
 
-  // set home walkie2
-  set_home_walkie2();
-
-  // close gripper
+    // close gripper
   gripper_command_msg.data = true;
   gripper_command_publisher.publish(gripper_command_msg);
+  
+  // set home walkie2
+  set_home_walkie2();
 
   // check whether it is true then return "success value"
   res.success_place = success;
