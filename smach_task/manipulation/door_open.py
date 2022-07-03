@@ -86,6 +86,8 @@ class open_or_close(smach.State):
         self.depth_image = check_image_size_for_ros(self.depth_image)
         depth = self.depth_image[ycen_pixel,  xcen_pixel] # [y, x] for numpy array
 
+        raw_input()
+
         while not rospy.is_shutdown:
             centerframe_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xcen_pixel, ycen_pixel], depth)
             print(centerframe_result)
