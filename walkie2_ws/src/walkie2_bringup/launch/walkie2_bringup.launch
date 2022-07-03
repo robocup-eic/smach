@@ -23,6 +23,16 @@
     <remap from="/scan" to="/walkie2/scan"/>
   </node>
 
+
+<!-- Lidar odometry-->
+ <node name="Lidar_odom" pkg="rtabmap_ros" type="icp_odometry">
+ <param name="publish_tf" value="false"/>
+ <param name="scan_voxel_size" value="0.1"/>
+	<remap from="/scan" to="/walkie2/scan"/>
+  <remap from="/odom" to="/walkie2/odom_lidar"/>
+</node>
+
+
   <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
       <arg name="align_depth" value="true" />
       <arg name="color_width" value="1280" />
@@ -33,8 +43,6 @@
       <arg name="depth_fps" value="30" />
       <arg name="filters" value="pointcloud"/>
   </include>
-
-  <!-- <node name="odrive" pkg="walkie2_bringup" type="talker.py"/> -->
 
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>
