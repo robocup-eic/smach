@@ -57,7 +57,7 @@ class Start_signal(smach.State):
         smach.State.__init__(self,outcomes=['continue_Standby'])
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
-        # Detect door opening
+        # Detect door+ opening
         return 'continue_Standby'
 
 
@@ -367,9 +367,21 @@ class Navigate_to_start(smach.State):
         goal.target_pose.pose.orientation = pose.orientation
 
         self.client.send_goal(goal)
-        """
+        self.client.wait_for_result()
+        result = self.client.get_result()
+        
+        if result.status == Goalstatus.SUCCEEDED:
+            if person_count == 2:
+                speak("I have finished my task")
+                return 'continue_SUCCEEDED'
+            else:
+                # navigate back to the door
+                return 'continue_Standby'
 
-        # check for reach goal
+        if result.status == Goalstatus.ABORTED:
+            rospy.loginfo("---------------------- ERROR ----------------")
+            return 'continue_SUCCEEDED'
+        """
 
         if person_count == 2:
             speak("I have finished my task")

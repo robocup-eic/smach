@@ -253,18 +253,23 @@ class Get_bounding_box(smach.State):
             x = int(x*self.intrinsics.width/1280)
             y = int(y*self.intrinsics.height/720)
             return (x, y)
-        
-        def find_closest_person():
-            pass
 
         def detect():
-            global target_lost, person_id, last_pose, person_id
             if self.frame is None:
                 return
             # scale image incase image size donot match cv server
             self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
             result = self.c.req(self.frame)
+
+            # check if there are any person
+            if len(result["result"]) == 0:
+                self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
+                return
+            # check if there are camera intrinsics received
+            if not self.intrinsics:
+                rospy.logerr("no camera intrinsics")
+                return
             # rescale pixel incase pixel donot match
             self.frame = check_image_size_for_ros(self.frame)
 
@@ -280,6 +285,7 @@ class Get_bounding_box(smach.State):
                     depth = self.depth_image[y_pixel, x_pixel] # numpy array
                     center_pixel_list.append((x_pixel, y_pixel, depth, track[0])) # (x, y, depth, perons_id)
                 
+                # find closest person
                 person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
 
             for track in result["result"]:
@@ -339,9 +345,15 @@ class Get_bounding_box(smach.State):
                     br.sendTransform((x, y, z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense_mount_1')
 
         rospy.loginfo('Executing state Get_bounding_box')
-        global target_lost
-        global is_stop
+        global target_lost, is_stop, person_id, last_pose
 
+        # reset variable
+        self.frame = None
+        self.depth_image = None
+        self.x_pixel = None
+        self.y_pixel = None
+        self.intrinsics = None
+        person_id = -1
         image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.yolo_callback)
         depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image , self.depth_callback)
         depth_info_sub = rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo , self.info_callback)

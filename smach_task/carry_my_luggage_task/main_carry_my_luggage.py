@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-from turtle import st
+"""
+kill flask in background
+kill -9 $(lsof -t -i:5000)
+"""
+
 import roslib
 import rospy
 import smach
@@ -245,16 +249,6 @@ class Get_bounding_box(smach.State):
             print(e)
     
     def depth_callback(self, frame):
-        """
-                            +Z           
-        -y   realsense frame|                
-        | +z                |    
-        |/                  |      
-        o---> +x            |  +X    
-                            | / 
-        +Y -----------------o camera_link frame tf/
-
-        """
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(frame, frame.encoding)
         except CvBridgeError as e:
@@ -288,6 +282,12 @@ class Get_bounding_box(smach.State):
             self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
             result = self.c.req(self.frame)
+            if len(result["result"]) == 0:
+                self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
+                return
+            if not self.intrinsics:
+                rospy.logerr("no camera intrinsics")
+                return
             # rescale pixel incase pixel donot match
             self.frame = check_image_size_for_ros(self.frame)
 
