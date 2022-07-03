@@ -12,11 +12,21 @@ import smach_ros
 
 from client.custom_socket import CustomSocket
 
+# navigation
+import tf2_ros
+from nav_msgs.msg import Odometry
+from math import pi
+import tf
+import tf2_msgs
+
 # ros pub sub
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
+
+# SimpleActionClient
+import actionlib
 
 # import for speed-to-text
 from flask import Flask, request
@@ -39,6 +49,7 @@ import time
 
 # import yaml reader
 from client.guest_name_manager import GuestNameManager
+from client.environment_descriptor import EnvironmentDescriptor
 
 class Start_signal(smach.State):
     def __init__(self):
@@ -336,10 +347,30 @@ class Navigate_to_start(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigate_to_start state')
         smach.State.__init__(self,outcomes=['continue_Standby', 'continue_SUCCEEDED'])
-        
+        self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
+
     def execute(self,userdata):
         rospy.loginfo('Executing Navigate_to_start state')
         # navigate back to the door to wait for the next guest
+        """
+        global ed
+
+        pose = ed.get_robot_pose("door_inside_living_room") # dont forget to find the right position on the setup day
+            
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
+        goal.target_pose.pose.position.x = pose.position.x
+        goal.target_pose.pose.position.y = pose.position.y
+        goal.target_pose.pose.orientation = pose.orientation
+
+        self.client.send_goal(goal)
+        """
+
+        # check for reach goal
+
         if person_count == 2:
             speak("I have finished my task")
             return 'continue_SUCCEEDED'
@@ -351,6 +382,7 @@ class Navigate_to_start(smach.State):
 if __name__ == '__main__':
     rospy.init_node('receptionist_task')
 
+    ed = EnvironmentDescriptor("../config/fur_data.yaml")
     gm = GuestNameManager("../config/receptionist_database.yaml")
     gm.reset()
     person_count = 0
