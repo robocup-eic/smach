@@ -13,12 +13,11 @@
   <child link="base_link"/>
 </joint>
 
-
 <link name="base_link">
   <inertial>
-    <origin xyz="-0.03921029174333767 -5.934425972055137e-06 0.5802747494402485" rpy="0 0 0"/>
-    <mass value="958.092984136945"/>
-    <inertia ixx="143.304009" iyy="141.886997" izz="24.804848" ixy="-6.5e-05" iyz="0.005171" ixz="13.516138"/>
+    <origin xyz="-0.1608928311021478 -5.96990322223803e-06 0.5834834631581107" rpy="0 0 0"/>
+    <mass value="952.3993400032292"/>
+    <inertia ixx="141.167931" iyy="139.78051" izz="23.866384" ixy="-5.5e-05" iyz="0.005153" ixz="12.651599"/>
   </inertial>
   <visual>
     <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -37,63 +36,42 @@
 
 <link name="right_wheel">
   <inertial>
-    <origin xyz="-2.222335472355593e-15 0.04902981833717965 0.0" rpy="0 0 0"/>
+    <origin xyz="2.128852395337864e-15 0.03612818166282045 6.938893903907228e-17" rpy="0 0 0"/>
     <mass value="12.73279410998368"/>
-    <inertia ixx="0.02996" iyy="0.051127" izz="0.02996" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+    <inertia ixx="0.02996" iyy="0.051127" izz="0.02996" ixy="-0.0" iyz="0.0" ixz="0.0"/>
   </inertial>
   <visual>
-    <origin xyz="0.0 0.28 -0.098" rpy="0 0 0"/>
+    <origin xyz="0.0 -0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/LM_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/RM_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
-    <origin xyz="0.0 0.28 -0.098" rpy="0 0 0"/>
+    <origin xyz="0.0 -0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/LM_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/RM_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
 
 <link name="left_wheel">
   <inertial>
-    <origin xyz="2.1545575985072264e-15 -0.049029818337179676 2.7755575615628914e-17" rpy="0 0 0"/>
+    <origin xyz="-2.2204515407301662e-15 -0.049029818337179676 6.938893903907228e-17" rpy="0 0 0"/>
     <mass value="12.73279410998368"/>
-    <inertia ixx="0.02996" iyy="0.051127" izz="0.02996" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+    <inertia ixx="0.02996" iyy="0.051127" izz="0.02996" ixy="0.0" iyz="0.0" ixz="0.0"/>
   </inertial>
   <visual>
-    <origin xyz="0.0 -0.28 -0.098" rpy="0 0 0"/>
+    <origin xyz="0.0 0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/RM_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/LM_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
-    <origin xyz="0.0 -0.28 -0.098" rpy="0 0 0"/>
+    <origin xyz="0.0 0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/RM_1.stl" scale="0.001 0.001 0.001"/>
-    </geometry>
-  </collision>
-</link>
-
-<link name="base_cr3">
-  <inertial>
-    <origin xyz="0.1214215 0.0 -0.022599999999999953" rpy="0 0 0"/>
-    <mass value="14.169925233606989"/>
-    <inertia ixx="0.034347" iyy="0.072049" izz="0.101571" ixy="0.0" iyz="0.0" ixz="0.0"/>
-  </inertial>
-  <visual>
-    <origin xyz="-0.103694 -0.0 -0.7855" rpy="0 0 0"/>
-    <geometry>
-      <mesh filename="package://walkie2_description/meshes/CR3base_1.stl" scale="0.001 0.001 0.001"/>
-    </geometry>
-    <material name="silver"/>
-  </visual>
-  <collision>
-    <origin xyz="-0.103694 -0.0 -0.7855" rpy="0 0 0"/>
-    <geometry>
-      <mesh filename="package://walkie2_description/meshes/CR3base_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/LM_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -105,73 +83,95 @@
     <inertia ixx="2.3e-05" iyy="2.3e-05" izz="3.6e-05" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
   </inertial>
   <visual>
-    <origin xyz="-0.317 0.0 -0.1955" rpy="0 0 0"/>
+    <origin xyz="-0.197 0.0 -0.1955" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/lidar_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/lidar_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
-    <origin xyz="-0.317 0.0 -0.1955" rpy="0 0 0"/>
+    <origin xyz="-0.197 0.0 -0.1955" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/lidar_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/lidar_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="base_cr3">
+  <inertial>
+    <origin xyz="0.1214215 -1.486984513226704e-17 -0.022599999999999953" rpy="0 0 0"/>
+    <mass value="14.169925233606989"/>
+    <inertia ixx="0.034347" iyy="0.072049" izz="0.101571" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.016306 -0.0 -0.7855" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://walkie2_description/meshes/CR3base_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.016306 -0.0 -0.7855" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://walkie2_description/meshes/CR3base_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
 
 <link name="realsense">
   <inertial>
-    <origin xyz="-1.3183898417423734e-16 0.050000000000000024 1.3322676295501878e-15" rpy="0 0 0"/>
+    <origin xyz="-1.1102230246251565e-16 0.050000000000000024 1.3322676295501878e-15" rpy="0 0 0"/>
     <mass value="0.3648087412503483"/>
     <inertia ixx="0.000317" iyy="2.7e-05" izz="0.000317" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
   </inertial>
   <visual>
-    <origin xyz="0.054006 0.0 -1.4942" rpy="0 0 0"/>
+    <origin xyz="0.174006 0.05 -1.4942" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/Realsense_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/Realsense_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
-    <origin xyz="0.054006 0.05 -1.4942" rpy="0 0 0"/>
+    <origin xyz="0.174006 0.05 -1.4942" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/Realsense_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/Realsense_1_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
 
 <joint name="right_wheel_joint" type="continuous">
-  <origin xyz="0.0 -0.28 0.098" rpy="0 0 0"/>
+  <origin xyz="0.0 0.194 0.098" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="right_wheel"/>
   <axis xyz="0.0 1.0 0.0"/>
 </joint>
 
 <joint name="left_wheel_joint" type="continuous">
-  <origin xyz="0.0 0.28 0.098" rpy="0 0 0"/>
+  <origin xyz="0.0 -0.194 0.098" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="left_wheel"/>
-  <axis xyz="0.0 1.0 0.0"/>
-</joint>
-
-<joint name="base_cr3_joint" type="prismatic">
-  <origin xyz="0.103694 0.0 0.7855" rpy="0 0 0"/>
-  <parent link="base_link"/>
-  <child link="base_cr3"/>
-  <axis xyz="0.0 0.0 1.0"/>
-  <limit upper="0.0" lower="-0.3" effort="100" velocity="100"/>
+  <axis xyz="0.0 -1.0 0.0"/>
 </joint>
 
 <joint name="hokuyo_joint" type="fixed">
-  <origin xyz="0.317 0.0 0.1955" rpy="0 0 0"/>
+  <origin xyz="0.197 0.0 0.1955" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="hokuyo"/>
 </joint>
 
-<joint name="realsense_joint" type="fixed">
-  <origin xyz="-0.054006 0 1.4942" rpy="0 0 0"/>
+<joint name="base_cr3_joint" type="prismatic">
+  <origin xyz="-0.016306 0.0 0.7855" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="base_cr3"/>
+  <axis xyz="0.0 0.0 1.0"/>
+  <limit upper="0.0" lower="0.0" effort="100" velocity="100"/>
+</joint>
+
+<joint name="realsense_joint" type="continuous">
+  <origin xyz="-0.174006 -0.05 1.4942" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="realsense"/>
+  <axis xyz="0.0 1.0 0.0"/>
 </joint>
 
 <joint name="imu_joint" type="fixed">

@@ -58,6 +58,7 @@ def start_odrive():
     rate = rospy.Rate(50) # 50hz
     try:
         while not rospy.is_shutdown():
+            try:
             # rospy.loginfo('{}'.format(vel))
                 vel[0] = float(-1*odrv0.axis0.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel left
                 vel[1] = float(odrv0.axis1.encoder.vel_estimate * TYRE_CIRCUMFERENCE) #vel right
