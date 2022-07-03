@@ -40,7 +40,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
-from actionlib_msgs import GoalStatus
+from actionlib_msgs.msg import GoalStatus
 
 # other utility
 from util.custom_socket import CustomSocket
@@ -49,283 +49,51 @@ from util.environment_descriptor import EnvironmentDescriptor
 import time
 import threading
 
+# import class for smach
+from sm_bringit import sm_bringit_Check_Object_Room_2, sm_bringit_Save_Location, sm_bringit_Find_Object
+from sm_bringit import sm_bringit_Pick_Up, sm_bringit_Back_To_Start, sm_bringit_Place_Object
+from sm_finditem import sm_finditem_Check_Object_Room, sm_finditem_Navigate_To_Room, sm_finditem_Find_Object, sm_finditem_Announce
+from sm_find_person import sm_find_person_Save_Location, sm_find_person_Ask_Which_Room, sm_find_person_Go_To_Room_1
+from sm_find_person import sm_find_person_Go_To_Room_2, sm_find_person_Go_To_Specified_Room
+from sm_find_person import sm_find_person_Find_Item, sm_find_person_Back_To_Start, sm_find_person_Tell_Where_Is_Person
+from sm_go_to import sm_go_to_Check_Object_Location, sm_go_to_Navigation, sm_go_to_Announce
+from sm_howmany import sm_howmany_Check_Location, sm_howmany_Navigation, sm_howmany_Object_Detection
+# LAN local network
+# import smach 
 class Stand_by(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating stand by state')
+    def __init__(self, stt):
+        rospy.loginfo('Initiating Standby state')
         smach.State.__init__(self, outcomes =['continue_SM_BRINGIT','continue_SM_FINDITEM','continue_SM_FIND_PERSON', 'continue_SM_GO_TO', 'continue_SM_HOWMANY'])
-        self.x = 1
+        self.x = 4
+        self.stt = stt
+        self.stt.body = "find_object"
     def execute(self, userdata):
-        if self.x == 1:
-            return 'continue_SM_BRINGIT'
-        elif self.x == 2:
-            return 'continue_SM_FINDITEM'
-        elif self.x == 3:
-            return 'continue_SM_FIND_PERSON'
-        elif self.x == 4:
-            return 'continue_SM_GO_TO'
-        else:
-            return 'continue_SM_HOWMANY'
-
-
-# ------- sm_bringit ----------------------------
-class  sm_bringit_Check_Object_Room_2(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating check object room 2 state')
-        smach.State.__init__(self, outcomes = ['continue_sm_bringit_Save_Location'])
-    def execute(self, userdata):
-        return 'continue_sm_bringit_Save_Location'
-
-
-class sm_bringit_Save_Location(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating save location state')
-        smach.State.__init__(self, outcomes = ['continue_sm_bringit_Find_Object'])
-    def execute(self, userdata):
-        return 'continue_sm_bringit_Find_Object'
-
-
-class sm_bringit_Find_Object(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating find object state')
-        smach.State.__init__(self, outcomes = ['continue_sm_bringit_Pick_Up','continue_aborted'])
-        self.x = 1
-    def execute(self, userdata):
-        if self.x == 1:
-            return 'continue_sm_bringit_Pick_Up'
-        else:
-            return 'continue_aborted'
-
-
-class sm_bringit_Pick_Up(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating pick up state')
-        smach.State.__init__(self, outcomes = ['continue_sm_bringit_Back_To_Start'])
-    def execute(self, userdata):
-        return 'continue_sm_bringit_Back_To_Start'
-
-
-class sm_bringit_Back_To_Start(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating back to start state')
-        smach.State.__init__(self, outcomes = ['continue_sm_bringit_Place_Object'])
-    def execute(self, userdata):
-        return 'continue_sm_bringit_Place_Object'
-
-
-class sm_bringit_Place_Object(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating place object state')
-        smach.State.__init__(self, outcomes = ['continue_succeeded'])
-    def execute(self, userdata):
-        return 'continue_succeeded'
-
-
-# ---------------------------  sm_finditem ---------------------------------
-class sm_finditem_Check_Object_Room(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating check object room state')
-        smach.State.__init__(self, outcomes = ['continue_sm_finditem_Navigate_To_Room'])
-        self.x = True
-    def execute(self, userdata):
-        return 'continue_sm_finditem_Navigate_To_Room'
-
-
-class sm_finditem_Navigate_To_Room(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating navigate to room state')
-        smach.State.__init__(self, outcomes = ['continue_sm_finditem_Find_Object', 'continue_aborted'])
-        self.x = True
-    def execute(self, userdata):
-        if self.x == True:
-            return 'continue_sm_finditem_Find_Object'
-        else:
-            return 'continue_aborted'
-
-
-class sm_finditem_Find_Object(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating find object state')
-        smach.State.__init__(self, outcomes = ['continue_sm_finditem_Announce'])
-    def execute(self, userdata):
-        return 'continue_sm_finditem_Announce'
-
-
-class sm_finditem_Announce(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating announce state')
-        smach.State.__init__(self, outcomes = ['continue_succeeded'])
-    def execute(self, userdata):
-        return 'continue_succeeded'
-
-# ----------------------- sm find person --------------------------------
-class sm_find_person_Save_Location(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating save location state')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Ask_Which_Room'])
-    def execute(self, userdata):
-        rospy.loginfo("Executing Save location state")
-        return 'continue_sm_find_person_Ask_Which_Room'
-
-
-class sm_find_person_Ask_Which_Room(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating ask which room state')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Go_To_Room_1','continue_sm_find_person_Go_To_Specified_Room'])
-        self.x = 1
-    def execute(self, userdata):
-        if self.x == 1:
-            return 'continue_sm_find_person_Go_To_Room_1'
-        else:
-            return 'continue_sm_find_person_Go_To_Specified_Room'
-
-
-class sm_find_person_Go_To_Room_1(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating go to room state')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Find_Item'])
-    def execute(self, userdata):
-        return 'continue_sm_find_person_Find_Item'
-
-
-class sm_find_person_Find_Item_1(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating find item')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Go_To_Room_2', 'continue_aborted', 'continue_sm_find_person_Back_To_Start_1'])
-        self.x = 1
-    def execute(self, userdata):
-        if self.x == 1:
-            return 'continue_sm_find_person_Go_To_Room_2'
-        elif self.x == 2:
-            return 'continue_aborted'
-        else:
-            return 'continue_sm_find_person_Back_To_Start_1'
-
-class sm_find_person_Go_To_Room_2(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating go to rooom 2 state')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Find_Item_1'])
-    def execute(self, userdata):
-        return 'continue_sm_find_person_Find_Item_1'
-
-class sm_find_person_Back_To_Start_1(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating back to start state')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Tell_Where_Is_Person_1'])
-    def execute(self, userdata):
-        return 'continue_sm_find_person_Tell_Where_Is_Person_1'
-
-class sm_find_person_Go_To_Specified_Room(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating go to specified room')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Find_Item_2'])
-    def execute(self, userdata):
-        return 'continue_sm_find_person_Find_Item_2'
-
-class sm_find_person_Find_Item_2(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating find item2 state')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Back_To_Start_2'])
-    def execute(self, userdata):
-        return 'continue_sm_find_person_Back_To_Start_2'
-
-class sm_find_person_Back_To_Start_2(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating back to start 2 state')
-        smach.State.__init__(self, outcomes = ['continue_sm_find_person_Tell_Where_Is_Person_2'])
-    def execute(self, userdata):
-        return 'continue_sm_find_person_Tell_Where_Is_Person_2'
-
-class sm_find_person_Tell_Where_Is_Person(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating tell where is person state')
-        smach.State.__init__(self, outcomes = ['continue_succeeded'])
-    def execute(self, userdata):
-        return 'continue_succeeded'
-
-#--------------------------------  sm_go_to --------------------------------------
-class sm_go_to_Check_Object_Location(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating Check_object_location state')
-        smach.State.__init__(self, outcomes = ['continue_sm_go_to_Navigation'],output_keys=['sm_go_to_Check_Object_Location_out'],)
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing Check_object_location state')
-        global stt
+        rospy.loginfo("Executing Standby state")
+        if self.x == 4:
+            return "continue_SM_FINDITEM"
         while True:
-            if stt.body is not None:
-                # TODO check again with nlp
-                location = stt.body["intent"]
-                userdata.sm_go_to_Check_Object_Location_out = location
-                return 'continue_sm_go_to_Navigation'
+            if self.stt.body is not None:
+                if self.stt.body["intent"] == "bring_desc_to_someone":
+                    return 'continue_SM_BRINGIT'
+                #if self.stt.body["intent"] == "find_object":
+                #    return 'continue_SM_FINDITEM'
+                if self.stt.body["intent"] == "find_people":
+                    return 'continue_SM_FIND_PERSON'
+                if self.stt.body["intent"] == "move_to":
+                    return 'continue_SM_GO_TO'
+                if self.stt.body["intent"] == "counting":
+                    return 'continue_SM_HOWMANY'
+                else:
+                    speak("Please state new command")
+# ------- sm_bringit ----------
+# ------- sm_finditem ---------
+# ------- sm_find_person ------
+#-------- sm_go_to ------------
+#-------- sm_howmany ----------
 
-class sm_go_to_Navigation(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating Navigation state')
-        smach.State.__init__(self, outcomes = ['continue_sm_go_to_Announce'], input_keys=['sm_go_to_Navigation_in'])
-        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing Navigation state')
-        global ed
-        location = userdata.sm_go_to_Navigation_in
-
-        goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "map"
-        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-        goal.target_pose.pose = ed.get_robot_pose(location)
-        self.move_base_client.send_goal(goal)
-
-        self.move_base_client.wait_for_result()
-        result = self.move_base_client.get_result()
-        rospy.loginfo("result {}".format(result))
-        if result.status == GoalStatus.SUCCESS :
-            return 'continue_sm_go_to_Announce'
-        else:
-            # return abort TODO check http://docs.ros.org/en/fuerte/api/actionlib_msgs/html/msg/GoalStatus.html
-            return 'continue_sm_go_to_Announce'
-
-class sm_go_to_Announce(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating Announce state')
-        smach.State.__init__(self, outcomes = ['continue_succeeded', 'continue_aborted'])
-        self.check = True
-    def execute(self, userdata):
-        rospy.loginfo("Executing Announce state")
-        if self.check == True:
-            speak("I'm arrive at the destination")
-            return 'continue_succeeded'
-        else:
-            return 'continue_aborted'
-
-
-#------------------------- sm_howmany --------------------------------
-class sm_howmany_Check_Location(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating check location state')
-        smach.State.__init__(self, outcomes = ['continue_sm_howmany_Navigation'])
-    def execute(self, userdata):
-        return 'continue_sm_howmany_Navigation'
-
-class sm_howmany_Navigation(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating navigation state')
-        smach.State.__init__(self, outcomes = ['continue_sm_howmany_Object_Detection'])
-    def execute(self, userdata):
-        return 'continue_sm_howmany_Object_Detection'
-
-class sm_howmany_Object_Detection(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating object detection state')
-        smach.State.__init__(self, outcomes = ['continue_aborted', 'continue_succeeded'])
-        self.x = 1
-    def execute(self, userdata):
-        if self.x == 1:
-            return 'continue_aborted'
-        else:
-            return 'continue_succeeded'
 def main():
     rospy.init_node('rospy_GPSR_state_machine')
-    #delcare the global variable
+    #delcare the globiable
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
     target_lost = False
     is_stop = False
@@ -334,15 +102,12 @@ def main():
     last_pose = None
 
     # connect to server
-    host = socket.gethostname()
-    port = 11000
-    c = CustomSocket(host,port)
-    c.clientConnect()
-
-    pose_port = 10002
-    pose_c = CustomSocket(host,pose_port)
-    pose_c.clientConnect()
-    
+    host = "192.168.8.99"
+    # an important port
+    WIT_lolov5 = 10002
+    Face_recog = 10006
+    Person_tracker = 10000
+    Object_Tracker = 10008
     
     # Flask nlp server
     stt = SpeechToText("nlp")
@@ -352,7 +117,7 @@ def main():
 
     sm_top = smach.StateMachine(outcomes = ['succeeded','aborted'])
     with sm_top:
-        smach.StateMachine.add('STAND_BY', Stand_by(),
+        smach.StateMachine.add('STAND_BY', Stand_by(stt),
                                transitions = {'continue_SM_BRINGIT':'SM_BRINGIT',
                                               'continue_SM_GO_TO':'SM_GO_TO',
                                               'continue_SM_FIND_PERSON':'SM_FIND_PERSON',
@@ -386,7 +151,7 @@ def main():
             smach.StateMachine.add('sm_finditem_NAVIGATE_TO_ROOM', sm_finditem_Navigate_To_Room(),
                                    transitions = {'continue_sm_finditem_Find_Object':'sm_finditem_FIND_OBJECT',
                                                   'continue_aborted':'aborted'})
-            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(),
+            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(host, Object_Tracker),
                                    transitions = {'continue_sm_finditem_Announce':'sm_finditem_ANNOUNCE'})
             smach.StateMachine.add('sm_finditem_ANNOUNCE', sm_finditem_Announce(),
                                    transitions = {'continue_succeeded':'succeeded'})
@@ -402,21 +167,21 @@ def main():
                                    transitions = {'continue_sm_find_person_Go_To_Room_1':'sm_find_person_GO_TO_ROOM_1',
                                                   'continue_sm_find_person_Go_To_Specified_Room':'sm_find_person_GO_TO_SPECIFIED_ROOM'})
             smach.StateMachine.add('sm_find_person_GO_TO_ROOM_1', sm_find_person_Go_To_Room_1(),
-                                   transitions = {'continue_sm_find_person_Find_Item':'sm_find_person_FIND_ITEM_1'})
+                                   transitions = {'continue_sm_find_person_Find_Item':'sm_find_person_FIND_ITEM'})
             smach.StateMachine.add('sm_find_person_GO_TO_SPECIFIED_ROOM', sm_find_person_Go_To_Specified_Room(),
-                                   transitions = {'continue_sm_find_person_Find_Item_2':'sm_find_person_FIND_ITEM_2'})
-            smach.StateMachine.add('sm_find_person_FIND_ITEM_1', sm_find_person_Find_Item_1(),
+                                   transitions = {'continue_sm_find_person_Find_Item':'sm_find_person_FIND_ITEM'})
+            smach.StateMachine.add('sm_find_person_FIND_ITEM', sm_find_person_Find_Item(),
                                    transitions = {'continue_sm_find_person_Go_To_Room_2':'sm_find_person_GO_TO_ROOM_2',
                                                   'continue_aborted':'aborted',
-                                                  'continue_sm_find_person_Back_To_Start_1':'sm_find_person_BACK_TO_START_1'})
-            smach.StateMachine.add('sm_find_person_FIND_ITEM_2', sm_find_person_Find_Item_2(),
-                                   transitions = {'continue_sm_find_person_Back_To_Start_2':'sm_find_person_BACK_TO_START_2'})
+                                                  'continue_sm_find_person_Back_To_Start':'sm_find_person_BACK_TO_START'})
+            #smach.StateMachine.add('sm_find_person_FIND_ITEM_2', sm_find_person_Find_Item_2(),
+            #                       transitions = {'continue_sm_find_person_Back_To_Start_2':'sm_find_person_BACK_TO_START_2'})
             smach.StateMachine.add('sm_find_person_GO_TO_ROOM_2', sm_find_person_Go_To_Room_2(),
-                                   transitions = {'continue_sm_find_person_Find_Item_1':'sm_find_person_FIND_ITEM_1'})
-            smach.StateMachine.add('sm_find_person_BACK_TO_START_1', sm_find_person_Back_To_Start_1(),
-                                   transitions = {'continue_sm_find_person_Tell_Where_Is_Person_1':'sm_find_person_TELL_WHERE_IS_PERSON'})
-            smach.StateMachine.add('sm_find_person_BACK_TO_START_2', sm_find_person_Back_To_Start_2(),
-                                   transitions = {'continue_sm_find_person_Tell_Where_Is_Person_2':'sm_find_person_TELL_WHERE_IS_PERSON'})
+                                   transitions = {'continue_sm_find_person_Find_Item':'sm_find_person_FIND_ITEM'})
+            smach.StateMachine.add('sm_find_person_BACK_TO_START', sm_find_person_Back_To_Start(),
+                                   transitions = {'continue_sm_find_person_Tell_Where_Is_Person':'sm_find_person_TELL_WHERE_IS_PERSON'})
+            #smach.StateMachine.add('sm_find_person_BACK_TO_START_2', sm_find_person_Back_To_Start_2(),
+            #                       transitions = {'continue_sm_find_person_Tell_Where_Is_Person_2':'sm_find_person_TELL_WHERE_IS_PERSON'})
             smach.StateMachine.add('sm_find_person_TELL_WHERE_IS_PERSON', sm_find_person_Tell_Where_Is_Person(),
                                    transitions = {'continue_succeeded':'succeeded'})
         smach.StateMachine.add('SM_FIND_PERSON', sm_find_person,
@@ -427,10 +192,10 @@ def main():
         sm_go_to.userdata.sm_go_to_location = ''
         #sm_go_to.userdata.sm_go_to_coordinate = []
         with sm_go_to:
-            smach.StateMachine.add('sm_go_to_CHECK_OBJECT_LOCATION', sm_go_to_Check_Object_Location(),
+            smach.StateMachine.add('sm_go_to_CHECK_OBJECT_LOCATION', sm_go_to_Check_Object_Location(stt),
                                    transitions = {'continue_sm_go_to_Navigation':'sm_go_to_NAVIGATION'},
                                    remapping = {'sm_go_to_Check_Object_Location_out':'sm_go_to_location'})
-            smach.StateMachine.add('sm_go_to_NAVIGATION', sm_go_to_Navigation(),
+            smach.StateMachine.add('sm_go_to_NAVIGATION', sm_go_to_Navigation(ed),
                                    transitions = {'continue_sm_go_to_Announce':'sm_go_to_ANNOUNCE'},
                                    remapping = {'sm_go_to_Navigation_in':'sm_go_to_location'})
             smach.StateMachine.add('sm_go_to_ANNOUNCE', sm_go_to_Announce(),
