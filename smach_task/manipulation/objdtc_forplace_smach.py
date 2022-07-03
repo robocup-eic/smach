@@ -5,6 +5,7 @@ roslaunch realsense2_camera rs_rgbd.launch align_depth:=true color_width:=1280 c
 kill -9 $(lsof -t -i:10001)
 """
 
+from operator import truediv
 import rospy
 import smach
 import smach_ros
@@ -241,7 +242,7 @@ class GetObjectBBX(smach.State):
 class GetObjectProperties(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectProperties')
-        smach.State.__init__(self, outcomes=['continue_Place'], 
+        smach.State.__init__(self, outcomes=['continue_Place','continue_ABORTED'], 
                              input_keys=['ListBBX_input'], 
                              output_keys=['ObjectPoseList_output', 'ObjectSizeList_output', 'ObjectStanList_output'])
         
@@ -335,10 +336,14 @@ class GetObjectProperties(smach.State):
             for objsize in objsize_list:
                 print(objsize.y)
                 print(objsize.z)
-                if objsize.y/objsize.z >= Rfactor:
-                    objstance_list.append(posture[0])
+                if objsize.z == 0 or objsize.y == 0:
+                    return False
                 else:
-                    objstance_list.append(posture[1])
+                    if objsize.y/objsize.z >= Rfactor:
+                        objstance_list.append(posture[0])
+                    else:
+                        objstance_list.append(posture[1])
+                    return True
             
             return objstance_list
                 
@@ -394,7 +399,9 @@ class GetObjectProperties(smach.State):
         
         self.ObjPoseList = GetPose(self.bbxc_point_list)
         self.ObjSizeList = GetSize(self.bbxc_point_list)
-        self.ObjStanList = GetStan(self.ObjSizeList)
+        stan_success = self.ObjStanList = GetStan(self.ObjSizeList)
+        if stan_success == False:
+            return 'continue_ABORTED'
 
         rospy.loginfo("Get all Object Properties, sending to Place")
         userdata.ObjectPoseList_output = self.ObjPoseList
@@ -434,7 +441,8 @@ def main():
                                 remapping=   {'ListBBX_output'          : 'bbx_list'})
 
         smach.StateMachine.add('GetObjectProperties', GetObjectProperties(),
-                                transitions= {'continue_Place'          : 'Place'},
+                                transitions= {'continue_Place'          : 'Place',
+                                              'continue_ABORTED'        : 'ABORTED'},
                                 remapping=   {'ListBBX_input'           : 'bbx_list',
                                               'ObjectPoseList_output'   : 'object_pose_list',
                                               'ObjectSizeList_output'   : 'object_size_list',

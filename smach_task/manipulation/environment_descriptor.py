@@ -43,7 +43,6 @@ class EnvironmentDescriptor:
 
     def get_height(self, name):
         for data in self.data_yaml:
-            print(data)
             if data["name"] == name:
                 return data["height"]
 
