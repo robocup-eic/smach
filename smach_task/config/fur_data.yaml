@@ -1,0 +1,134 @@
+-
+  name: table1 #or table/bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 3.2658033371
+    y: 0.0
+    z: 0.0
+  corner2:
+    x: 3.26580286026
+    y: -1.69568741322
+    z: 0.0
+  corner3:
+    x: 1.86145830154
+    y: -1.69568729401
+    z: 0.0
+  corner4:
+    x: 1.86145853996
+    y: -0.04141664505
+    z: 0.0
+  robot_pose: 
+    position: 
+      x: 4.00367879868
+      y: -0.838799059391
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.999939642217
+      w: -0.010986897825
+  height: 0.5
+
+-
+  name: bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 7.59784984589
+    y: -2.0170211792
+    z: 0.0
+  corner2:
+    x: 7.59784984589
+    y: -3.18334150314
+    z: 0.0
+  corner3:
+    x: 5.07478904724
+    y: -3.21904468536
+    z: 0.0
+  corner4:
+    x: 5.09859228134
+    y: -0.12413167953
+    z: 0.0
+  robot_pose: 
+    position: 
+      x: 4.00367879868
+      y: -0.838799059391
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.999939642217
+      w: -0.010986897825
+  height: 0.4
+-
+  name: lamp #or plant pot/chair
+  frame_id: map
+  shape: circle
+  radius: 0.5
+  position:
+    x: 4.32501125336
+    y: -2.49307012558
+    z: 0.0
+  robot_pose: #idk if it gonna be used
+    position: 
+      x: 4.00367879868
+      y: -0.838799059391
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.999939642217
+      w: -0.010986897825
+-
+  name: plantpot
+  frame_id: map
+  shape: circle
+  radius: 0.5
+  position:
+    x: 0.897457122803
+    y: -2.80250144005
+    z: 0.0
+  robot_pose: #idk if it gonna be used
+    position: 
+      x: 4.00367879868
+      y: -0.838799059391
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.999939642217
+      w: -0.010986897825
+-
+  name: shelf
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 7.59784984589
+    y: -2.0170211792
+    z: 0.0
+  corner2:
+    x: 7.59784984589
+    y: -3.18334150314
+    z: 0.0
+  corner3:
+    x: 5.07478904724
+    y: -3.21904468536
+    z: 0.0
+  corner4:
+    x: 5.09859228134
+    y: -0.12413167953
+    z: 0.0
+  robot_pose: 
+    position: 
+      x: 4.00367879868
+      y: -0.838799059391
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.999939642217
+      w: -0.010986897825
+  height: [0.2,0.4,0.6,0.8]
+-
+  

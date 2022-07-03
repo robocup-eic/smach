@@ -20,8 +20,8 @@ odom1_config: [true, false, false,
 
 odom1_differential: true
 odom1_relative: false
-# odom1_pose_rejection_threshold: 1.0
-# odom1_twist_rejection_threshold: 1.0
+odom1_pose_rejection_threshold: 1.0
+odom1_twist_rejection_threshold: 1.0
 
 imu0: /imu/data
 imu0_config: [false, false, false,

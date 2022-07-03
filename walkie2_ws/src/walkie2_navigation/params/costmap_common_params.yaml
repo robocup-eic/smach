@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 obstacle_range: 5.0
 raytrace_range: 5.0
 footprint: [[-0.40, -0.35],[-0.40, 0.35],[0.30, 0.35],[0.30, -0.35]]
+=======
+obstacle_range: 3.0
+raytrace_range: 3.0
+footprint: [[-0.24, -0.35],[-0.24, 0.35],[0.43, 0.35],[0.43, -0.35]]
+>>>>>>> 2be01fd1d13677550b650dcb824aa31d19924e02
 # robot_radius: 0.25
 transform_tolerance: 0.5
 # laser_scan_sensor_2: {sensor_frame: sensor_d435_depth_frame, data_type: LaserScan, topic: realsense_scan, marking: true, clearing: true}

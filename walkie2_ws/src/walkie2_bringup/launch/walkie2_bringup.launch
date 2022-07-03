@@ -21,7 +21,7 @@
     <param name="angle_max" value="1.57"/>
     <param name="angle_min" value="-1.57"/>
     <remap from="/scan" to="/walkie2/scan"/>
-  </node> 
+  </node>
 
 <!-- Lidar odometry-->
  <node name="Lidar_odom" pkg="rtabmap_ros" type="icp_odometry">
