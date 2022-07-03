@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from tkinter.tix import Tree
 import rospy
 import pyrealsense2 as rs2
 
@@ -11,6 +12,7 @@ dpt_frame = pipe.wait_for_frames().get_depth_frame().as_depth_frame()
 width = dpt_frame.get_width()
 height = dpt_frame.get_height()
 
-raw_input()
-pixel_distance_in_meters = dpt_frame.get_distance(width / 2, height / 2)
-print(pixel_distance_in_meters)
+while Tree:
+    raw_input()
+    pixel_distance_in_meters = dpt_frame.get_distance(width / 2, height / 2)
+    print(pixel_distance_in_meters)

@@ -9,6 +9,7 @@ import pyrealsense2 as rs2
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
 
+
 class open_or_close(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state open_or_clos')
@@ -20,7 +21,6 @@ class open_or_close(smach.State):
         
     
     def execute(self, userdata):
-        
         def rescale_pixel(x, y):
             x = int(x*self.intrinsics.width/1280)
             y = int(y*self.intrinsics.height/720)
@@ -77,6 +77,10 @@ class open_or_close(smach.State):
             "/camera/aligned_depth_to_color/camera_info", CameraInfo, info_callback)
         self.depth_sub = rospy.Subscriber(
             "/camera/aligned_depth_to_color/image_raw", Image, depth_callback, queue_size=1, buff_size=52428800)
+        
+        while self.intrinsics is None:
+            time.sleep(0.1)
+            rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
         
         x_pixel = int(self.intrinsics.width/2)
         y_pixel = int(self.intrinsics.height/2)
