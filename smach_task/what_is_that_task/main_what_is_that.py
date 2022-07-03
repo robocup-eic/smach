@@ -91,8 +91,8 @@ class Stop_command(smach.State):
                     stt.clear()
                     return "continue_stop"
 
-                if target_lost:
-                    return "continue_stop"
+            if target_lost:
+                return "continue_stop"
             time.sleep(0.01)
 
 
@@ -103,6 +103,12 @@ class Follow_person(smach.State):
         self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
+        self.cancel = Twist()
+        self.stop_pub = stop_pub = rospy.Publisher("/walkie2/cmd_vel",Twist,queue_size=1)
+
+        self.cancel.linear.x = 0
+        self.cancel.linear.y = 0
+        self.cancel.angular.z = 0
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Follow_person')
@@ -114,6 +120,7 @@ class Follow_person(smach.State):
 
         while True:
             try:
+
                 if time.time() - start_time > goal_send_interval:
                     pose = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                     goal = MoveBaseGoal()
@@ -128,46 +135,60 @@ class Follow_person(smach.State):
                     start_time = time.time()
                     # rospy.loginfo("Sending new goal: Quarternion is {}, {}, {}, {}".format(pose.transform.rotation.w,pose.transform.rotation.x,pose.transform.rotation.y,pose.transform.rotation.z))
 
-                    if  is_stop == True:
+                    if  is_stop:
                         self.client.cancel_goal()
-
-                        cancel = Twist()
-                        stop_pub = rospy.Publisher("/walkie/cmd_vel",Twist,queue_size=1)
-
-                        cancel.linear.x = 0.0
-                        cancel.linear.y = 0.0
-                        cancel.angular.z = 0.0
                         
-                        stop_pub.publish(cancel)
+                        self.stop_pub.publish(self.cancel)
 
                         speak("I'm stopped")
 
                         return "continue_stop"
 
-                    elif target_lost == True:
+                    elif target_lost:
 
-                        self.client.cancel_goal()
-
-                        cancel = Twist()
-                        stop_pub = rospy.Publisher("/walkie/cmd_vel",Twist,queue_size=1)
-
-                        cancel.linear.x = 0.0
-                        cancel.linear.y = 0.0
-                        cancel.angular.z = 0.0
+                        # self.client.cancel_goal()
                         
-                        stop_pub.publish(cancel)
+                        self.stop_pub.publish(self.cancel)
 
-                        speak("I lost you, where are you my friend.")
+                        speak("I have lost you, where are you my friend.")
 
                         return "continue_stop"
 
                     else:
                         wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
+
                 else:
-                    rospy.sleep(0.1)
+                    
+                    wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
+
+                    if target_lost:
+
+                        self.stop_pub.publish(self.cancel)
+
+                        speak("I have lost you, where are you my friend.")
+
+                        return "continue_stop"
+
 
             except Exception as e:
-                pass
+
+                if  is_stop:
+
+                    self.client.cancel_goal()
+                        
+                    self.stop_pub.publish(self.cancel)
+
+                    speak("I'm stopped")
+
+                    return "continue_stop"
+                
+                if target_lost:
+
+                    self.stop_pub.publish(self.cancel)
+
+                    speak("I have lost you, where are you my friend.")
+
+                    return "continue_stop"
                 
 
 class Get_bounding_box(smach.State):
@@ -188,8 +209,8 @@ class Get_bounding_box(smach.State):
         self.bridge = CvBridge()
 
         # condition variable
-        self.found_target = False
         self.lost_frame = 0
+        self.lost_threshold=100
     
     def info_callback(self, cameraInfo):
         try:
@@ -253,22 +274,45 @@ class Get_bounding_box(smach.State):
             x = int(x*self.intrinsics.width/1280)
             y = int(y*self.intrinsics.height/720)
             return (x, y)
-        
-        def find_closest_person():
-            pass
 
         def detect():
-            global target_lost, person_id, last_pose, person_id
+
+            global target_lost, person_id, last_pose
+            
+            lost = True
+
             if self.frame is None:
                 return
             # scale image incase image size donot match cv server
             self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
             result = self.c.req(self.frame)
+
+            # check if there are any person
+            if len(result["result"]) == 0:
+                self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
+
+                self.lost_frame += 1
+
+                rospy.loginfo("Lost target for {} consecutive frames".format(self.lost_frame))
+
+                if self.lost_frame >= self.lost_threshold:
+                    target_lost = True
+
+                if last_pose is not None:
+                    br = tf.TransformBroadcaster()
+                    br.sendTransform(last_pose, tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame', 'map')
+
+                return 
+                
+            # check if there are camera intrinsics received
+            if not self.intrinsics:
+                rospy.logerr("no camera intrinsics")
+                return
             # rescale pixel incase pixel donot match
             self.frame = check_image_size_for_ros(self.frame)
 
-            lost = True
+            
 
             # not found person yet
             if person_id == -1:
@@ -280,7 +324,9 @@ class Get_bounding_box(smach.State):
                     depth = self.depth_image[y_pixel, x_pixel] # numpy array
                     center_pixel_list.append((x_pixel, y_pixel, depth, track[0])) # (x, y, depth, perons_id)
                 
+                # find closest person
                 person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
+                rospy.loginfo("Found target person: target ID {}".format(person_id))
 
             for track in result["result"]:
                 # track : [id, class_name, [x1,y1,x2,y2]]
@@ -301,21 +347,25 @@ class Get_bounding_box(smach.State):
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
 
             # check if person tracker can find any person
-            if  lost==True:
+            if lost:
+
                 self.lost_frame += 1
+
+                rospy.loginfo("Lost target for {} consecutive frames".format(self.lost_frame))
+
+                if self.lost_frame >= self.lost_threshold:
+                    target_lost = True
+
                 if last_pose is not None:
                     br = tf.TransformBroadcaster()
                     br.sendTransform(last_pose, tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame', 'map')
             
             else:
-                # check if it lost forever
-                if self.lost_frame >= 100:
-                    target_lost = True
-
                 # 3d pose
                 if not self.intrinsics:
                     rospy.logerr("no camera intrinsics")
                     return
+
                 # rescale pixel incase pixel donot match
                 self.depth_image = check_image_size_for_ros(self.depth_image)
                 pix = (self.x_pixel, self.y_pixel)
@@ -324,6 +374,7 @@ class Get_bounding_box(smach.State):
                 
                 # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
                 x_coord, y_coord, z_coord = result[0]/1000, result[1]/1000, result[2]/1000
+                rospy.loginfo("Target is at {}, {}, {}".format(x_coord, y_coord, z_coord))
 
                 if 1 < z_coord < 8:
                     # rospy.loginfo("Target is at: ({}, {})".format(self.x_pixel, self.y_pixel))
@@ -336,12 +387,19 @@ class Get_bounding_box(smach.State):
                     y = -x_coord
                     z = -y_coord
                     br = tf.TransformBroadcaster()
-                    br.sendTransform((x, y, z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense_mount_1')
+                    br.sendTransform((x, y, z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense')
 
         rospy.loginfo('Executing state Get_bounding_box')
-        global target_lost
-        global is_stop
+        global target_lost, is_stop, person_id, last_pose
 
+        # reset variable
+        self.frame = None
+        self.depth_image = None
+        self.x_pixel = None
+        self.y_pixel = None
+        self.intrinsics = None
+        person_id = -1
+        self.lost_frame = 0
         image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.yolo_callback)
         depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image , self.depth_callback)
         depth_info_sub = rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo , self.info_callback)
@@ -456,7 +514,7 @@ if __name__ == '__main__':
     last_pose = None
 
     # connect to server
-    host = socket.gethostname()
+    host = "192.168.5.15"
     port = 11000
     c = CustomSocket(host,port)
     c.clientConnect()
