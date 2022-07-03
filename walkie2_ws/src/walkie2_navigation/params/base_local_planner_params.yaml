@@ -1,13 +1,8 @@
 DWAPlannerROS:
 
 # Robot Configuration Parameters
-<<<<<<< HEAD
   max_vel_x: 0.5 #was 1.0
   min_vel_x: -0.10 #was -1.0
-=======
-  max_vel_x: 0.4 #was 1.0
-  min_vel_x: 0. #was -1.0
->>>>>>> 2be01fd1d13677550b650dcb824aa31d19924e02
 
   max_vel_y: 0.0
   min_vel_y: 0.0
@@ -39,11 +34,7 @@ DWAPlannerROS:
   path_distance_bias: 32.0
   goal_distance_bias: 20.0
   occdist_scale: 0.05
-<<<<<<< HEAD
   forward_point_distance: 0.0 #0.325
-=======
-  forward_point_distance: 0.0 #was 0.325
->>>>>>> 2be01fd1d13677550b650dcb824aa31d19924e02
   stop_time_buffer: 0.2
   scaling_speed: 0.25
   max_scaling_factor: 0.2
