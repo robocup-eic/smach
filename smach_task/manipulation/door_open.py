@@ -16,6 +16,7 @@ class open_or_close(smach.State):
 
         self.intrinsics = None
         self.frame = None
+        self.bridge = CvBridge()
         
     
     def execute(self, userdata):
