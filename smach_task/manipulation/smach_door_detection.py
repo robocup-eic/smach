@@ -39,6 +39,9 @@ class Close_or_Open(smach.State):
                 distance = dpt_frame.get_distance(x, y)
                 print(distance)
 
+                if distance < 0.4:
+                    continue
+
                 if round_check == self.round:
                     break
                 

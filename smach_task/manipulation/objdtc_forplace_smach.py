@@ -5,7 +5,6 @@ roslaunch realsense2_camera rs_rgbd.launch align_depth:=true color_width:=1280 c
 kill -9 $(lsof -t -i:10001)
 """
 
-from operator import truediv
 import rospy
 import smach
 import smach_ros
