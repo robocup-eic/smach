@@ -25,7 +25,8 @@ int WHEEL_NUM = 2;
 float WHEEL_RAD = 0.130; //was 0.125 poosibly wrong measurement
 float WHEEL_DIST = 0.467; //was 0.547 possibly wrong measurement
 
-#define TICKS_PER_REV 1530;
+#define TICKS_PER_REV_LEFT 1530;
+#define TICKS_PER_REV_RIGHT 15300;
 
 class WalkieBase
 {
@@ -185,8 +186,8 @@ public:
     prev_pos_left = pos_left;
     prev_pos_right = pos_right;
     
-    rad_left = delta_pos_left*2*M_PI/TICKS_PER_REV;
-    rad_right = delta_pos_right*2*M_PI/TICKS_PER_REV;
+    rad_left = delta_pos_left*2*M_PI/TICKS_PER_REV_LEFT;
+    rad_right = delta_pos_right*2*M_PI/TICKS_PER_REV_RIGHT;
     
     joint_states_pos[2] += rad_left;
     joint_states_pos[3] += rad_right;

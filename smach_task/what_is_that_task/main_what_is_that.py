@@ -514,7 +514,8 @@ if __name__ == '__main__':
     last_pose = None
 
     # connect to server
-    host = "192.168.5.15"
+    host = socket.gethostname()
+    # host = "192.168.5.15"
     port = 11000
     c = CustomSocket(host,port)
     c.clientConnect()

@@ -5,6 +5,7 @@ kill flask in background
 kill -9 $(lsof -t -i:5000)
 """
 
+from scipy.misc import face
 import roslib
 import rospy
 import smach
@@ -40,6 +41,7 @@ import pyrealsense2.pyrealsense2 as rs2
 from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped
 from std_msgs.msg import Bool,Int64
 import socket
+from client.custom_socket import CustomSocket
 
 # import for text-to-speech
 import requests
@@ -226,18 +228,79 @@ class Ask(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Ask state')
         smach.State.__init__(self,outcomes=['continue_Navigation'])
+
+        # computer vision socker
+        global faceRec
+        self.faceRec = faceRec
+
+        # image
+        self.frame = None
+
+    def image_callback(self, data):
+        try:
+            # change subscribed data to numpy.array and save it as "frame"
+            self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
+        except CvBridgeError as e:
+            print(e)
         
     def execute(self,userdata):
+
+        def check_image_size_for_cv(frame):
+            if frame.shape[0] != 720 and frame.shape[1] != 1280:
+                frame = cv2.resize(frame, (1280, 720))
+            return frame
+
+        def check_image_size_for_ros(frame):
+            if frame.shape[0] != self.intrinsics.height and frame.shape[1] != self.intrinsics.width:
+                frame = cv2.resize(frame, (self.intrinsics.width, self.intrinsics.height))
+            return frame
+
+        def rescale_pixel(x, y):
+            x = int(x*self.intrinsics.width/1280)
+            y = int(y*self.intrinsics.height/720)
+            return (x, y)
+
+        def register():
+            if self.frame is None:
+                return
+            # scale image incase image size donot match cv server
+            self.frame = check_image_size_for_cv(self.frame)
+            self.msg = self.faceRec.register(frame, self.input_name)
+            
+
+
         rospy.loginfo('Executing Ask state')
         # ask the guest to register's his/her face to the robot
         # ask name and favorite drink
         # save name and favorite drink in dictionary
         global person_count
         global stt
-        # register face
-        speak("Please show your face to the robot's camera")
+        image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.image_callback)
+
+
         # listening to the person and save his/her name to the file
         speak("What is your name?")
+        self.input_name = "name"
+
+
+        # register face
+        speak("Please show your face to the robot's camera")
+        while True:
+            register()
+
+            if self.msg["isOk"]:
+                print(self.msg)
+                break
+            else:
+                print("No face detect.")
+
+
+
+
+
+        
+
+
         while True:
             if stt.body is not None:
                 if stt.body["intent"] == "my_name" and "people" in stt.body.keys():
