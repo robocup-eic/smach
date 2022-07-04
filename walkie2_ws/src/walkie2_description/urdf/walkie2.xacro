@@ -44,14 +44,14 @@
   <visual>
     <origin xyz="0.0 -0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/RM_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/RM_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
     <origin xyz="0.0 -0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/RM_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/RM_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -65,14 +65,14 @@
   <visual>
     <origin xyz="0.0 0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/LM_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/LM_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
     <origin xyz="0.0 0.194 -0.098" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/LM_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/LM_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -86,14 +86,14 @@
   <visual>
     <origin xyz="-0.197 0.0 -0.1955" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/lidar_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/lidar_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
     <origin xyz="-0.197 0.0 -0.1955" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/lidar_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/lidar_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -107,14 +107,14 @@
   <visual>
     <origin xyz="0.016306 -0.0 -0.7855" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/CR3base_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/CR3base_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
     <origin xyz="0.016306 -0.0 -0.7855" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/CR3base_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/CR3base_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -128,14 +128,14 @@
   <visual>
     <origin xyz="0.174006 0.05 -1.4942" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/Realsense_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/Realsense_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="silver"/>
   </visual>
   <collision>
     <origin xyz="0.174006 0.05 -1.4942" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="package://walkie2_description/meshes/Realsense_1_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="package://walkie2_description/meshes/Realsense_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
