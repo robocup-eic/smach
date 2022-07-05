@@ -168,7 +168,7 @@
   <limit upper="0.0" lower="0.0" effort="100" velocity="100"/>
 </joint>
 
-<joint name="realsense_joint" type="continuous">
+<joint name="realsense_joint" type="fixed">
   <origin xyz="-0.174006 -0.05 1.4942" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="realsense"/>
