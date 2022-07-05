@@ -131,4 +131,41 @@
       w: -0.010986897825
   height: [0.2,0.4,0.6,0.8]
 -
+  name: chair1 #or plant pot/chair
+  frame_id: map
+  shape: circle
+  radius: 0.5
+  position:
+    x: 4.32501125336
+    y: -2.49307012558
+    z: 0.0
+-
+  name: chair2 #or plant pot/chair
+  frame_id: map
+  shape: circle
+  radius: 0.5
+  position:
+    x: 4.32501125336
+    y: -2.49307012558
+    z: 0.0
+-  
+  name: chair3 #or plant pot/chair
+  frame_id: map
+  shape: circle
+  radius: 0.5
+  position:
+    x: 4.32501125336
+    y: -2.49307012558
+    z: 0.0
+-
+  name: chair4 #or plant pot/chair
+  frame_id: map
+  shape: circle
+  radius: 0.5
+  position:
+    x: 4.32501125336
+    y: -2.49307012558
+    z: 0.0
+-
+  
   

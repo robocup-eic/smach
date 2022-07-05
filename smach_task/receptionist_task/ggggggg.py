@@ -1,3 +1,5 @@
+    #!/usr/bin/env python
+
 import roslib
 import rospy
 import smach
@@ -28,13 +30,16 @@ from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
 from util.realsense import Realsense
 
+import tf2_geometry_msgs
+from geometry_msgs.msg import Pose
+
 class Navigation(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigation state')
         smach.State.__init__(self,outcomes=['continue_No_seat','continue_Seat'])
-
+        global gm
         # init list of seat
-        self.chair_list = ('lamp','plantpot')
+        self.chair_list = gm.get_chair_poses()
         self.person_list = []
         self.bridge = CvBridge()
 
@@ -72,15 +77,31 @@ class Navigation(smach.State):
                 frame = cv2.putText(frame, str(person_id), rs.rescale_pixel(person[2][0], person[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                 
                 # get 3d person point
-                person_point = Point()
-                person_point.x, person_point.y, person_point.z = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
-                person_list.append((person_id,person_point))
+                person_pose = Pose()
+                person_pose.position.x, person_pose.position.y, person_pose.position.z = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
+                person_pose.orientation.x, person_pose.orientation.y, person_pose.orientation.z, person_pose.orientation.w = 0,0,0,1
+                person_list.append((person_id, person_pose))
 
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
 
             # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
-
             return person_list
+
+        def transform_pose(input_pose, from_frame, to_frame):
+            # **Assuming /tf2 topic is being broadcasted
+            tf_buffer = tf2_ros.Buffer()
+            listener = tf2_ros.TransformListener(tf_buffer)
+            pose_stamped = tf2_geometry_msgs.PoseStamped()
+            pose_stamped.pose = input_pose
+            pose_stamped.header.frame_id = from_frame
+            pose_stamped.header.stamp = rospy.Time.now()
+            try:
+                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+                output_pose_stamped = tf_buffer.transform(
+                    pose_stamped, to_frame, rospy.Duration(1))
+                return output_pose_stamped.pose
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                raise
 
         def tf_all_people(person_list):
             if len(person_list) == 0:
@@ -133,18 +154,18 @@ class Navigation(smach.State):
             for person in self.person_list:
                 person_id      = str(person[0])
                 min_distance = 10000000
+                person_pose = person[1]
+                # compare with chair
 
-                for chair in self.chair_list:
-                    pose = tf_listener.lookupTransform(chair, person_id, rospy.Time.now())
-                    x = pose[0][0]
-                    y = pose[0][1]
-                    print(x,y)
-                    distance = float((x**2 + y**2)**0.5)
+                for chair in self.chair_list: ## TODO ed get chair list
+                    chair_pose = chair["pose"]
+                    print(chair_pose)
+                    distance = float(((chair_pose.position.x - person_pose.position.x)**2 + (chair_pose.position.y - person_pose.position.y)**2)**0.5)
 
                     if distance < min_distance:
                         min_distance = distance
-                        bound_chair = chair
-                avaliable_seat.remove(bound_chair)
+                        bond_chair = chair
+                avaliable_seat.remove(bond_chair)
             
             return avaliable_seat
         
@@ -153,15 +174,27 @@ class Navigation(smach.State):
         rospy.sleep(0.5)
         result_person_list = []
 
-        for i in range(9):
-            result_person_list = detect(rs.get_image())
-            for result in result_person_list:
-                if result[0] in [r[0] for r in self.person_list]:
-                    self.person_list.append(result)
 
-            if len(result_person_list) != 0:
-                self.person_list = result_person_list
-        print(self.person_list)
+        for i in range(10):
+            result_person_list = detect(rs.get_image())
+            if result_person_list is not None:
+                for result in result_person_list:
+                    # if there are no
+                    if result[0] != [r[0] for r in self.person_list]:
+                        self.person_list.append(result)
+
+
+        # for i in range(9):
+        #     result_person_list = detect(rs.get_image())
+        #     for result in result_person_list:
+        #         # 
+        #         if result[0] in [r[0] for r in self.person_list]:
+        #             self.person_list.append(result)
+
+        #     if len(result_person_list) != 0:
+        #         self.person_list = result_person_list
+        # print(self.person_list)
+
         if tf_all_people(self.person_list) and tf_all_chair(self.chair_list):
             avaliable_seat = avaliable_seat_list()
             print(avaliable_seat)

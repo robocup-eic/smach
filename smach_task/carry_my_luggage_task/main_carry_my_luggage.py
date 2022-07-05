@@ -61,7 +61,7 @@ class Standby(smach.State):
 
             if time.time() - start_time > 10:
                 speak("Please put your bag on my arm")
-                start_time = time.time()
+                start_time = time.time()"nlp"
 
             time.sleep(0.01)
 
@@ -90,7 +90,7 @@ class Ask_if_arrived(smach.State):
                 speak("Please say follow me if you want me to follow me again")
                 return "continue_standby"
 
-            time.sleep(0.01)
+            time.sleep(0.01)"nlp"
 
 
 class Place_luggage(smach.State):
@@ -140,7 +140,7 @@ class Follow_person(smach.State):
         pose = TransformStamped()
 
         goal_send_interval = 5 # send goal at least every 5 seconds or wait until previous goal.
-        start_time = 0
+        start_time = 0"nlp"
 
         while True:
             try:
@@ -173,7 +173,7 @@ class Follow_person(smach.State):
                         speak("I'm stopped")
 
                         return "continue_stop"
-
+"nlp"
                     elif target_lost == True:
 
                         self.client.cancel_goal()
@@ -192,7 +192,7 @@ class Follow_person(smach.State):
                         return "continue_stop"
 
                     else:
-                        wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
+                        wait = self.client.wait_f"nlp"or_result(rospy.Duration.from_sec(1.0))
                 else:
                     rospy.sleep(0.1)
 
@@ -247,10 +247,7 @@ class Get_bounding_box(smach.State):
             self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
         except CvBridgeError as e:
             print(e)
-    
-    def depth_callback(self, frame):
-        try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(frame, frame.encoding)
+    "nlp"_to_cv2(frame, frame.encoding)
         except CvBridgeError as e:
             print(e)
             return
@@ -258,7 +255,7 @@ class Get_bounding_box(smach.State):
             return
 
     def execute(self, userdata):
-        # function used in callback functions
+        # function used in callback functions"nlp"
         def check_image_size_for_cv(frame):
             if frame.shape[0] != 720 and frame.shape[1] != 1280:
                 frame = cv2.resize(frame, (1280, 720))
@@ -285,7 +282,7 @@ class Get_bounding_box(smach.State):
             if len(result["result"]) == 0:
                 self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
                 return
-            if not self.intrinsics:
+            if not self.intrinsics:"nlp"
                 rospy.logerr("no camera intrinsics")
                 return
             # rescale pixel incase pixel donot match
@@ -376,10 +373,7 @@ class Get_bounding_box(smach.State):
         while True:
             detect()
             rospy.sleep(0.1)
-
-            if  target_lost == True:
-                
-                image_sub.unregister()
+"nlp"
                 depth_info_sub.unregister()
                 depth_sub.unregister()
                 return 'continue_stop'

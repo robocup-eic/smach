@@ -17,6 +17,8 @@ from nav_msgs.msg import Odometry
 from math import pi
 import tf
 import tf2_msgs
+from geometry_msgs.msg import Twist
+from actionlib_msgs.msg import GoalStatus
 
 # ros pub sub
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -51,6 +53,7 @@ import time
 from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
 
+
 class Start_signal(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Start_signal state')
@@ -63,7 +66,6 @@ class Start_signal(smach.State):
         global rs
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
-
         frame_count = 0
 
         while True:
@@ -262,17 +264,34 @@ class Seat(smach.State):
         speak("There is an available seat here")
         return 'continue_Introduce_guest'
 
-
 class Introduce_guest(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Introduce_guest state')
         smach.State.__init__(self,outcomes=['continue_Introduce_host'])
-        
+        self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     def execute(self,userdata):
         rospy.loginfo('Executing Introduce_guest state')
-        global person_count
-        global gm
+        global person_count, gm, rs
         # find the host and face the robot to the host
+        rotate_msg = Twist()
+        rotate_msg.angular.z = 0.1
+
+        is_found = False
+        while not is_found:
+            self.rotate_pub.publish(rotate_msg)
+            detections = faceRec.detect(rs.get_image())
+            ############
+
+            # return
+            ############
+            for detection in detections:
+                if detection["name"] == gm.get_guest_name("host") and 500 < detection["x"] < 700:
+                    cancel = Twist()
+                    cancel.linear.x = 0
+                    cancel.linear.y = 0
+                    cancel.angular.z = 0
+                    is_found = True
+
         # clearly identify the person being introduced and state their name and favorite drink
         if person_count == 1:
             speak("Hello {host_name}, the guest who is on the {furniture} is {guest_1}".format(host_name = gm.get_guest_name("host"), furniture = "Couch", guest_1 = gm.get_guest_name("guest_1")))
@@ -291,14 +310,39 @@ class Introduce_host(smach.State):
     def execute(self,userdata):
         rospy.loginfo('Executing Introduce_host state')
         # find the guest and face the robot to the guest
+
         # clearly identify the person being introduced annd state their name and favorite drink
-        global person_count
+
+        global person_count, gm, rs
+        # find the host and face the robot to the host
+        rotate_msg = Twist()
+        rotate_msg.angular.z = 0.1
+
+        is_found = False
+        while not is_found:
+            self.rotate_pub.publish(rotate_msg)
+            detections = faceRec.detect(rs.get_image())
+            ############
+
+            # return
+            ############
+            for detection in detections:
+                if detection["name"] == gm.get_guest_name("guest_{}".format(person_count)) and 500 < detection["x"] < 700:
+                    cancel = Twist()
+                    cancel.linear.x = 0
+                    cancel.linear.y = 0
+                    cancel.angular.z = 0
+                    is_found = True
+
+
         if person_count == 1:
+
             # find the guest1 and face the robot to the guest1
             speak("Hello {guest_1}, the host's name is {host_name}".format(guest_1 = gm.get_guest_name("guest_1"), host_name = gm.get_guest_name("host")))
             speak("His favorite drink is {fav_drink_host}".format(fav_drink_host = gm.get_guest_fav_drink("host")))
         if person_count == 2:
             # find the guest_2 and face the robot the the guest_2
+
             speak("Hello {guest_2}, the host's name is {host_name}".format(guest_2 = gm.get_guest_name("guest_2"), host_name = gm.get_guest_name("host")))
             speak("His favorite drink is {fav_drink_host}".format(fav_drink_host= gm.get_guest_fav_drink("host")))
         return 'continue_Navigate_to_start'
@@ -315,10 +359,9 @@ class Navigate_to_start(smach.State):
     def execute(self,userdata):
         rospy.loginfo('Executing Navigate_to_start state')
         # navigate back to the door to wait for the next guest
-        """
         global ed
 
-        pose = ed.get_robot_pose("door_inside_living_room") # dont forget to find the right position on the setup day
+        pose = ed.get_robot_pose("entrance_door_living") # dont forget to find the right position on the setup day
             
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
@@ -331,7 +374,7 @@ class Navigate_to_start(smach.State):
         self.client.wait_for_result()
         result = self.client.get_result()
         
-        if result.status == Goalstatus.SUCCEEDED:
+        if result.status == GoalStatus.SUCCEEDED:
             if person_count == 2:
                 speak("I have finished my task")
                 return 'continue_SUCCEEDED'
@@ -339,17 +382,11 @@ class Navigate_to_start(smach.State):
                 # navigate back to the door
                 return 'continue_Standby'
 
-        if result.status == Goalstatus.ABORTED:
+        elif result.status == GoalStatus.ABORTED:
             rospy.loginfo("---------------------- ERROR ----------------")
             return 'continue_SUCCEEDED'
-        """
-
-        if person_count == 2:
-            speak("I have finished my task")
-            return 'continue_SUCCEEDED'
         else:
-            # navigate back to the door
-            return 'continue_Standby'
+            return "continue_SUCCEEDED"
 
 
 if __name__ == '__main__':

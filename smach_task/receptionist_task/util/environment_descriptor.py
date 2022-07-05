@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import yaml
 from geometry_msgs.msg import Pose, Point
 
@@ -26,6 +28,33 @@ class EnvironmentDescriptor:
                 robot_pose.orientation.z = data["robot_pose"]["orientation"]["z"]
                 robot_pose.orientation.w = data["robot_pose"]["orientation"]["w"]
                 return robot_pose
+
+    def get_robot_pose(self, name):
+        for data in self.data_yaml:
+            if data["name"] == name:
+                robot_pose = Pose()
+                robot_pose.position.x = data["robot_pose"]["position"]["x"]
+                robot_pose.position.y = data["robot_pose"]["position"]["y"]
+                robot_pose.position.z = data["robot_pose"]["position"]["z"]
+                robot_pose.orientation.x = data["robot_pose"]["orientation"]["x"]
+                robot_pose.orientation.y = data["robot_pose"]["orientation"]["y"]
+                robot_pose.orientation.z = data["robot_pose"]["orientation"]["z"]
+                robot_pose.orientation.w = data["robot_pose"]["orientation"]["w"]
+                return robot_pose
+
+    def get_chair_poses(self):
+        chair_poses = []
+        for data in self.data_yaml:
+            if "chair" in data["name"]:
+                chair_pose = Pose()
+                chair_pose.position.x = data["position"]["x"]
+                chair_pose.position.y = data["position"]["y"]
+                chair_pose.position.z = data["position"]["z"]
+                chair_pose.orientation.x = 0
+                chair_pose.orientation.y = 0
+                chair_pose.orientation.z = 0
+                chair_pose.orientation.w = 1
+        return chair_poses
 
     def get_corner_list(self, name):
         corner_list = []
