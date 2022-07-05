@@ -1,4 +1,4 @@
-    #!/usr/bin/env python
+#!/usr/bin/env python
 
 import roslib
 import rospy
@@ -45,7 +45,7 @@ class Navigation(smach.State):
 
     def execute(self,userdata):
         rospy.loginfo('Executing Navigation state')
-        global static_broadcaster, dynamic_broadcaster, tf_listener, ed
+        global static_broadcaster, dynamic_broadcaster, tf_listener, tf_Buffer, ed
 
         def detect(frame):
             # scale image incase image size donot match cv server
@@ -149,7 +149,7 @@ class Navigation(smach.State):
             return True
 
         def avaliable_seat_list():
-            avaliable_seat = self.chair_list.copy()
+            avaliable_seat = list(self.chair_list)
 
             for person in self.person_list:
                 person_id      = str(person[0])
@@ -171,8 +171,10 @@ class Navigation(smach.State):
         
         #===============================================start=============================================
         # start person tracker
+        # (person_id,point)
         rospy.sleep(0.5)
         result_person_list = []
+        avaliable_seat = []
 
 
         for i in range(10):
