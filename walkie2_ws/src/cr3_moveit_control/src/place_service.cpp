@@ -58,7 +58,7 @@ double smallest_distance(geometry_msgs::Pose target_pose1, std::vector<geometry_
   return all_distance[0];
 }
 
-void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> current_collision_object_pos) {
+void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> current_collision_object_pos, geometry_msgs::Pose &MID_TABLE) {
   moveit::planning_interface::MoveGroupInterface move_group_interface(PLANNING_GROUP_ARM);
   const moveit::core::JointModelGroup *joint_model_group = move_group_interface.getCurrentState()->getJointModelGroup(PLANNING_GROUP_ARM);
 
@@ -82,12 +82,21 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
 
   geometry_msgs::Pose base_link_pose;
+
+  float max_table_y = target_pos1.position.y;
   while(!success)
   {
     target_pose1.position.y += 0.05;
     double distance_between_obj = smallest_distance(target_pose1, current_collision_object_pos);
     if((0.1 < distance_between_obj) && (distance(base_link_pose, target_pose1) < 0.63))
     {
+      move_group_interface.setPoseTarget(target_pose1);
+      success= (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    }
+
+    if(target_pose.position.y > max_table_y)
+    {
+      target_pose1 = MID_TABLE;
       move_group_interface.setPoseTarget(target_pose1);
       success= (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
     }
@@ -335,10 +344,10 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   for (int i=0;i<req.collision_object_pos.size();i++)
   {
     addCollisionObject(0.05, 0.2,
-                       req.collision_object_pos[i].position.x,                //position x of collision object
-                       req.collision_object_pos[i].position.y,                //position y of collision object 
-                       dimension_z + 0.1,                                     //position z of collision object
-                       "collision object" + boost::to_string(i));             //collision object name
+                      req.collision_object_pos[i].position.x,                //position x of collision object
+                      req.collision_object_pos[i].position.y,                //position y of collision object 
+                      dimension_z + 0.1,                                     //position z of collision object
+                      "collision object" + boost::to_string(i));             //collision object name
   }
 
   // find pose to preplace
@@ -354,29 +363,50 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   pose.orientation.y = myQuaternion.getY();
   pose.orientation.z = myQuaternion.getZ();
   pose.orientation.w = myQuaternion.getW();
+
+  geometry_msgs::Pose mid_table;
+  tf2::Quaternion myQuaternion;
+
+  mid_table.position.x = place_within21_x - 0.1;
+  mid_table.position.y = (place_within21_y + place_within22_y) / 2.0;
+  mid_table.position.z = high + 0.25;
+
+  myQuaternion.setRPY( -1 * M_PI / 2, -1 * M_PI / 4, M_PI / 2 );
+  mid_table.orientation.x = myQuaternion.getX();
+  mid_table.orientation.y = myQuaternion.getY();
+  mid_table.orientation.z = myQuaternion.getZ();
+  mid_table.orientation.w = myQuaternion.getW();
   
   // move to preplace pose
-  // move(pose, collision_object_pos);
-  move(pose, req.collision_object_pos);
+  move(pose, req.collision_object_posl, mid_table);
   if (!success){
     return false;
   }
   
-  // move cartesian along z axis
-  move_cartesian(pose, 0, 0, -0.1);
-  if (!success){
-    return false;
+  if(pose != mid_table)
+  {
+    // move cartesian along z axis
+    move_cartesian(pose, 0, 0, -0.1);
+    if (!success){
+      return false;
+    }
+
+    // open gripper
+    std_msgs::Bool gripper_command_msg;
+    gripper_command_msg.data = false;
+    gripper_command_publisher.publish(gripper_command_msg);
+
+    // move cartesian out of object
+    move_cartesian(pose, 0.1, 0, 0.1);
+    if (!success){
+      return false;
   }
-
-  // open gripper
-  std_msgs::Bool gripper_command_msg;
-  gripper_command_msg.data = false;
-  gripper_command_publisher.publish(gripper_command_msg);
-
-  // move cartesian out of object
-  move_cartesian(pose, 0.1, 0, 0.1);
-  if (!success){
-    return false;
+  else
+  {
+    // open gripper
+    std_msgs::Bool gripper_command_msg;
+    gripper_command_msg.data = false;
+    gripper_command_publisher.publish(gripper_command_msg);
   }
 
     // close gripper
