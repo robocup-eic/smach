@@ -2,7 +2,7 @@ import yaml
 from geometry_msgs.msg import Pose, Point
 
 class EnvironmentDescriptor:
-    def __init__(self, yaml_path = "../../config/fur_data.yaml"):
+    def __init__(self, yaml_path = "../config/fur_data.yaml"):
         self.yaml_path = yaml_path
         self.data_yaml = self.read_yaml()
 
@@ -43,7 +43,6 @@ class EnvironmentDescriptor:
 
     def get_height(self, name):
         for data in self.data_yaml:
-            print(data)
             if data["name"] == name:
                 return data["height"]
 

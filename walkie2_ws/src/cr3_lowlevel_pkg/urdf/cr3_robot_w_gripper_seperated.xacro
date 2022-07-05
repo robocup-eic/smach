@@ -179,7 +179,8 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link5.STL" scale="1.1 1.3 1.3"/>
+        <mesh filename="package://cr3_lowlevel_pkg/meshes/Link5.STL" scale="1.1 1.1 1.1"/>
+        <!-- <mesh filename="package://cr3_lowlevel_pkg/meshes/Link5.STL" scale="1.1 1.3 1.3"/> -->
       </geometry>
     </collision>
   </link>
