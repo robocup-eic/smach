@@ -4,7 +4,7 @@ import roslib
 import rospy
 import smach
 import smach_ros
-from client.custom_socket import CustomSocket
+from util.custom_socket import CustomSocket
 # navigation
 import tf2_ros
 from nav_msgs.msg import Odometry
@@ -103,62 +103,19 @@ class Navigation(smach.State):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
-        def tf_all_people(person_list):
-            if len(person_list) == 0:
-                return False
-            for person in person_list:
-                person_id      = str(person[0])
-                person_point   = person[1]
-
-                dynamic_tf_stamp                         = TransformStamped()
-                dynamic_tf_stamp.header.stamp            = rospy.Time.now()
-                dynamic_tf_stamp.header.frame_id         = "camera_link"
-                dynamic_tf_stamp.child_frame_id          = person_id
-                dynamic_tf_stamp.transform.translation.x = person_point.x
-                dynamic_tf_stamp.transform.translation.y = person_point.y
-                dynamic_tf_stamp.transform.translation.z = person_point.z
-                dynamic_tf_stamp.transform.rotation.x    = 0
-                dynamic_tf_stamp.transform.rotation.y    = 0
-                dynamic_tf_stamp.transform.rotation.z    = 0
-                dynamic_tf_stamp.transform.rotation.w    = 1
-
-                dynamic_broadcaster.sendTransform(dynamic_tf_stamp)
-
-            rospy.loginfo('Broadcate all Person in tf-tree')
-            return True
-
-        def tf_all_chair(chair_list):
-            for chair in chair_list:
-                point = ed.get_center_point(chair)
-
-                static_tf_stamp                         = TransformStamped()
-                static_tf_stamp.header.stamp            = rospy.Time.now()
-                static_tf_stamp.header.frame_id         = "map"
-                static_tf_stamp.child_frame_id          = chair
-                static_tf_stamp.transform.translation.x = point.x 
-                static_tf_stamp.transform.translation.y = point.y
-                static_tf_stamp.transform.translation.z = point.z
-                static_tf_stamp.transform.rotation.x    = 0
-                static_tf_stamp.transform.rotation.y    = 0
-                static_tf_stamp.transform.rotation.z    = 0
-                static_tf_stamp.transform.rotation.w    = 1
-
-                static_broadcaster.sendTransform(static_tf_stamp)
-
-            rospy.loginfo('Broadcate all Seat in tf-tree')
-            return True
-
         def avaliable_seat_list():
+            global ed
             avaliable_seat = list(self.chair_list)
 
             for person in self.person_list:
                 person_id      = str(person[0])
                 min_distance = 10000000
                 person_pose = person[1]
+                person_pose = transform_pose(person_pose, "camera_link", "map")
                 # compare with chair
 
-                for chair in self.chair_list: ## TODO ed get chair list
-                    chair_pose = chair["pose"]
+                for chair in ed.get_chair_poses(): ## TODO ed get chair list
+                    chair_pose = chair["position"]
                     print(chair_pose)
                     distance = float(((chair_pose.position.x - person_pose.position.x)**2 + (chair_pose.position.y - person_pose.position.y)**2)**0.5)
 
@@ -185,21 +142,8 @@ class Navigation(smach.State):
                     if result[0] != [r[0] for r in self.person_list]:
                         self.person_list.append(result)
 
-
-        # for i in range(9):
-        #     result_person_list = detect(rs.get_image())
-        #     for result in result_person_list:
-        #         # 
-        #         if result[0] in [r[0] for r in self.person_list]:
-        #             self.person_list.append(result)
-
-        #     if len(result_person_list) != 0:
-        #         self.person_list = result_person_list
-        # print(self.person_list)
-
-        if tf_all_people(self.person_list) and tf_all_chair(self.chair_list):
-            avaliable_seat = avaliable_seat_list()
-            print(avaliable_seat)
+        avaliable_seat = avaliable_seat_list()
+        print(avaliable_seat)
         
         if len(avaliable_seat) == 0:
             return 'continue_No_seat'
