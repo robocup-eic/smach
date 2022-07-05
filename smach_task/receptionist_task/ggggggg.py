@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import roslib
 import rospy
 import smach
@@ -40,7 +42,7 @@ class Navigation(smach.State):
 
     def execute(self,userdata):
         rospy.loginfo('Executing Navigation state')
-        global static_broadcaster, dynamic_broadcaster, tf_listener, ed
+        global static_broadcaster, dynamic_broadcaster, tf_listener, tf_Buffer, ed
 
         def detect(frame):
             # scale image incase image size donot match cv server
@@ -128,14 +130,14 @@ class Navigation(smach.State):
             return True
 
         def avaliable_seat_list():
-            avaliable_seat = self.chair_list.copy()
+            avaliable_seat = list(self.chair_list)
 
             for person in self.person_list:
                 person_id      = str(person[0])
                 min_distance = 10000000
 
                 for chair in self.chair_list:
-                    pose = tf_listener.lookupTransform(chair, person_id, rospy.Time.now())
+                    pose = tf_Buffer.lookup_transform(chair, person_id, rospy.Time.now())
                     x = pose[0][0]
                     y = pose[0][1]
                     print(x,y)
@@ -150,21 +152,29 @@ class Navigation(smach.State):
         
         #===============================================start=============================================
         # start person tracker
+        # (person_id,point)
         rospy.sleep(0.5)
         result_person_list = []
+        avaliable_seat = []
 
-        for i in range(9):
+        for i in range(1):
             result_person_list = detect(rs.get_image())
-            for result in result_person_list:
-                if result[0] in [r[0] for r in self.person_list]:
-                    self.person_list.append(result)
+            print(result_person_list)
+            if result_person_list is not None:
+                print(result_person_list)
+                for result in result_person_list:
+                    print(result[0])
+                    if result[0] != [r[0] for r in self.person_list]:
+                        self.person_list.append(result)
+                        print(self.person_list)
 
-            if len(result_person_list) != 0:
-                self.person_list = result_person_list
         print(self.person_list)
-        if tf_all_people(self.person_list) and tf_all_chair(self.chair_list):
-            avaliable_seat = avaliable_seat_list()
-            print(avaliable_seat)
+        while True:
+            tf_all_people(self.person_list)
+            tf_all_chair(self.chair_list)
+            # avaliable_seat = avaliable_seat_list().copy()
+            # print(avaliable_seat)
+            # break
         
         if len(avaliable_seat) == 0:
             return 'continue_No_seat'
