@@ -13,7 +13,7 @@ import smach_ros
 # navigation
 import tf2_ros
 from nav_msgs.msg import Odometry
-from math import pi
+from math import pi, atan
 import tf
 import tf2_msgs
 
@@ -122,14 +122,21 @@ class Follow_person(smach.State):
             try:
 
                 if time.time() - start_time > goal_send_interval:
-                    pose = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
+                    pose = self.tfBuffer.lookup_transform('base_footprint','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                     goal = MoveBaseGoal()
-                    goal.target_pose.header.frame_id = "map"
+                    goal.target_pose.header.frame_id = "base_footprint"
                     goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
                     goal.target_pose.pose.position.x = pose.transform.translation.x
                     goal.target_pose.pose.position.y = pose.transform.translation.y
                     # TODO 
-                    goal.target_pose.pose.orientation = pose.transform.rotation
+                    delta_x = pose.transform.translation.x
+                    delta_y = pose.transform.translation.y
+                    yaw = atan(delta_x/delta_y) # yaw
+                    quarternion_orientation = tf.transformations.quaternion_from_euler(0, 0, yaw)
+                    goal.target_pose.pose.orientation.x = quarternion_orientation[0]
+                    goal.target_pose.pose.orientation.y = quarternion_orientation[1]
+                    goal.target_pose.pose.orientation.z = quarternion_orientation[2]
+                    goal.target_pose.pose.orientation.w = quarternion_orientation[3]
 
                     self.client.send_goal(goal)
                     last_pose = (pose.transform.translation.x, pose.transform.translation.y, pose.transform.translation.z)
