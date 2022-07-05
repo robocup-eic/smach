@@ -34,4 +34,15 @@
   </actuator>
 </transmission>
 
+<transmission name="realsense_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="realsense_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="realsense_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
 </robot>

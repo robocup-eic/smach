@@ -34,7 +34,6 @@ find_package(catkin REQUIRED
                         rosapi
                         tf2_web_republisher
                         moveit_servo
-                        cr3_lowlevel_pkg
 			)
 
 # System dependencies are found with CMake's conventions
@@ -78,7 +77,6 @@ catkin_install_python(PROGRAMS
                       src/furniture_marker.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-# include lowlevel pkg too
 include_directories(${catkin_INCLUDE_DIRS})
 
 add_executable(robot_control_node_sim src/robot_control_node_sim.cpp)
@@ -104,7 +102,7 @@ target_link_libraries(pick_service_adjust_yaw ${catkin_LIBRARIES})
 
 add_executable(pick_service_visual_servo src/pick_service_visual_servo.cpp)
 target_link_libraries(pick_service_visual_servo ${catkin_LIBRARIES})
-add_dependencies(pick_service_visual_servo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(pick_service_visual_servo cr3_moveit_control cr3_lowlevel_pkg)
 
 add_executable(place_service src/place_service.cpp)
 add_dependencies(place_service ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -118,3 +116,5 @@ target_link_libraries(pick_client ${catkin_LIBRARIES})
 add_executable(constraint_publisher src/constraint_publisher.cpp)
 target_link_libraries(constraint_publisher ${catkin_LIBRARIES} boost_filesystem ${JSONCPP_LIBRARIES})
 
+add_executable(tf_test src/tf_test.cpp)
+target_link_libraries(tf_test ${catkin_LIBRARIES})

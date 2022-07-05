@@ -30,26 +30,16 @@ class EnvironmentDescriptor:
     def get_corner_list(self, name):
         corner_list = []
         for data in self.data_yaml:
-            if data is None:
-                continue
             if data["name"] == name:
                 for i in range(4):
-                    corner = Point()
-                    corner.x = data["corner{}".format(i+1)]["x"]
-                    corner.y = data["corner{}".format(i+1)]["y"]
-                    corner.z = data["corner{}".format(i+1)]["z"]
-                    corner_list.append(corner)
+                    corner_list.append(data["corner{}".format(i+1)])
         return corner_list
 
     def get_height(self, name):
         for data in self.data_yaml:
-            print(data)
             if data["name"] == name:
                 return data["height"]
 
 if __name__ == "__main__":
     ed = EnvironmentDescriptor("../../config/fur_data.yaml")
-    # print(ed.data_yaml)
-    # print(ed.get_height("table1"))
-
-    print(ed.get_corner_list("table1"))
+    print(ed.get_robot_pose("table1"))

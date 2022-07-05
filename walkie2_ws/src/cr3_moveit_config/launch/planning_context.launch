@@ -6,7 +6,7 @@
   <arg name="robot_description" default="robot_description"/>
 
   <!-- Load universal robot description format (URDF) -->
-  <param if="$(arg load_robot_description)" name="$(arg robot_description)" command="xacro  '$(find cr3_lowlevel_pkg)/urdf/cr3_robot_w_gripper_seperated.xacro'"/>
+  <param if="$(arg load_robot_description)" name="$(arg robot_description)" command="xacro '$(find cr3_lowlevel_pkg)/urdf/cr3_robot_w_gripper_seperated.xacro'"/>
 
   <!-- The semantic description that corresponds to the URDF -->
   <param name="$(arg robot_description)_semantic" textfile="$(find cr3_moveit_config)/config/cr3_robot.srdf" />

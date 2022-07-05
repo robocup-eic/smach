@@ -48,6 +48,7 @@ from util.nlp_server import SpeechToText, speak
 from util.environment_descriptor import EnvironmentDescriptor
 import time
 import threading
+
 # import class for smach
 from sm_bringit import sm_bringit_Check_Object_Room_2, sm_bringit_Save_Location, sm_bringit_Find_Object
 from sm_bringit import sm_bringit_Pick_Up, sm_bringit_Back_To_Start, sm_bringit_Place_Object
@@ -57,32 +58,42 @@ from sm_find_person import sm_find_person_Go_To_Room_2, sm_find_person_Go_To_Spe
 from sm_find_person import sm_find_person_Find_Item, sm_find_person_Back_To_Start, sm_find_person_Tell_Where_Is_Person
 from sm_go_to import sm_go_to_Check_Object_Location, sm_go_to_Navigation, sm_go_to_Announce
 from sm_howmany import sm_howmany_Check_Location, sm_howmany_Navigation, sm_howmany_Object_Detection
+# LAN local network
 # import smach 
 class Stand_by(smach.State):
-    def __init__(self):
-        rospy.loginfo('initiating stand by state')
+    def __init__(self, stt):
+        rospy.loginfo('Initiating Standby state')
         smach.State.__init__(self, outcomes =['continue_SM_BRINGIT','continue_SM_FINDITEM','continue_SM_FIND_PERSON', 'continue_SM_GO_TO', 'continue_SM_HOWMANY'])
         self.x = 4
+        self.stt = stt
+        self.stt.body = "find_object"
     def execute(self, userdata):
-        if self.x == 1:
-            return 'continue_SM_BRINGIT'
-        elif self.x == 2:
-            return 'continue_SM_FINDITEM'
-        elif self.x == 3:
-            return 'continue_SM_FIND_PERSON'
-        elif self.x == 4:
-            return 'continue_SM_GO_TO'
-        else:
-            return 'continue_SM_HOWMANY'
-# ------- sm_bringit 
-# ------- sm_finditem 
-# ------- sm_find_person 
-#-------- sm_go_to 
-#-------- sm_howmany 
+        rospy.loginfo("Executing Standby state")
+        if self.x == 4:
+            return "continue_SM_FINDITEM"
+        while True:
+            if self.stt.body is not None:
+                if self.stt.body["intent"] == "bring_desc_to_someone":
+                    return 'continue_SM_BRINGIT'
+                #if self.stt.body["intent"] == "find_object":
+                #    return 'continue_SM_FINDITEM'
+                if self.stt.body["intent"] == "find_people":
+                    return 'continue_SM_FIND_PERSON'
+                if self.stt.body["intent"] == "move_to":
+                    return 'continue_SM_GO_TO'
+                if self.stt.body["intent"] == "counting":
+                    return 'continue_SM_HOWMANY'
+                else:
+                    speak("Please state new command")
+# ------- sm_bringit ----------
+# ------- sm_finditem ---------
+# ------- sm_find_person ------
+#-------- sm_go_to ------------
+#-------- sm_howmany ----------
 
 def main():
     rospy.init_node('rospy_GPSR_state_machine')
-    #delcare the global variable
+    #delcare the globiable
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
     target_lost = False
     is_stop = False
@@ -91,15 +102,12 @@ def main():
     last_pose = None
 
     # connect to server
-    host = socket.gethostname()
-    port = 11000
-    c = CustomSocket(host,port)
-    c.clientConnect()
-
-    pose_port = 10002
-    pose_c = CustomSocket(host,pose_port)
-    pose_c.clientConnect()
-    
+    host = "192.168.8.99"
+    # an important port
+    WIT_lolov5 = 10002
+    Face_recog = 10006
+    Person_tracker = 10000
+    Object_Tracker = 10008
     
     # Flask nlp server
     stt = SpeechToText("nlp")
@@ -109,7 +117,7 @@ def main():
 
     sm_top = smach.StateMachine(outcomes = ['succeeded','aborted'])
     with sm_top:
-        smach.StateMachine.add('STAND_BY', Stand_by(),
+        smach.StateMachine.add('STAND_BY', Stand_by(stt),
                                transitions = {'continue_SM_BRINGIT':'SM_BRINGIT',
                                               'continue_SM_GO_TO':'SM_GO_TO',
                                               'continue_SM_FIND_PERSON':'SM_FIND_PERSON',
@@ -143,7 +151,7 @@ def main():
             smach.StateMachine.add('sm_finditem_NAVIGATE_TO_ROOM', sm_finditem_Navigate_To_Room(),
                                    transitions = {'continue_sm_finditem_Find_Object':'sm_finditem_FIND_OBJECT',
                                                   'continue_aborted':'aborted'})
-            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(),
+            smach.StateMachine.add('sm_finditem_FIND_OBJECT', sm_finditem_Find_Object(host, Object_Tracker),
                                    transitions = {'continue_sm_finditem_Announce':'sm_finditem_ANNOUNCE'})
             smach.StateMachine.add('sm_finditem_ANNOUNCE', sm_finditem_Announce(),
                                    transitions = {'continue_succeeded':'succeeded'})

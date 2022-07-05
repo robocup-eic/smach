@@ -22,7 +22,7 @@
 //===============================================================
 static const std::string PLANNING_GROUP_ARM = "arm";
 bool success = false;
-bool has_trial = true;
+bool has_trial = false;
 int number_of_trial = 7;
 
 ros::Publisher gripper_command_publisher;

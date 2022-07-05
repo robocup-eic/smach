@@ -57,7 +57,7 @@ class sm_go_to_Check_Object_Location(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Executing Check_object_location state')
         while True:
-            print(self.stt.None)
+            #print(self.stt.body)
             if self.stt.body is not None:
                 # TODO check again with nlp
                 print(self.stt.body)
@@ -85,7 +85,7 @@ class sm_go_to_Navigation(smach.State):
         self.move_base_client.wait_for_result()
         result = self.move_base_client.get_result()
         rospy.loginfo("result {}".format(result))
-        if result.status == GoalStatus.SUCCESS :
+        if result.status == GoalStatus.SUCCEEDED :
             return 'continue_sm_go_to_Announce'
         else:
             # return abort TODO check http://docs.ros.org/en/fuerte/api/actionlib_msgs/html/msg/GoalStatus.html

@@ -16,9 +16,11 @@
 // include quaternian transformation
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
 #include <string>
 #include <vector>
 
+// service
 #include "cr3_moveit_control/PickWithSide.h"
 //===============================================================
 static const std::string PLANNING_GROUP_ARM = "arm";
@@ -32,6 +34,29 @@ const double LEFT_ORIENT[3] = {0, -M_PI / 2.0, -M_PI / 2.0};
 const double RIGHT_ORIENT[3] = {0, -M_PI / 2.0, M_PI / 2.0};
 const double GRIPPER_ORIENT = -M_PI / 4.0; // Please use -M_PI / 4.0
 //===========================================================================================
+
+// transform pose
+void transform_pose(geometry_msgs::Pose &goal_pose){
+  tf2_ros::Buffer tf_buffer;
+  tf2_ros::TransformListener tf2_listener(tf_buffer);
+  geometry_msgs::TransformStamped base_link_to_base_link_cr3;
+  // get transform from base_link to cr3_base_link
+  base_link_to_base_link_cr3 = tf_buffer.lookupTransform("base_link", "cr3_base_link", ros::Time(0), ros::Duration(1.0));
+
+  geometry_msgs::PoseStamped robot_pose;
+  robot_pose.pose.position.x = goal_pose.position.x;
+  robot_pose.pose.position.y = goal_pose.position.y;
+  robot_pose.pose.position.z = goal_pose.position.z;
+  robot_pose.pose.orientation.x = goal_pose.orientation.x;
+  robot_pose.pose.orientation.y = goal_pose.orientation.y;
+  robot_pose.pose.orientation.z = goal_pose.orientation.z;
+  robot_pose.pose.orientation.w = goal_pose.orientation.w;
+
+  tf2::doTransform(robot_pose, robot_pose, base_link_to_base_link_cr3); // robot_pose is the PoseStamped I want to transform
+
+  goal_pose = robot_pose.pose;
+
+}
 
 // Move the arm
 
@@ -52,6 +77,7 @@ void move(geometry_msgs::Pose goal_pose)
   target_pose.position.y = goal_pose.position.y;
   target_pose.position.z = goal_pose.position.z;
 
+  ROS_INFO_STREAM(target_pose);
   move_group_interface.setPoseTarget(target_pose);
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
   success = (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
@@ -78,8 +104,8 @@ void move_cartesian(geometry_msgs::Pose &current_pose, float x, float y, float z
   waypoints.push_back(current_pose);
 
   geometry_msgs::Pose target_pose = current_pose;
-  target_pose.position.x += x;
-  target_pose.position.y += y;
+  target_pose.position.x += -1*x; // cr3_base_link opposite with base_link
+  target_pose.position.y += -1*y; // cr3_base_link opposite with base_link
   target_pose.position.z += z;
   waypoints.push_back(target_pose);
 
@@ -112,7 +138,7 @@ void set_home_walkie2()
   std::vector<double> joint_group_positions;
   current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
 
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  moveit_visual_tools::MoveItVisualTools visual_tools("cr3_base_link");
   visual_tools.deleteAllMarkers();
 
   // Now, let's modify one of the joints, plan to the new joint space goal and visualize the plan.
@@ -149,7 +175,7 @@ void retreat()
   std::vector<double> joint_group_positions;
   current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
 
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  moveit_visual_tools::MoveItVisualTools visual_tools("cr3_base_link");
   visual_tools.deleteAllMarkers();
 
   // Now, let's modify one of the joints, plan to the new joint space goal and visualize the plan.
@@ -215,7 +241,10 @@ bool pick_server(cr3_moveit_control::PickWithSide::Request &req,
     pose.orientation.y = new_pose.orientation.y;
     pose.orientation.z = new_pose.orientation.z;
     pose.orientation.w = new_pose.orientation.w;
+
+    transform_pose(pose);
     move(pose);
+
     if (!success)
     {
       return false;

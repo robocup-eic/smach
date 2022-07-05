@@ -29,6 +29,7 @@ import pyrealsense2.pyrealsense2 as rs2
 from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped
 from std_msgs.msg import Bool,Int64
 import socket
+from http.client import responses
 
 # import for text-to-speech
 import requests
@@ -73,11 +74,46 @@ class sm_finditem_Navigate_To_Room(smach.State):
 
 
 class sm_finditem_Find_Object(smach.State):
-    def __init__(self):
+    def __init__(self, host, port):
         rospy.loginfo('initiating find object state')
         smach.State.__init__(self, outcomes = ['continue_sm_finditem_Announce'])
+        self.host = host
+        self.port = port
+        self.frame = None
+        self.bridge = CvBridge()
+    def yolo_callback(self, data):
+        try:
+            # change subscribed data to numpy.array and save it as "frame"
+            self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
+            print(type(self.frame))
+        except CvBridgeError as e:
+            print(e)
     def execute(self, userdata):
         rospy.loginfo('executing find object')
+        c = CustomSocket(self.host, self.port)
+        c.clientConnect()
+        print("-------")
+        print(self.host)
+        print(self.port)
+        print("-------")
+        image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.yolo_callback)
+        print("-fish fish fish fish")
+        while self.frame is None:
+            rospy.sleep(0.1)
+        result = c.req(self.frame)
+        rospy.loginfo("-----executing the callback state-----")
+        print(result)
+        rospy.loginfo("-----executing the callback state-----")
+
+
+        ##### do algorithm confition?
+
+        rospy.loginfo(self.yolo_callback)
+        rospy.sleep(0.8)
+
+
+        image_sub.unregister()
+        
         return 'continue_sm_finditem_Announce'
 
 

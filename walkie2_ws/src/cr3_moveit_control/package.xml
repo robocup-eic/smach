@@ -20,7 +20,6 @@
   <build_depend>rospy</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>cr3_lowlevel_pkg</build_depend>
   <depend>controller_manager</depend>
   <depend>effort_controllers</depend>
   <depend>gazebo_ros</depend>
@@ -53,7 +52,7 @@
   <build_export_depend>rospy</build_export_depend>
   <!-- <build_export_depend>message_generation</build_export_depend> -->
   <build_export_depend>geometry_msgs</build_export_depend>
-  <exec_depend>cr3_lowlevel_pkg</exec_depend>
+  
   <exec_depend>rospy</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
