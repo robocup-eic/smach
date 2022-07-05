@@ -248,7 +248,6 @@ class Get_bounding_box(smach.State):
         o---> +x            |  +X    
                             | / 
         +Y -----------------o camera_link frame tf/
-
         """
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(frame, frame.encoding)
@@ -312,8 +311,6 @@ class Get_bounding_box(smach.State):
             # rescale pixel incase pixel donot match
             self.frame = check_image_size_for_ros(self.frame)
 
-            
-
             # not found person yet
             if person_id == -1:
                 center_pixel_list = []
@@ -343,7 +340,7 @@ class Get_bounding_box(smach.State):
                     self.frame = cv2.circle(self.frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
                     self.frame = cv2.rectangle(self.frame, rescale_pixel(track[2][0], track[2][1]), rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
                     self.frame = cv2.putText(self.frame, str(person_id), (track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-            
+
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
 
             # check if person tracker can find any person
@@ -376,14 +373,14 @@ class Get_bounding_box(smach.State):
                 x_coord, y_coord, z_coord = result[0]/1000, result[1]/1000, result[2]/1000
                 rospy.loginfo("Target is at {}, {}, {}".format(x_coord, y_coord, z_coord))
 
-                if 1 < z_coord < 8:
+                if 0.5 < z_coord < 8:
                     # rospy.loginfo("Target is at: ({}, {})".format(self.x_pixel, self.y_pixel))
                     # rospy.loginfo("Depth is {}".format(depth))
                     # rospy.loginfo("Detected at (x,y,z): {}".format([r/1000 for r in result]))
-                    rospy.sleep(0.1)
+                    # rospy.sleep(0.01)
 
                     # camera frame for tf x is point toward and y is point left.
-                    x = z_coord - 1 # set the goal point to be 1 meter away from person
+                    x = z_coord - 0.5 # set the goal point to be 1 meter away from person
                     y = -x_coord
                     z = -y_coord
                     br = tf.TransformBroadcaster()
@@ -411,14 +408,14 @@ class Get_bounding_box(smach.State):
             rospy.sleep(0.1)
 
             if  target_lost == True:
-                
+                self.frame = None
                 image_sub.unregister()
                 depth_info_sub.unregister()
                 depth_sub.unregister()
                 return 'continue_stop'
             
             elif is_stop == True:
-                
+                self.frame = None
                 image_sub.unregister()
                 depth_info_sub.unregister()
                 depth_sub.unregister()
