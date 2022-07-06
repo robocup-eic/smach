@@ -37,7 +37,7 @@ import threading
 import requests
 import numpy as np
 import cv2
-from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped
+from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped, Pose
 from std_msgs.msg import Bool,Int64
 import socket
 from util.custom_socket import CustomSocket
@@ -63,6 +63,22 @@ class Start_signal(smach.State):
         
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
+
+        def go_to_Navigation(location):
+
+            goal = MoveBaseGoal()
+            goal.target_pose.header.frame_id = "map"
+            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+            goal.target_pose.pose = self.ed.get_robot_pose(location)
+            self.move_base_client.send_goal(goal)
+            self.move_base_client.wait_for_result()
+            result = self.move_base_client.get_result()
+            rospy.loginfo("result {}".format(result))
+            if result.status == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
+
         global rs
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
@@ -85,9 +101,17 @@ class Start_signal(smach.State):
                 frame_count += 1
             else:
                 frame_count = 0
+        
+        # navigate to standby position
+        standby = go_to_Navigation('standby')
+
+        if standby:
+            rospy.loginfo('Walky stand by, Ready for order')
+        else:
+            rospy.logerr('Navigation failed')
+
         return 'continue_Standby'
 
-    
 class Standby(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Standby state')
@@ -153,6 +177,7 @@ class Standby(smach.State):
         
         # -------------------------------------------------------------------------------------
         rospy.loginfo('Executing Standby state')
+        
         # run person detection constantly
         # wait untill the robot finds a person then continue to the next state
         # before continue to the next state count the number of person
@@ -173,7 +198,7 @@ class Standby(smach.State):
 class Ask(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Ask state')
-        smach.State.__init__(self,outcomes=['continue_Navigation'])
+        smach.State.__init__(self,outcomes=['continue_Navigation'],output_keys=['avaliable_seat_out'])
         
     def execute(self,userdata):
             
@@ -243,16 +268,109 @@ class Navigation(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigation state')
         smach.State.__init__(self,outcomes=['continue_No_seat','continue_Seat'])
-        self.case = 1
+        global gm
+
+        # init list of seat
+        self.chair_list = gm.get_chair_poses()
+        self.person_list = []
+        self.bridge = CvBridge()
+
     def execute(self,userdata):
         rospy.loginfo('Executing Navigation state')
-        global ed
-        # navigate to seat
-        ed.
-        # detect available
-        if self.case == 0:
+        global tf_Buffer, ed
+
+        def detect(frame):
+            # scale image incase image size donot match cv server
+            frame = rs.check_image_size_for_cv(frame)
+            # send frame to server and recieve the result
+            result = personTrack.req(frame)
+            # rescale pixel incase pixel donot match
+            frame = rs.check_image_size_for_ros(frame)
+            # init person_list
+            person_list = []
+
+            # if there is no person just skip
+            if len(result["result"]) == 0:
+                image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+                return
+
+            for person in result["result"]:
+                person_id = person[0]
+                self.x_pixel = int((person[2][0]+person[2][2])/2)
+                self.y_pixel = int((person[2][1]+person[2][3])/2)
+                self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
+
+                # visualize purpose
+                frame = cv2.circle(frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
+                frame = cv2.rectangle(frame, rs.rescale_pixel(person[2][0], person[2][1]), rs.rescale_pixel(person[2][2], person[2][3]), (0, 255, 0), 2)
+                frame = cv2.putText(frame, str(person_id), rs.rescale_pixel(person[2][0], person[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                
+                # get 3d person point
+                person_pose = Pose()
+                person_pose.position.x, person_pose.position.y, person_pose.position.z = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
+                person_pose.orientation.x, person_pose.orientation.y, person_pose.orientation.z, person_pose.orientation.w = 0,0,0,1
+                person_list.append((person_id, person_pose))
+
+            image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+            # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
+            return person_list
+
+        def transform_pose(input_pose, from_frame, to_frame):
+            # **Assuming /tf2 topic is being broadcasted
+            tf_buffer = tf2_ros.Buffer()
+            pose_stamped = PoseStamped()
+            pose_stamped.pose = input_pose
+            pose_stamped.header.frame_id = from_frame
+            pose_stamped.header.stamp = rospy.Time.now()
+            try:
+                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+                output_pose_stamped = tf_buffer.transform(
+                    pose_stamped, to_frame, rospy.Duration(1))
+                return output_pose_stamped.pose
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                raise
+            
+        def avaliable_seat_list():
+            global ed
+            avaliable_seat = list(self.chair_list)
+            for person in self.person_list:
+                person_id      = str(person[0])
+                min_distance = 10000000
+                person_pose = person[1]
+                person_pose = transform_pose(person_pose, "camera_link", "map")
+                # compare with chair
+                for chair in ed.get_chair_poses(): ## TODO ed get chair list
+                    chair_pose = chair["position"]
+                
+                    distance = float(((chair_pose.position.x - person_pose.position.x)**2 + (chair_pose.position.y - person_pose.position.y)**2)**0.5)
+                    if distance < min_distance:
+                        min_distance = distance
+                        bond_chair = chair
+                avaliable_seat.remove(bond_chair)
+            
+            return avaliable_seat
+        
+        #===============================================start=============================================
+        # start person tracker
+        # (person_id,point)
+
+        rospy.sleep(0.5)
+        result_person_list = []
+        avaliable_seat = []
+        for i in range(10):
+            result_person_list = detect(rs.get_image())
+            if result_person_list is not None:
+                for result in result_person_list:
+                    # if there are no
+                    if result[0] != [r[0] for r in self.person_list]:
+                        self.person_list.append(result)
+        avaliable_seat = avaliable_seat_list()
+        rospy.loginfo("avaliable seat are:" + str(avaliable_seat))
+        
+        if len(avaliable_seat) == 0:
             return 'continue_No_seat'
         else:
+            userdata.avaliable_seat_out = avaliable_seat
             return 'continue_Seat'
 
 
@@ -270,9 +388,12 @@ class No_seat(smach.State):
 class Seat(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Seat state')
-        smach.State.__init__(self,outcomes=['continue_Introduce_guest'])
+        smach.State.__init__(self,outcomes=['continue_Introduce_guest'], input_keys=['avaliable_seat_in'])
+        
     def execute(self,userdata):
         rospy.loginfo('Executing Seat state')
+        # list of avaliable seat
+        avaliable_seat = userdata.avaliable_seat_in
         # announce that there is available seat
         # point to the furniture
         speak("There is an available seat here")
@@ -406,6 +527,8 @@ class Navigate_to_start(smach.State):
 if __name__ == '__main__':
     rospy.init_node('receptionist_task')
 
+    tf_Buffer = tf2_ros.Buffer()
+
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
     gm = GuestNameManager("../config/receptionist_database.yaml")
     gm.reset()
@@ -436,6 +559,9 @@ if __name__ == '__main__':
     # Create a SMACH state machine
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED'])
 
+    # smach userdata
+    sm_top.userdata.avaliable_seat = []
+
     # Open the container
     with sm_top:
         # Add states to the container
@@ -447,11 +573,13 @@ if __name__ == '__main__':
                                transitions={'continue_Navigation':'Navigation'})
         smach.StateMachine.add('Navigation', Navigation(),
                                transitions={'continue_No_seat':'No_seat',
-                                            'continue_Seat':'Seat'})
+                                            'continue_Seat':'Seat'},
+                               remapping  ={'avaliable_seat_out':'avaliable_seat'})
         smach.StateMachine.add('No_seat', No_seat(),
                                transitions={'continue_Introduce_guest':'Introduce_guest'})
         smach.StateMachine.add('Seat', Seat(),
-                               transitions={'continue_Introduce_guest':'Introduce_guest'})
+                               transitions={'continue_Introduce_guest':'Introduce_guest'},
+                               remapping  ={'avaliable_seat_in':'avaliable_seat'})
         smach.StateMachine.add('Introduce_guest', Introduce_guest(),
                                transitions={'continue_Introduce_host':'Introduce_host'})
         smach.StateMachine.add('Introduce_host', Introduce_host(),
