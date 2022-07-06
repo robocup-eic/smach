@@ -83,7 +83,7 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
 
   geometry_msgs::Pose base_link_pose;
 
-  float max_table_y = target_pos1.position.y;
+  float max_table_y = target_pose1.position.y;
   while(!success)
   {
     target_pose1.position.y += 0.05;
@@ -94,7 +94,7 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
       success= (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
     }
 
-    if(target_pose.position.y > max_table_y)
+    if(target_pose1.position.y > max_table_y)
     {
       target_pose1 = MID_TABLE;
       move_group_interface.setPoseTarget(target_pose1);
@@ -365,20 +365,17 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   pose.orientation.w = myQuaternion.getW();
 
   geometry_msgs::Pose mid_table;
-  tf2::Quaternion myQuaternion;
 
   mid_table.position.x = place_within21_x - 0.1;
   mid_table.position.y = (place_within21_y + place_within22_y) / 2.0;
   mid_table.position.z = high + 0.25;
-
-  myQuaternion.setRPY( -1 * M_PI / 2, -1 * M_PI / 4, M_PI / 2 );
   mid_table.orientation.x = myQuaternion.getX();
   mid_table.orientation.y = myQuaternion.getY();
   mid_table.orientation.z = myQuaternion.getZ();
   mid_table.orientation.w = myQuaternion.getW();
   
   // move to preplace pose
-  move(pose, req.collision_object_posl, mid_table);
+  move(pose, req.collision_object_pos, mid_table);
   if (!success){
     return false;
   }
@@ -420,6 +417,7 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   res.success_place = success;
   ROS_INFO(res.success_place ? "true" : "false");
   return true;
+  }
 }
 
 int main(int argc, char** argv){
