@@ -1,15 +1,11 @@
+#!/usr/bin/env python
+
 from client.custom_socket import CustomSocket
 import socket
 import rospy
 from geometry_msgs.msg      import Point
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import String
-
-# connect to server
-host = '192.168.8.99'
-port = 11000
-personTrack = CustomSocket(host,port)
-personTrack.clientConnect()
 
 #CV2 related libraries
 from cv_bridge import CvBridge, CvBridgeError
@@ -202,6 +198,12 @@ class FindPerson:
 if __name__ == '__main__':
 
     rospy.init_node('receptionist_task')
+
+    # connect to server
+    host = '192.168.8.99'
+    port = 11000
+    personTrack = CustomSocket(host,port)
+    personTrack.clientConnect()
 
     person_finder = FindPerson()
     person_finder()
