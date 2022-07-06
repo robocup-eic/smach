@@ -40,6 +40,7 @@ from client.custom_socket import CustomSocket
 from client.nlp_server import SpeechToText, speak
 import time
 import threading
+from math import atan
 
 
 class Standby(smach.State):
@@ -122,20 +123,31 @@ class Follow_person(smach.State):
             try:
 
                 if time.time() - start_time > goal_send_interval:
-                    pose = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
+                    pose = self.tfBuffer.lookup_transform('base_footprint','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                     goal = MoveBaseGoal()
-                    goal.target_pose.header.frame_id = "map"
+                    goal.target_pose.header.frame_id = "base_footprint"
                     goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
                     goal.target_pose.pose.position.x = pose.transform.translation.x
                     goal.target_pose.pose.position.y = pose.transform.translation.y
-                    goal.target_pose.pose.orientation = pose.transform.rotation
+                    #TODO 
+                    delta_x = pose.transform.translation.x
+                    delta_y = pose.transform.translation.y
+                    yaw = atan(delta_x/delta_y) # yaw
+                    quarternion_orientation = tf.transformations.quaternion_from_euler(0, 0, yaw)
+                    goal.target_pose.pose.orientation.x = quarternion_orientation[0]
+                    goal.target_pose.pose.orientation.y = quarternion_orientation[1]
+                    goal.target_pose.pose.orientation.z = quarternion_orientation[2]
+                    goal.target_pose.pose.orientation.w = quarternion_orientation[3]
 
+                    last_pose_tf = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                     self.client.send_goal(goal)
-                    last_pose = (pose.transform.translation.x, pose.transform.translation.y, pose.transform.translation.z)
+                    last_pose = (last_pose_tf.transform.translation.x, last_pose_tf.transform.translation.y, last_pose_tf.transform.translation.z)
                     start_time = time.time()
-                    # rospy.loginfo("Sending new goal: Quarternion is {}, {}, {}, {}".format(pose.transform.rotation.w,pose.transform.rotation.x,pose.transform.rotation.y,pose.transform.rotation.z))
+
+                    rospy.loginfo("Sending new goal: X,Y,Z is {}, {}, {}".format(pose.transform.translation.x,pose.transform.translation.y,pose.transform.translation.z))
 
                     if  is_stop:
+
                         self.client.cancel_goal()
                         
                         self.stop_pub.publish(self.cancel)
@@ -146,29 +158,24 @@ class Follow_person(smach.State):
 
                     elif target_lost:
 
-                        # self.client.cancel_goal()
+                        self.client.cancel_goal()
                         
                         self.stop_pub.publish(self.cancel)
 
                         speak("I have lost you, where are you my friend.")
 
                         return "continue_stop"
-
-                    else:
-                        wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
-
                 else:
-                    
-                    wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
 
                     if target_lost:
+
+                        self.client.cancel_goal()
 
                         self.stop_pub.publish(self.cancel)
 
                         speak("I have lost you, where are you my friend.")
 
                         return "continue_stop"
-
 
             except Exception as e:
 
@@ -183,6 +190,8 @@ class Follow_person(smach.State):
                     return "continue_stop"
                 
                 if target_lost:
+
+                    self.client.cancel_goal()
 
                     self.stop_pub.publish(self.cancel)
 

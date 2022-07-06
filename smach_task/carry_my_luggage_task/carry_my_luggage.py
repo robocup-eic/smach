@@ -29,7 +29,7 @@ import threading
 # import for text-to-speech
 import requests
 import json
-from nlp_server import SpeechToText, speak
+from client.nlp_server import SpeechToText, speak
 import time
 
 #Bring in the simple action client
@@ -37,7 +37,7 @@ import actionlib
 
 #Bring in the .action file and messages used by the move based action
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from custom_socket import CustomSocket
+from client.custom_socket import CustomSocket
 from cv_bridge import CvBridge, CvBridgeError #
 from sensor_msgs.msg import Image, CameraInfo #
 
@@ -79,6 +79,7 @@ class Ask_if_arrived(smach.State):
         speak("Are we arrived?")
         
         while True:
+            
             if stt.body["intent"] is not None:
                 speak("Please say yes or no")
                 rospy.loginfo(self.stt.body["intent"])
@@ -183,15 +184,15 @@ class Follow_person(smach.State):
                 self.follow_cmd_pub.publish(self.follow_cmd)
 
                 try:
+
                     if time.time() - start_time > goal_send_interval:
-                    
                         pose = self.tfBuffer.lookup_transform('base_footprint','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                         goal = MoveBaseGoal()
                         goal.target_pose.header.frame_id = "base_footprint"
                         goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
                         goal.target_pose.pose.position.x = pose.transform.translation.x
                         goal.target_pose.pose.position.y = pose.transform.translation.y
-                        # TODO 
+                        #TODO 
                         delta_x = pose.transform.translation.x
                         delta_y = pose.transform.translation.y
                         yaw = atan(delta_x/delta_y) # yaw
@@ -201,42 +202,47 @@ class Follow_person(smach.State):
                         goal.target_pose.pose.orientation.z = quarternion_orientation[2]
                         goal.target_pose.pose.orientation.w = quarternion_orientation[3]
 
+                        last_pose_tf = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                         self.client.send_goal(goal)
-                        last_pose = (pose.transform.translation.x, pose.transform.translation.y, pose.transform.translation.z)
+                        last_pose = (last_pose_tf.transform.translation.x, last_pose_tf.transform.translation.y, last_pose_tf.transform.translation.z)
                         start_time = time.time()
-                        rospy.loginfo("Sending new goal: Quarternion is {}, {}, {}, {}".format(pose.transform.rotation.w,pose.transform.rotation.x,pose.transform.rotation.y,pose.transform.rotation.z))
 
-                        if  is_stop == True:
+                        rospy.loginfo("Sending new goal: X,Y,Z is {}, {}, {}".format(pose.transform.translation.x,pose.transform.translation.y,pose.transform.translation.z))
+
+                        if  is_stop:
 
                             self.client.cancel_goal()
-
+                            
                             self.stop_pub.publish(self.cancel)
 
                             speak("I'm stopped")
 
                             return "continue_stop"
 
-                        elif target_lost == True:
+                        elif target_lost:
 
                             self.client.cancel_goal()
-
+                            
                             self.stop_pub.publish(self.cancel)
 
-                            speak("I lost you, where are you my friend.")
+                            speak("I have lost you, where are you my friend.")
 
                             return "continue_stop"
 
                     else:
+                        
+                        # wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
 
                         if target_lost:
 
-                            self.follow_cmd = "Stop"
+                            self.client.cancel_goal()
 
                             self.stop_pub.publish(self.cancel)
 
                             speak("I have lost you, where are you my friend.")
 
                             return "continue_stop"
+
 
                 except Exception as e:
 
@@ -252,13 +258,13 @@ class Follow_person(smach.State):
                     
                     if target_lost:
 
+                        self.client.cancel_goal()
+
                         self.stop_pub.publish(self.cancel)
 
                         speak("I have lost you, where are you my friend.")
 
                         return "continue_stop"
-
-
             else:
 
                 try:
@@ -266,19 +272,19 @@ class Follow_person(smach.State):
                     self.follow_cmd.data = "follow"
                     self.follow_cmd_pub.publish(self.follow_cmd)
                         
-                    if  is_stop == True:
+                    if  is_stop:
 
-                        self.client.cancel_goal()
-                        
-                        self.stop_pub.publish(self.cancel)
+                        self.follow_cmd.data = "stop"
+                        self.follow_cmd_pub.publish(self.follow_cmd)
 
                         speak("I'm stopped")
 
                         return "continue_stop"
 
-                    elif target_lost == True:
+                    elif target_lost:
 
-                        self.client.cancel_goal()
+                        self.follow_cmd.data = "stop"
+                        self.follow_cmd_pub.publish(self.follow_cmd)
                         
                         self.stop_pub.publish(self.cancel)
 
@@ -306,6 +312,8 @@ class Follow_person(smach.State):
 
                         return "continue_stop"
 
+                        
+                
 
 class Get_bounding_box(smach.State):
     def __init__(self):
