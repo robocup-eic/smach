@@ -102,6 +102,20 @@ class Standby(smach.State):
     def execute(self,userdata):
         global image_pub, personTrack, rs
 
+        def go_to_Navigation(location):
+            goal = MoveBaseGoal()
+            goal.target_pose.header.frame_id = "map"
+            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+            goal.target_pose.pose = self.ed.get_robot_pose(location)
+            self.move_base_client.send_goal(goal)
+            self.move_base_client.wait_for_result()
+            result = self.move_base_client.get_result()
+            rospy.loginfo("result {}".format(result))
+            if result.status == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
+
         def detect(frame):
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
@@ -153,6 +167,9 @@ class Standby(smach.State):
         
         # -------------------------------------------------------------------------------------
         rospy.loginfo('Executing Standby state')
+
+        
+
         # run person detection constantly
         # wait untill the robot finds a person then continue to the next state
         # before continue to the next state count the number of person
