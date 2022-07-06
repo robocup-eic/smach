@@ -14,6 +14,7 @@ class EnvironmentDescriptor:
             except yaml.YAMLError as exc:
                 print(exc)
                 return None
+
     def get_robot_pose(self, name):
         for data in self.data_yaml:
             if data["name"] == name:
@@ -39,6 +40,15 @@ class EnvironmentDescriptor:
         for data in self.data_yaml:
             if data["name"] == name:
                 return data["height"]
+
+    def get_center_point(self, name):
+        for data in self.data_yaml:
+            if data["name"] == name:
+                center_point = Point()
+                center_point.x = data["position"]["x"]
+                center_point.y = data["position"]["y"]
+                center_point.z = data["position"]["z"]
+                return center_point
 
 if __name__ == "__main__":
     ed = EnvironmentDescriptor("../../config/fur_data.yaml")
