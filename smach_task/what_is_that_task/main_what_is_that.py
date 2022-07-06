@@ -104,7 +104,7 @@ class Follow_person(smach.State):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
         self.cancel = Twist()
-        self.stop_pub = stop_pub = rospy.Publisher("/walkie2/cmd_vel",Twist,queue_size=1)
+        self.stop_pub = rospy.Publisher("/walkie2/cmd_vel",Twist,queue_size=1)
 
         self.cancel.linear.x = 0
         self.cancel.linear.y = 0
@@ -115,7 +115,7 @@ class Follow_person(smach.State):
         global target_lost, is_stop, last_pose
         pose = TransformStamped()
 
-        goal_send_interval = 1 # send goal at least every 5 seconds or wait until previous goal.
+        goal_send_interval = 3 # send goal at least every 5 seconds or wait until previous goal.
         start_time = 0
 
         while True:
@@ -128,7 +128,7 @@ class Follow_person(smach.State):
                     goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
                     goal.target_pose.pose.position.x = pose.transform.translation.x
                     goal.target_pose.pose.position.y = pose.transform.translation.y
-                    # TODO 
+                    #TODO 
                     delta_x = pose.transform.translation.x
                     delta_y = pose.transform.translation.y
                     yaw = atan(delta_x/delta_y) # yaw
@@ -138,12 +138,15 @@ class Follow_person(smach.State):
                     goal.target_pose.pose.orientation.z = quarternion_orientation[2]
                     goal.target_pose.pose.orientation.w = quarternion_orientation[3]
 
+                    last_pose_tf = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                     self.client.send_goal(goal)
-                    last_pose = (pose.transform.translation.x, pose.transform.translation.y, pose.transform.translation.z)
+                    last_pose = (last_pose_tf.transform.translation.x, last_pose_tf.transform.translation.y, last_pose_tf.transform.translation.z)
                     start_time = time.time()
-                    rospy.loginfo("Sending new goal: Quarternion is {}, {}, {}, {}".format(pose.transform.rotation.w,pose.transform.rotation.x,pose.transform.rotation.y,pose.transform.rotation.z))
+
+                    rospy.loginfo("Sending new goal: X,Y,Z is {}, {}, {}".format(pose.transform.translation.x,pose.transform.translation.y,pose.transform.translation.z))
 
                     if  is_stop:
+
                         self.client.cancel_goal()
                         
                         self.stop_pub.publish(self.cancel)
@@ -162,14 +165,13 @@ class Follow_person(smach.State):
 
                         return "continue_stop"
 
-                    # else:
-                    #     wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
-
                 else:
                     
                     # wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
 
                     if target_lost:
+
+                        self.client.cancel_goal()
 
                         self.stop_pub.publish(self.cancel)
 
@@ -191,6 +193,8 @@ class Follow_person(smach.State):
                     return "continue_stop"
                 
                 if target_lost:
+
+                    self.client.cancel_goal()
 
                     self.stop_pub.publish(self.cancel)
 
@@ -218,7 +222,7 @@ class Get_bounding_box(smach.State):
 
         # condition variable
         self.lost_frame = 0
-        self.lost_threshold=100
+        self.lost_threshold=30
     
     def info_callback(self, cameraInfo):
         try:
@@ -381,7 +385,7 @@ class Get_bounding_box(smach.State):
                 x_coord, y_coord, z_coord = result[0]/1000, result[1]/1000, result[2]/1000
                 rospy.loginfo("Target is at {}, {}, {}".format(x_coord, y_coord, z_coord))
 
-                if 0.5 < z_coord < 8:
+                if 0.5 < z_coord < 4:
                     # rospy.loginfo("Target is at: ({}, {})".format(self.x_pixel, self.y_pixel))
                     # rospy.loginfo("Depth is {}".format(depth))
                     # rospy.loginfo("Detected at (x,y,z): {}".format([r/1000 for r in result]))
@@ -413,7 +417,6 @@ class Get_bounding_box(smach.State):
 
         while True:
             detect()
-            rospy.sleep(0.1)
 
             if  target_lost == True:
                 self.frame = None
