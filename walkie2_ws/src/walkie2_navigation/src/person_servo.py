@@ -42,7 +42,7 @@ class ChasePerson():
         self.sub_cmd = rospy.Subscriber("/human/follow_cmd",String, self.set_cmd)
         rospy.loginfo("Command Subscribers set")
         
-        self.pub_servo = rospy.Publisher("/servo2_command", Int16, queue_size=1)
+        self.pub_realsense_yaw = rospy.Publisher("/realsense_yaw_command", Int16, queue_size=1)
         rospy.loginfo("Publisher set")
         
         self._message = Int16()
@@ -99,7 +99,7 @@ class ChasePerson():
                 self._message.data = steer_action
                 
                 #-- publish it
-                self.pub_servo.publish(self._message)
+                self.pub_realsense_yaw.publish(self._message)
 
                 rate.sleep()
         except KeyboardInterrupt:
