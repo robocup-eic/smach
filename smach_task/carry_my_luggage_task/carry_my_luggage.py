@@ -29,7 +29,7 @@ import threading
 # import for text-to-speech
 import requests
 import json
-from client.nlp_server import SpeechToText, speak
+from util.nlp_server import SpeechToText, speak
 import time
 
 #Bring in the simple action client
@@ -37,7 +37,7 @@ import actionlib
 
 #Bring in the .action file and messages used by the move based action
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from client.custom_socket import CustomSocket
+from util.custom_socket import CustomSocket
 from cv_bridge import CvBridge, CvBridgeError #
 from sensor_msgs.msg import Image, CameraInfo #
 from actionlib_msgs.msg import GoalStatus
@@ -45,8 +45,8 @@ from actionlib_msgs.msg import GoalStatus
 # Utils function
 import math
 from math import atan
-from client.environment_descriptor import EnvironmentDescriptor
-from client.realsense import Realsense
+from util.environment_descriptor import EnvironmentDescriptor
+from util.realsense import Realsense
 
 class Start_signal(smach.State):
     def __init__(self):
@@ -100,6 +100,7 @@ class Start_signal(smach.State):
                 frame_count = 0
         
         # navigate to standby position
+        rospy.loginfo("moving to standby")
         standby = go_to_Navigation('standby')
         if standby:
             rospy.loginfo('Walky stand by, Ready for order')
@@ -280,9 +281,9 @@ class Follow_person(smach.State):
                 try:
 
                     if time.time() - start_time > goal_send_interval:
-                        pose = self.tfBuffer.lookup_transform('base_footprint','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
+                        pose = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                         goal = MoveBaseGoal()
-                        goal.target_pose.header.frame_id = "base_footprint"
+                        goal.target_pose.header.frame_id = "map"
                         goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
                         goal.target_pose.pose.position.x = pose.transform.translation.x
                         goal.target_pose.pose.position.y = pose.transform.translation.y
