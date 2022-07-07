@@ -60,24 +60,25 @@ class Start_signal(smach.State):
         smach.State.__init__(self,outcomes=['continue_Standby'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
+        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
         
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
 
         def go_to_Navigation(location):
-
             goal = MoveBaseGoal()
             goal.target_pose.header.frame_id = "map"
             goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-            goal.target_pose.pose = self.ed.get_robot_pose(location)
+            goal.target_pose.pose = ed.get_robot_pose(location)
             self.move_base_client.send_goal(goal)
             self.move_base_client.wait_for_result()
-            result = self.move_base_client.get_result()
-            rospy.loginfo("result {}".format(result))
-            if result.status == GoalStatus.SUCCEEDED :
-                return True
-            else:
-                return False
+            while True:
+                result = self.move_base_client.get_state()
+                rospy.loginfo("status {}".format(result))
+                if result == GoalStatus.SUCCEEDED :
+                    return True
+                else:
+                    return False
 
         global rs
         # Detect door opening
@@ -103,7 +104,7 @@ class Start_signal(smach.State):
                 frame_count = 0
         
         # navigate to standby position
-        standby = go_to_Navigation('standby')
+        standby = go_to_Navigation('living_room')
 
         if standby:
             rospy.loginfo('Walky stand by, Ready for order')
@@ -124,6 +125,7 @@ class Standby(smach.State):
         self.person_id = -1
 
     def execute(self,userdata):
+        rospy.loginfo('Executing Standby state')
         global image_pub, personTrack, rs
 
         def detect(frame):
@@ -239,9 +241,8 @@ class Ask(smach.State):
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(rs.get_image())
             msg = faceRec.register(frame, person_name)
-
-            if msg["isOk"]:
-                print(msg)
+            print(msg)
+            if msg["isOk"] or msg["message"] == "name taken":
                 break
             else:
                 print("No face detect.")
@@ -252,9 +253,10 @@ class Ask(smach.State):
         object_name = ""
         while True:
             if stt.body is not None:
-                if stt.body["intent"] == "favorite" and "object" in stt.body.keys():
+                # print(stt.body.keys())
+                if stt.body["intent"] == "favorite" and ("object" in stt.body.keys()):
                     print(stt.body["object"])
-                    object_name = stt.body["people"]
+                    object_name = stt.body["object"]
                     gm.add_guest_name("guest_{}".format(person_count), object_name)
                     stt.clear()
                     break
@@ -268,10 +270,10 @@ class Navigation(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigation state')
         smach.State.__init__(self,outcomes=['continue_No_seat','continue_Seat'])
-        global gm
+        global ed
 
         # init list of seat
-        self.chair_list = gm.get_chair_poses()
+        self.chair_list = ed.get_chair_poses()
         self.person_list = []
         self.bridge = CvBridge()
 
@@ -334,10 +336,10 @@ class Navigation(smach.State):
             global ed
             avaliable_seat = list(self.chair_list)
             for person in self.person_list:
-                person_id      = str(person[0])
+                person_id      = person[0]
                 min_distance = 10000000
                 person_pose = person[1]
-                person_pose = transform_pose(person_pose, "camera_link", "map")
+                person_pose = transform_pose(person_pose, "realsense", "map")
                 # compare with chair
                 for chair in ed.get_chair_poses(): ## TODO ed get chair list
                     chair_pose = chair["position"]

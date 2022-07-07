@@ -5,6 +5,8 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Global Map1
+        - /Global Map1/Map1
         - /Image1
       Splitter Ratio: 0.5
     Tree Height: 355
@@ -263,7 +265,7 @@ Visualization Manager:
         - Alpha: 0.699999988079071
           Class: rviz/Map
           Color Scheme: costmap
-          Draw Behind: false
+          Draw Behind: true
           Enabled: true
           Name: Map
           Topic: /move_base/global_costmap/costmap
@@ -425,25 +427,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 8.649818420410156
+      Distance: 16.211774826049805
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 6.3767547607421875
-        Y: -0.5961786508560181
-        Z: 0.11593344807624817
+        X: 0.4289524555206299
+        Y: 0.2671413719654083
+        Z: 0.08998522162437439
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4997963905334473
+      Pitch: 1.3897966146469116
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.5353978872299194
+      Yaw: 1.6453989744186401
     Saved: ~
 Window Geometry:
   Displays:
