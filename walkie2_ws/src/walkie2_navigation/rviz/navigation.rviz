@@ -82,10 +82,10 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
+      Size (Pixels): 8
       Size (m): 0.009999999776482582
-      Style: Flat Squares
-      Topic: /walkie/scan
+      Style: Points
+      Topic: /walkie2/scan
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -99,12 +99,42 @@ Visualization Manager:
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
-        Hokuyo_UST-10LX__2__v1_1:
+        Link Tree Style: Links in Alphabetic Order
+        Link1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        Link Tree Style: Links in Alphabetic Order
+        Link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_cr3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         base_footprint:
           Alpha: 1
           Show Axes: false
@@ -114,40 +144,91 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        cr3_base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        finger_l:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        finger_r:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hand:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hokuyo:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         imu_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        left_back_wheel_1:
+        left_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        left_front_wheel_1:
+        realsense:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        realsense_base_1:
+        right_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        realsense_mount_1:
+        sensor_d435_bottom_screw_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        sensor_d435_color_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        sensor_d435_color_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        sensor_d435_depth_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        sensor_d435_depth_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        sensor_d435_left_ir_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        sensor_d435_left_ir_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        sensor_d435_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        right_back_wheel_1:
+        sensor_d435_right_ir_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: true
-        right_front_wheel_1:
+        sensor_d435_right_ir_optical_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: true
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
@@ -174,7 +255,7 @@ Visualization Manager:
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /move_base/NavfnROS/plan
+      Topic: /move_base/GlobalPlanner/plan
       Unreliable: false
       Value: true
     - Class: rviz/Group
@@ -257,7 +338,7 @@ Visualization Manager:
           Topic: /move_base/TrajectoryPlannerROS/local_plan
           Unreliable: false
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Local Map
     - Alpha: 1
       Arrow Length: 0.05000000074505806
@@ -291,64 +372,22 @@ Visualization Manager:
       Unreliable: false
       Value: true
     - Class: rviz/TF
-      Enabled: true
+      Enabled: false
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        Hokuyo_UST-10LX__2__v1_1:
-          Value: true
-        base_footprint:
-          Value: true
-        base_link:
-          Value: true
-        imu_link:
-          Value: true
-        left_back_wheel_1:
-          Value: true
-        left_front_wheel_1:
-          Value: true
-        map:
-          Value: true
-        odom:
-          Value: true
-        realsense_base_1:
-          Value: true
-        realsense_mount_1:
-          Value: true
-        right_back_wheel_1:
-          Value: true
-        right_front_wheel_1:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          odom:
-            base_footprint:
-              base_link:
-                Hokuyo_UST-10LX__2__v1_1:
-                  {}
-                imu_link:
-                  {}
-                left_back_wheel_1:
-                  {}
-                left_front_wheel_1:
-                  {}
-                realsense_base_1:
-                  realsense_mount_1:
-                    {}
-                right_back_wheel_1:
-                  {}
-                right_front_wheel_1:
-                  {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /walkie/camera/color/image_raw
+      Image Topic: /blob/image_blob
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -386,25 +425,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 9.71407413482666
+      Distance: 8.649818420410156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 6.3767547607421875
+        Y: -0.5961786508560181
+        Z: 0.11593344807624817
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1453977823257446
+      Pitch: 1.4997963905334473
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.520397663116455
+      Yaw: 1.5353978872299194
     Saved: ~
 Window Geometry:
   Displays:
@@ -424,5 +463,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1267
-  X: 423
-  Y: 95
+  X: 120
+  Y: 27
