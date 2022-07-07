@@ -6,7 +6,7 @@ Subscribes to
     /human/rel_coor
     
 Publishes commands to 
-    /servo_command
+    /person_follow_cmd
 
 """
 import time
@@ -14,7 +14,7 @@ import rospy
 from geometry_msgs.msg import Point
 from std_msgs.msg import String, Int16
 
-K_LAT_DIST_TO_STEER     = 0.01
+K_LAT_DIST_TO_STEER     = 0.025
 START_OFFSET = 30
 
 
@@ -42,7 +42,7 @@ class ChasePerson():
         self.sub_cmd = rospy.Subscriber("/human/follow_cmd",String, self.set_cmd)
         rospy.loginfo("Command Subscribers set")
         
-        self.pub_servo = rospy.Publisher("/servo1_command", Int16, queue_size=1)
+        self.pub_servo = rospy.Publisher("/servo2_command", Int16, queue_size=1)
         rospy.loginfo("Publisher set")
         
         self._message = Int16()
@@ -71,7 +71,7 @@ class ChasePerson():
         
         if self.is_detected:
             #--- Apply steering, proportional to how close is the object
-            steer_action   = K_LAT_DIST_TO_STEER*self.rel_x
+            steer_action   = -1*K_LAT_DIST_TO_STEER*self.rel_x
             steer_action   = saturate(steer_action, -90, 90)
         else:
             steer_action    = 0
@@ -88,7 +88,7 @@ class ChasePerson():
                 #-- Get the control action 
                 steer_action = self.get_control_action() 
                 
-                rospy.loginfo("angular_z = {}".format(steer_action))
+                # rospy.loginfo("angular_z = {}".format(steer_action))
 
                 if self.cmd != 'follow':
                     steer_action = 0
