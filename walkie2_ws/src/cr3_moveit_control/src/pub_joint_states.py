@@ -45,15 +45,15 @@ if __name__ == '__main__' :
     lift_state = 0.465
 
     pub = rospy.Publisher("/joint_states", JointState, queue_size=10)
-    rospy.Subscriber("/realsense_pitch_command", Int16, realsense_pitch_cb, queue_size=1)
-    rospy.Subscriber("/realsense_yaw_command", Int16, realsense_yaw_cb, queue_size=1)
+    rospy.Subscriber("/realsense_pitch_angle", Int16, realsense_pitch_cb, queue_size=1)
+    rospy.Subscriber("/realsense_yaw_angle", Int16, realsense_yaw_cb, queue_size=1)
     rospy.Subscriber("/lift_state", Float32, lift_cb)
 
     rate = rospy.Rate(10) # 10hz
     while not rospy.is_shutdown():
         try:
             msg = JointState()
-            msg.name = ["realsense_joint_yaw", "realsense_joint_pitch", "cr3_base_joint"]
+            msg.name = ["realsense_yaw_joint", "realsense_pitch_joint", "base_cr3_joint"]
             # Initialize the time of publishing
             msg.header.stamp = rospy.Time.now()
             # Joint angle values

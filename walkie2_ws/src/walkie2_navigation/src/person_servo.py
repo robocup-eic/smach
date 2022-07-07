@@ -74,7 +74,7 @@ class ChasePerson():
             steer_action   = -1*K_LAT_DIST_TO_STEER*self.rel_x
             steer_action   = saturate(steer_action, -90, 90)
         else:
-            steer_action    = 0
+            steer_action   = 0
 
         return int(steer_action)
         
