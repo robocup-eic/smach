@@ -3,7 +3,7 @@ local_costmap:
   laser_scan_sensor_1: {sensor_frame: hokuyo, data_type: LaserScan, topic: /walkie2/scan, marking: true, clearing: true}
   global_frame: odom
   robot_base_frame: base_footprint
-  update_frequency: 5
+  update_frequency: 10
   publish_frequency: 5
   static_map: false
   rolling_window: true
