@@ -340,7 +340,7 @@ class Follow_person(smach.State):
 
                 except Exception as e:
 
-                    rospy.loginfo("Error")
+                    rospy.loginfo(e)
 
                     if  is_stop:
 
