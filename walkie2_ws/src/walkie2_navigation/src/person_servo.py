@@ -58,7 +58,7 @@ class ChasePerson():
         self.rel_x = message.x
         self.rel_y = message.y
         self._time_detected = time.time()
-        # rospy.loginfo("Human detected: %.1f  %.1f "%(self.rel_x, self.rel_y))
+        rospy.loginfo("Human detected: %.1f  %.1f "%(self.rel_x, self.rel_y))
 
     def get_control_action(self):
         """
