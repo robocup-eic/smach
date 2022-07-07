@@ -42,7 +42,7 @@ class ChasePerson():
         self.sub_cmd = rospy.Subscriber("/human/follow_cmd",String, self.set_cmd)
         rospy.loginfo("Command Subscribers set")
         
-        self.pub_servo = rospy.Publisher("/servo2_command", Int16, queue_size=1)
+        self.pub_realsense_yaw = rospy.Publisher("/realsense_yaw_command", Int16, queue_size=1)
         rospy.loginfo("Publisher set")
         
         self._message = Int16()
@@ -58,7 +58,7 @@ class ChasePerson():
         self.rel_x = message.x
         self.rel_y = message.y
         self._time_detected = time.time()
-        # rospy.loginfo("Human detected: %.1f  %.1f "%(self.rel_x, self.rel_y))
+        rospy.loginfo("Human detected: %.1f  %.1f "%(self.rel_x, self.rel_y))
 
     def get_control_action(self):
         """
@@ -74,7 +74,7 @@ class ChasePerson():
             steer_action   = -1*K_LAT_DIST_TO_STEER*self.rel_x
             steer_action   = saturate(steer_action, -90, 90)
         else:
-            steer_action    = 0
+            steer_action   = 0
 
         return int(steer_action)
         
@@ -99,7 +99,7 @@ class ChasePerson():
                 self._message.data = steer_action
                 
                 #-- publish it
-                self.pub_servo.publish(self._message)
+                self.pub_realsense_yaw.publish(self._message)
 
                 rate.sleep()
         except KeyboardInterrupt:

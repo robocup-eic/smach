@@ -1,0 +1,196 @@
+<?xml version="1.0" ?>
+<robot name="urdfnaja" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:include filename="$(find urdfnaja_description)/urdf/materials.xacro" />
+<xacro:include filename="$(find urdfnaja_description)/urdf/urdfnaja.trans" />
+<xacro:include filename="$(find urdfnaja_description)/urdf/urdfnaja.gazebo" />
+<link name="base_link">
+  <inertial>
+    <origin xyz="-0.14266061601859278 -2.04104129482168e-16 0.6096114883710303" rpy="0 0 0"/>
+    <mass value="1074.5812290931972"/>
+    <inertia ixx="153.826231" iyy="155.222575" izz="27.438057" ixy="-0.0" iyz="0.0" ixz="9.102597"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="pantilt1_1">
+  <inertial>
+    <origin xyz="-0.009267873664598997 -0.009584201347951788 0.0168296234143277" rpy="0 0 0"/>
+    <mass value="0.52273509412428"/>
+    <inertia ixx="0.001265" iyy="0.000145" izz="0.001315" ixy="0.000132" iyz="1.4e-05" ixz="7e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.189306 -0.0 -1.463" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/pantilt1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0.189306 -0.0 -1.463" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/pantilt1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="Realsense_1_1">
+  <inertial>
+    <origin xyz="-2.498001805406602e-16 0.04700000000000002 2.220446049250313e-15" rpy="0 0 0"/>
+    <mass value="0.3648087412503483"/>
+    <inertia ixx="0.000317" iyy="2.7e-05" izz="0.000317" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.174006 0.05 -1.4805" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/Realsense_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="powder_coat_red"/>
+  </visual>
+  <collision>
+    <origin xyz="0.174006 0.05 -1.4805" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/Realsense_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="LM_1_1">
+  <inertial>
+    <origin xyz="3.3902413350627908e-15 0.04902981833717954 6.938893903907228e-17" rpy="0 0 0"/>
+    <mass value="12.732794109983676"/>
+    <inertia ixx="0.02996" iyy="0.051127" izz="0.02996" ixy="0.0" iyz="-0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.0 0.28 -0.098" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/LM_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0.0 0.28 -0.098" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/LM_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="RM_1_1">
+  <inertial>
+    <origin xyz="2.1662634637512955e-15 -0.04902981833717965 6.938893903907228e-17" rpy="0 0 0"/>
+    <mass value="12.73279410998368"/>
+    <inertia ixx="0.02996" iyy="0.051127" izz="0.02996" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.0 -0.28 -0.098" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/RM_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0.0 -0.28 -0.098" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/RM_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="CR3base_1_1">
+  <inertial>
+    <origin xyz="0.13142150000000002 -0.08222500000000002 0.12259999999999993" rpy="0 0 0"/>
+    <mass value="15.336928213606988"/>
+    <inertia ixx="0.037175" iyy="0.090909" izz="0.122862" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.016306 -0.082225 -0.4455" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/CR3base_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0.016306 -0.082225 -0.4455" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/CR3base_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="lidar_1_1">
+  <inertial>
+    <origin xyz="-5.551115123125783e-17 -6.194138613915646e-18 0.009128500000000012" rpy="0 0 0"/>
+    <mass value="0.18009801922048968"/>
+    <inertia ixx="2.3e-05" iyy="2.3e-05" izz="3.6e-05" ixy="0.0" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.197 0.0 -0.1955" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/lidar_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="powder_coat_blue"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.197 0.0 -0.1955" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://urdfnaja_description/meshes/lidar_1_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="Rev22" type="continuous">
+  <origin xyz="-0.189306 0.0 1.463" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="pantilt1_1"/>
+  <axis xyz="0.0 0.0 1.0"/>
+</joint>
+
+<joint name="Rev23" type="continuous">
+  <origin xyz="0.0153 -0.05 0.0175" rpy="0 0 0"/>
+  <parent link="pantilt1_1"/>
+  <child link="Realsense_1_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+</joint>
+
+<joint name="Rev24" type="continuous">
+  <origin xyz="0.0 -0.28 0.098" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="LM_1_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+</joint>
+
+<joint name="Rev25" type="continuous">
+  <origin xyz="0.0 0.28 0.098" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="RM_1_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+</joint>
+
+<joint name="Slider27" type="prismatic">
+  <origin xyz="-0.016306 0.082225 0.4455" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="CR3base_1_1"/>
+  <axis xyz="0.0 0.0 -1.0"/>
+  <limit upper="0.0" lower="0.0" effort="100" velocity="100"/>
+</joint>
+
+<joint name="Rigid28" type="fixed">
+  <origin xyz="0.197 0.0 0.1955" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="lidar_1_1"/>
+</joint>
+
+</robot>
