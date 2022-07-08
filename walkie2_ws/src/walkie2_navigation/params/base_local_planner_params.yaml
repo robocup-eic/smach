@@ -26,16 +26,16 @@ DWAPlannerROS:
   latch_xy_goal_tolerance: false
 
 # Forward Simulation Parameters
-  sim_time: 4
+  sim_time: 1.5 #4.0
   vx_samples: 80
   vy_samples: 0
-  vth_samples: 80
+  vth_samples: 40
   controller_frequency: 10.0
 
 # Trajectory Scoring Parameters
   path_distance_bias: 32.0
   goal_distance_bias: 20.0 # was 20.0
-  occdist_scale: 0.05
+  occdist_scale: 0.05 #0.08
   forward_point_distance: 0.325 #0.325
   stop_time_buffer: 0.2
   scaling_speed: 0.25
