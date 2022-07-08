@@ -4,7 +4,7 @@
   <arg default="$(find walkie2_description)/launch/urdf.rviz" name="rvizconfig"/>
   <param command="$(find xacro)/xacro $(arg model)" name="robot_description"/>
   <param name="use_gui" value="$(arg gui)"/>
-  <arg default="false" name="use_imu"/>
+  <arg default="true" name="use_imu"/>
   <arg default="false" name="rviz"/>
   <arg default="/dev/ttyACM0" name="port"/>
   
