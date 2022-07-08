@@ -115,7 +115,9 @@ class Standby(smach.State):
         smach.State.__init__(self, outcomes=['continue_follow'])
         
     def execute(self, userdata):
-        global stt
+        global stt, is_stop, target_lost
+        is_stop = False
+        target_lost = False
         rospy.loginfo('Executing state Standby')
         start_time = 0
         while True:
@@ -151,20 +153,20 @@ class Ask_if_arrived(smach.State):
 
             
             if stt.body:
-                speak("Please say yes or no")
                 rospy.loginfo(stt.body["intent"])
 
-                if stt.body["intent"] == "Yes": # waiting for "follow me" command
+                if stt.body["intent"] == "affirm": # waiting for "follow me" command
                     stt.clear()
                     return "continue_place_luggage"
 
-                elif stt.body["intent"] == "No": # waiting for "carry my luggage" command
+                elif stt.body["intent"] == "deny": # waiting for "carry my luggage" command
                     stt.clear()
-                    speak("Please say follow me if you want me to follow me again")
+                    speak("Please say follow me if you want me to follow you again")
                     return "continue_standby"
 
                 else:
-                    speak("Pardon?")
+                    speak("Please say yes or no")
+                    stt.clear()
                     stt.listen()
             time.sleep(0.01)
 
@@ -184,7 +186,7 @@ class Check_position(smach.State):
 
         smach.State.__init__(self, outcomes=['continue_stop'])
         rospy.loginfo('Initiating state Check_position')
-        self.detect_radius = 0.3
+        self.detect_radius = 0.2
         
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
@@ -203,7 +205,7 @@ class Check_position(smach.State):
             
             pose = self.tfBuffer.lookup_transform('map','base_footprint',rospy.Time.now()-rospy.Duration.from_sec(1.0))
 
-            distance = math.sqrt((pose.transform.translation.x-exit_position.x)**2+(pose.transform.translation.y-exit_position.y))
+            distance = ((pose.transform.translation.x-exit_position.x)**2+(pose.transform.translation.y-exit_position.y)**2)**0.5
 
 
             if distance<self.detect_radius:
@@ -211,10 +213,7 @@ class Check_position(smach.State):
                 robot_inside = False
                 rospy.loginfo("Robot outside exit, Switch to non-move_base person follower")
                        
-            if is_stop :
-                return 'continue_stop'
-
-            if target_lost :
+            if is_stop or target_lost:
                 return 'continue_stop'
             
 
@@ -234,8 +233,8 @@ class Stop_command(smach.State):
                     stt.clear()
                     return "continue_stop"
 
-                if target_lost:
-                    return "continue_stop"
+            if target_lost:
+                return "continue_stop"
             time.sleep(0.01)
 
 
@@ -281,9 +280,9 @@ class Follow_person(smach.State):
                 try:
 
                     if time.time() - start_time > goal_send_interval:
-                        pose = self.tfBuffer.lookup_transform('map','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
+                        pose = self.tfBuffer.lookup_transform('base_footprint','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                         goal = MoveBaseGoal()
-                        goal.target_pose.header.frame_id = "map"
+                        goal.target_pose.header.frame_id = "base_footprint"
                         goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
                         goal.target_pose.pose.position.x = pose.transform.translation.x
                         goal.target_pose.pose.position.y = pose.transform.translation.y
@@ -629,7 +628,7 @@ class Get_bounding_box(smach.State):
                     y = -x_coord
                     z = -y_coord
                     br = tf.TransformBroadcaster()
-                    br.sendTransform((x, y, z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense')
+                    br.sendTransform((x, y, z),tf.transformations.quaternion_from_euler(0, 0, 0),rospy.Time.now(),'human_frame','realsense_pitch')
 
         rospy.loginfo('Executing state Get_bounding_box')
         global target_lost, is_stop, person_id, last_pose

@@ -48,6 +48,8 @@
       <arg name="filters" value="pointcloud"/>
   </include>
 
+  <node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
+
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>
   </group>
@@ -59,7 +61,7 @@
     </node>
 
     <!-- Run serial_node for IMU data -->
-    <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+    <node name="imu_node" pkg="rosserial_python" type="serial_node.py">
       <param name="port" value="$(arg port)"/>
     </node>
 
