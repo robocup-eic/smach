@@ -3,21 +3,18 @@ local_costmap:
   laser_scan_sensor_1: {sensor_frame: hokuyo, data_type: LaserScan, topic: /walkie2/scan, marking: true, clearing: true}
   global_frame: odom
   robot_base_frame: base_footprint
-  update_frequency: 10
-  publish_frequency: 5
+  update_frequency: 10.0
+  publish_frequency: 5.0
   static_map: false
   rolling_window: true
-  width: 7.0
-  height: 7.0
   resolution: 0.03
-  # inflation_radius: 1.75
-  # cost_scaling_factor: 10.0
+  footprint_padding: 0.0
   
   plugins:
-    - {name: nonpersisting, type: "costmap_2d::NonPersistentVoxelLayer"}
+    - {name: obstacle_layer, type: "costmap_2d::NonPersistentVoxelLayer"}
     - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
 
-  nonpersisting:
+  obstacle_layer:
     enabled:              true
     track_unknown_space:  true
     max_obstacle_height:  1.7
@@ -37,7 +34,6 @@ local_costmap:
       min_obstacle_height: 0.0
       max_obstacle_height: 1.7
   
-    
   inflation_layer:
     enabled: true
     cost_scaling_factor: 10.0 # exponential rate at which the obstacle cost drops off (default: 10)
