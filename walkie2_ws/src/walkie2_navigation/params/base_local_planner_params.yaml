@@ -2,7 +2,7 @@ DWAPlannerROS:
 
 # Robot Configuration Parameters
   max_vel_x: 0.2 #was 1.0
-  min_vel_x: -0.15 #was -1.0
+  min_vel_x: 0.0 #was -1.0
 
   max_vel_y: 0.0
   min_vel_y: 0.0
@@ -40,6 +40,7 @@ DWAPlannerROS:
   stop_time_buffer: 0.2
   scaling_speed: 0.25
   max_scaling_factor: 0.2
+  # twirling_scale: 0.8 # 0.0
 
 # Oscillation Prevention Parameters
   oscillation_reset_dist: 0.05

@@ -253,12 +253,16 @@ class Follow_person(smach.State):
         self.cancel.linear.y = 0
         self.cancel.angular.z = 0
 
+        # follow with whole body
         self.follow_cmd = String()
         self.follow_cmd_pub = rospy.Publisher("/human/follow_cmd",String,queue_size=1)
 
         self.follow_cmd.data = "follow"
         self.is_cancelled = False
 
+        # realsense follow
+        self.realsense_follow_cmd = String()
+        self.realsense_follow_cmd_pub = rospy.Publisher("/human/realsense_follow_cmd", String, queue_size=1)
     def execute(self, userdata):
 
         rospy.loginfo('Executing state Follow_person')
@@ -276,6 +280,8 @@ class Follow_person(smach.State):
                 
                 self.follow_cmd.data = "stop"
                 self.follow_cmd_pub.publish(self.follow_cmd)
+
+                self.realsense_follow_cmd_pub.publish("follow")
 
                 try:
 
@@ -304,37 +310,26 @@ class Follow_person(smach.State):
                         rospy.loginfo("Sending new goal: X,Y,Z is {}, {}, {}".format(pose.transform.translation.x,pose.transform.translation.y,pose.transform.translation.z))
 
                         if  is_stop:
-
                             self.client.cancel_goal()
-                            
                             self.stop_pub.publish(self.cancel)
-
+                            self.realsense_follow_cmd_pub.publish("stop")
                             speak("I'm stopped")
-
                             return "continue_stop"
 
                         elif target_lost:
-
                             self.client.cancel_goal()
-                            
                             self.stop_pub.publish(self.cancel)
-
+                            self.realsense_follow_cmd_pub.publish("stop")
                             speak("I have lost you, where are you my friend.")
-
                             return "continue_stop"
-
                     else:
                         
                         # wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
-
                         if target_lost:
-
                             self.client.cancel_goal()
-
                             self.stop_pub.publish(self.cancel)
-
                             speak("I have lost you, where are you my friend.")
-
+                            self.realsense_follow_cmd_pub.publish("stop")
                             return "continue_stop"
 
 
@@ -343,56 +338,37 @@ class Follow_person(smach.State):
                     rospy.loginfo(e)
 
                     if  is_stop:
-
                         self.client.cancel_goal()
-                            
                         self.stop_pub.publish(self.cancel)
-
                         speak("I'm stopped")
-
+                        self.realsense_follow_cmd_pub.publish("stop")
                         return "continue_stop"
                     
                     if target_lost:
-
                         self.client.cancel_goal()
-
                         self.stop_pub.publish(self.cancel)
-
                         speak("I have lost you, where are you my friend.")
-
+                        self.realsense_follow_cmd_pub.publish("stop")
                         return "continue_stop"
             else:
-                
+                self.realsense_follow_cmd_pub.publish("stop")
                 try:
-
                     if not self.is_cancelled:
-
                         self.client.cancel_goal()
                         self.is_cancelled = True
-
-                        self.follow_cmd.data = "follow"
-                        self.follow_cmd_pub.publish(self.follow_cmd)
+                        self.follow_cmd_pub.publish("follow")
                         
                     if  is_stop:
-
-                        self.follow_cmd.data = "stop"
-                        self.follow_cmd_pub.publish(self.follow_cmd)
-
+                        self.follow_cmd_pub.publish("stop")
                         self.stop_pub.publish(self.cancel)
-
                         speak("I'm stopped")
-
                         return "continue_stop"
 
                     elif target_lost:
-
                         self.follow_cmd.data = "stop"
                         self.follow_cmd_pub.publish(self.follow_cmd)
-
                         self.stop_pub.publish(self.cancel)
-
                         speak("I lost you, where are you my friend.")
-
                         return "continue_stop"
 
                 except Exception as e:
@@ -401,24 +377,16 @@ class Follow_person(smach.State):
 
                         self.follow_cmd.data = "stop"
                         self.follow_cmd_pub.publish(self.follow_cmd)
-
                         self.stop_pub.publish(self.cancel)
-
                         speak("I'm stopped")
-
                         return "continue_stop"
 
                     elif target_lost:
-
                         self.follow_cmd.data = "stop"
                         self.follow_cmd_pub.publish(self.follow_cmd)
-
                         self.stop_pub.publish(self.cancel)
-
                         speak("I lost you, where are you my friend.")
-
                         return "continue_stop"
-                        
                 
 
 class Get_bounding_box(smach.State):
@@ -647,8 +615,10 @@ class Get_bounding_box(smach.State):
         self.image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
         rospy.sleep(0.5)
 
+        skip_frame = 10
+        skip_frame
         while True:
-            
+            if skip_frame < 
             detect()
             rospy.sleep(0.1)
 
