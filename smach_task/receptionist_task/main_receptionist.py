@@ -546,6 +546,7 @@ if __name__ == '__main__':
     tf_Buffer = tf2_ros.Buffer()
 
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed.visual_robotpoint()
     gm = GuestNameManager("../config/receptionist_database.yaml")
     gm.reset()
     person_count = 0
