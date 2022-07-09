@@ -148,16 +148,16 @@
   </inertial>
   <visual>
     <origin xyz="0.174006 0.05 -1.4942" rpy="0 0 0"/>
-    <!-- <geometry>
+    <geometry>
       <mesh filename="package://walkie2_description/meshes/realsense_pitch.stl" scale="0.001 0.001 0.001"/>
-    </geometry> -->
+    </geometry>
     <material name="silver"/>
   </visual>
   <collision>
     <origin xyz="0.174006 0.05 -1.4942" rpy="0 0 0"/>
-    <!-- <geometry>
+    <geometry>
       <mesh filename="package://walkie2_description/meshes/realsense_pitch.stl" scale="0.001 0.001 0.001"/>
-    </geometry> -->
+    </geometry>
   </collision>
 </link>
 

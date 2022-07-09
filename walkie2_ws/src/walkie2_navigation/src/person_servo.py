@@ -13,8 +13,10 @@ import time
 import rospy
 from geometry_msgs.msg import Point
 from std_msgs.msg import String, Int16
+from nav_msgs.msg import Odometry
 
 K_LAT_DIST_TO_STEER     = 0.025
+K_ROBOT_STEER = 0.1
 START_OFFSET = 30
 
 
@@ -22,7 +24,6 @@ def saturate(value, min, max):
     if value <= min: return(min)
     elif value >= max: return(max)
     else: return(value)
-
 
 class ChasePerson():
     def __init__(self):
@@ -33,26 +34,40 @@ class ChasePerson():
         self.abs_y         = 0.0
         self.abs_z         = 0.0
         self._time_detected = 0.0
+        self.robot_angular_z = 0.0
 
         self.cmd = ''
         
         self.sub_center = rospy.Subscriber("/human/rel_coor", Point, self.rel_update_coor)
         rospy.loginfo("Rel Subscribers set")
         
-        self.sub_cmd = rospy.Subscriber("/human/follow_cmd",String, self.set_cmd)
+        self.sub_cmd = rospy.Subscriber("/human/realsense_follow_cmd",String, self.set_cmd)
         rospy.loginfo("Command Subscribers set")
+
+        self.sub_odom = rospy.Subscriber("/walkie2/odom", Odometry, self.odom_cb)
         
-        self.pub_realsense_yaw = rospy.Publisher("/realsense_yaw_command", Int16, queue_size=1)
+        self.pub_realsense_relative_yaw = rospy.Publisher("/realsense_yaw_relative_command", Int16, queue_size=1)
         rospy.loginfo("Publisher set")
+
+        self.pub_realsense_absolute_pitch = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_absolute_yaw = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
+        rospy.loginfo("Pubslisher realsense set home")
         
         self._message = Int16()
         
+    def realsense_set_home(self):
+        self.pub_realsense_absolute_pitch.publish(-35)
+        self.pub_realsense_absolute_yaw.publish(10)
+        time.sleep(2)
+
     @property
     def is_detected(self): return(time.time() - self._time_detected < 1.0)
 
     def set_cmd(self,message):
         self.cmd = message.data
     
+    def odom_cb(self, message):
+        self.robot_angular_z = message.twist.twist.angular.z
         
     def rel_update_coor(self, message):
         self.rel_x = message.x
@@ -71,8 +86,9 @@ class ChasePerson():
         
         if self.is_detected:
             #--- Apply steering, proportional to how close is the object
-            steer_action   = -1*K_LAT_DIST_TO_STEER*self.rel_x
-            steer_action   = saturate(steer_action, -90, 90)
+            # steer_action   = (-1)*K_LAT_DIST_TO_STEER*self.rel_x + (-1)*K_ROBOT_STEER*self.robot_angular_z
+            steer_action   = (-1)*K_LAT_DIST_TO_STEER*self.rel_x
+            steer_action   = saturate(steer_action, -3, 3)
         else:
             steer_action   = 0
 
@@ -91,7 +107,8 @@ class ChasePerson():
                 # rospy.loginfo("angular_z = {}".format(steer_action))
 
                 if self.cmd != 'follow':
-                    steer_action = 0
+                    self.realsense_set_home()
+                    steer_action = 0      
 
                 rospy.loginfo("angular_z = {}".format(steer_action))
                 
@@ -99,7 +116,7 @@ class ChasePerson():
                 self._message.data = steer_action
                 
                 #-- publish it
-                self.pub_realsense_yaw.publish(self._message)
+                self.pub_realsense_relative_yaw.publish(self._message)
 
                 rate.sleep()
         except KeyboardInterrupt:

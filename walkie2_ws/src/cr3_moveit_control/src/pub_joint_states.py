@@ -6,7 +6,6 @@ from pickle import TRUE
 import rospy
 from std_msgs.msg import Bool, Int16, Float32
 from sensor_msgs.msg import JointState
-from tesr_ros_cr3_pkg.msg import JointCommand
 
 # other library
 import time
@@ -44,7 +43,7 @@ if __name__ == '__main__' :
     global lift_state
     lift_state = 0.465
 
-    pub = rospy.Publisher("/joint_states", JointState, queue_size=10)
+    pub = rospy.Publisher("walkie2/joint_states", JointState, queue_size=10)
     rospy.Subscriber("/realsense_pitch_angle", Int16, realsense_pitch_cb, queue_size=1)
     rospy.Subscriber("/realsense_yaw_angle", Int16, realsense_yaw_cb, queue_size=1)
     rospy.Subscriber("/lift_state", Float32, lift_cb)
@@ -57,7 +56,7 @@ if __name__ == '__main__' :
             # Initialize the time of publishing
             msg.header.stamp = rospy.Time.now()
             # Joint angle values
-            msg.position = [realsense_pitch_angle, realsense_yaw_angle, lift_state]
+            msg.position = [realsense_yaw_angle, realsense_pitch_angle, lift_state]
             # rospy.loginfo(msg.position)
             pub.publish(msg)
             rate.sleep()
