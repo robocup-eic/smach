@@ -810,7 +810,7 @@ class Place_object(smach.State):
                                              'continue_SUCCEEDED'],
                                     input_keys = ['object_pose_list_input'])
     def execute(self, userdata):
-        global count_placeObject
+        global count_placeObject,PLACE_TABLE
         rospy.loginfo('Executing Place_object state')
         count_placeObject += 1
         rospy.loginfo('Number of object placed = %s', count_placeObject)
@@ -862,11 +862,11 @@ class Place_object(smach.State):
         corner3 = Pose()
         corner4 = Pose()
         high = Point()
-        # robot_pose = Pose()
+        robot_pose = Pose()
 
         ed = EnvironmentDescriptor("../config/fur_data.yaml")
-        corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list("table1")
-        high.z = ed.get_height("table1")
+        corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list(PLACE_TABLE)
+        high.z = ed.get_height(PLACE_TABLE)
 
         robot_pose = transform_pose(Pose(), "world", "robot_pose")
 
@@ -942,6 +942,7 @@ if __name__ == '__main__':
     CEREAL_FUR = "table1"
     MILK_FUR = "bed"
     FLAT_SURFACE = "flat_surface"
+    PLACE_TABLE = "table1"
     ###############################
 
     #declare the global variable
