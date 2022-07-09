@@ -88,5 +88,7 @@
 
   </group>
 
+  <node name="realsense_follow" pkg="walkie2_navigation" type="person_servo.py"/>
+
   
 </launch>

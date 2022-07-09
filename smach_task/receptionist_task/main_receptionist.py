@@ -471,11 +471,6 @@ class Introduce_guest(smach.State):
         while not is_found:
             self.rotate_pub.publish(rotate_msg)
             detections = faceRec.detect(rs.get_image())
-            ############
-
-
-            # return
-            ############
             for name,location in detections.items():
                 rospy.loginfo('Detected: {}'.format(name))
                 if name == gm.get_guest_name("host") and 400 < location[0] < 800:

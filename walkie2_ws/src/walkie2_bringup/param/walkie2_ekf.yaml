@@ -27,8 +27,8 @@ imu0_config: [false, false, false,
               false, false, false,
               false, false, true,
               false, false, false]
-imu0_pose_rejection_threshold: 0.3
-imu0_twist_rejection_threshold: 0.3
+imu0_pose_rejection_threshold: 0.2
+imu0_twist_rejection_threshold: 0.2
 imu0_differential: true
 imu0_relative: true
 imu0_remove_gravitational_acceleration: true
