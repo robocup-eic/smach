@@ -198,13 +198,15 @@ class Check_position(smach.State):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
+        robot_inside = True
+
     def execute(self, userdata):
         
 
         rospy.loginfo('Executing state Check_position')
         global robot_inside, is_stop, target_lost, ed
 
-        robot_inside = True
+        
 
         exit_position = ed.get_center_point("bedroom_entrance")
 
