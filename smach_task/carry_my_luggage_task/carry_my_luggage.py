@@ -193,10 +193,12 @@ class Check_position(smach.State):
 
         smach.State.__init__(self, outcomes=['continue_stop'])
         rospy.loginfo('Initiating state Check_position')
-        self.detect_radius = 0.2
+        self.detect_radius = 0.5
         
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
+
+        robot_inside = True
 
     def execute(self, userdata):
         
@@ -204,7 +206,7 @@ class Check_position(smach.State):
         rospy.loginfo('Executing state Check_position')
         global robot_inside, is_stop, target_lost, ed
 
-        robot_inside = True
+        
 
         exit_position = ed.get_center_point("exit")
 
@@ -214,6 +216,7 @@ class Check_position(smach.State):
 
             distance = ((pose.transform.translation.x-exit_position.x)**2+(pose.transform.translation.y-exit_position.y)**2)**0.5
 
+            rospy.loginfo('Distance to Exit : {} m'.format(distance))
 
             if distance<self.detect_radius:
 
@@ -432,7 +435,6 @@ class Get_bounding_box(smach.State):
             result = personTrack.req(frame)
             # rescale pixel incase pixel donot match
             frame = rs.check_image_size_for_ros(frame)
-            rospy.loginfo(result)
             # check if there are any person
             if len(result["result"]) == 0:
                 self.image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))

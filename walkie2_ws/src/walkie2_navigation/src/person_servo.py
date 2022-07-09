@@ -58,7 +58,7 @@ class ChasePerson():
     def realsense_set_home(self):
         self.pub_realsense_absolute_pitch.publish(-35)
         self.pub_realsense_absolute_yaw.publish(10)
-        time.sleep(2)
+        time.sleep(0.5)
 
     @property
     def is_detected(self): return(time.time() - self._time_detected < 1.0)
