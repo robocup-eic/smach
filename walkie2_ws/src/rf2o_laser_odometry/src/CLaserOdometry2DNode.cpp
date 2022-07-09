@@ -123,7 +123,8 @@ bool CLaserOdometry2DNode::setLaserPoseFromTf()
   transform.setIdentity();
   try
   {
-    tf_listener.lookupTransform(base_frame_id, last_scan.header.frame_id, ros::Time(0), transform);
+    // tf_listener.lookupTransform(base_frame_id, last_scan.header.frame_id, ros::Time(0), transform);
+    tf_listener.lookupTransform(base_frame_id, "base_footprint", ros::Time(0), transform);
     retrieved = true;
   }
   catch (tf::TransformException &ex)

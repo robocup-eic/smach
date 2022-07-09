@@ -175,7 +175,7 @@
       z: 0.89293
       w: -0.45018
 -
-  name: livingroom entrance
+  name: livingroom_entrance
   frame_id: map
   shape: None
   position:
@@ -193,7 +193,7 @@
       z: 1.0
       w: 0.0
 -
-  name: bedroom entrance
+  name: bedroom_entrance
   frame_id: map
   shape: None
   position:
