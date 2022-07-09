@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from curses.textpad import rectangle
 import yaml
 import rospy
 from geometry_msgs.msg import Pose, Point
@@ -32,18 +33,7 @@ class EnvironmentDescriptor:
                 robot_pose.orientation.z = data["robot_pose"]["orientation"]["z"]
                 robot_pose.orientation.w = data["robot_pose"]["orientation"]["w"]
                 return robot_pose
-    def get_robot_pose(self, name):
-        for data in self.data_yaml:
-            if data["name"] == name:
-                robot_pose = Pose()
-                robot_pose.position.x = data["robot_pose"]["position"]["x"]
-                robot_pose.position.y = data["robot_pose"]["position"]["y"]
-                robot_pose.position.z = data["robot_pose"]["position"]["z"]
-                robot_pose.orientation.x = data["robot_pose"]["orientation"]["x"]
-                robot_pose.orientation.y = data["robot_pose"]["orientation"]["y"]
-                robot_pose.orientation.z = data["robot_pose"]["orientation"]["z"]
-                robot_pose.orientation.w = data["robot_pose"]["orientation"]["w"]
-                return robot_pose
+
     def get_chair_poses(self):
         chair_poses = []
         for data in self.data_yaml:
@@ -69,14 +59,32 @@ class EnvironmentDescriptor:
         for data in self.data_yaml:
             if data["name"] == name:
                 return data["height"]
+
     def get_center_point(self, name):
         for data in self.data_yaml:
             if data["name"] == name:
-                center_point = Point()
-                center_point.x = data["position"]["x"]
-                center_point.y = data["position"]["y"]
-                center_point.z = data["position"]["z"]
-                return center_point
+                if data["shape"]== "rectangle":
+                    center_point = Point()
+                    xc1 = data["corner1"]["x"]
+                    xc2 = data["corner2"]["x"]
+                    xc3 = data["corner3"]["x"]
+                    xc4 = data["corner4"]["x"]
+                    yc1 = data["corner1"]["y"]
+                    yc2 = data["corner2"]["y"]
+                    yc3 = data["corner3"]["y"]
+                    yc4 = data["corner4"]["y"]
+
+                    center_point.x = (xc1+xc2+xc3+xc4)/4
+                    center_point.y = (yc1+yc2+yc3+yc4)/4
+                    center_point.z = 0
+                
+                elif data["shape"] == "circle":
+                    center_point = Point()
+                    center_point.x = data["position"]["x"]
+                    center_point.y = data["position"]["y"]
+                    center_point.z = data["position"]["z"]
+                    
+            return center_point
     
     def visual_robotpoint(self):
         point_list = []
@@ -108,13 +116,13 @@ class EnvironmentDescriptor:
         start = rospy.Time.now()
         print(start)
 
-        rospy.logwarn("please add marker topic:= /robot_point_visual to see robot_pose point -*30 SEC REMAIN*-")
+        rospy.logwarn("please add marker topic:= /robot_point_visual to see robot_pose point -*60 SEC REMAIN*-")
         while True:
 
             if self.marker_pub.get_num_connections()>0:
                 break
 
-            if rospy.Time.now() - start >= rospy.Duration(30):
+            if rospy.Time.now() - start >= rospy.Duration(60):
                 break
 
         self.marker_pub.publish(point_marker)
