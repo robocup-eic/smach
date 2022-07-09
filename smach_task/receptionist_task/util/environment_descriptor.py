@@ -80,16 +80,15 @@ class EnvironmentDescriptor:
     
     def visual_robotpoint(self):
         point_list = []
-        name_list = []
+        # name_list = []
         for data in self.data_yaml:
-            
-            if data["robot_pose"] is not None:
+            if data.has_key("robot_pose"):
                 robot_pose = Point()
                 robot_pose.x = data["robot_pose"]["position"]["x"]
                 robot_pose.y = data["robot_pose"]["position"]["y"]
                 robot_pose.z = data["robot_pose"]["position"]["z"]
                 point_list.append(robot_pose)
-                name_list.append(data["name"])
+                # name_list.append(data["name"])
             
 
         point_marker = Marker()
@@ -99,15 +98,20 @@ class EnvironmentDescriptor:
         point_marker.type = Marker.POINTS
         point_marker.action = Marker.ADD
         point_marker.points = point_list
+        point_marker.scale.x = 0.1
+        point_marker.scale.y = 0.1
         point_marker.color.a = 1
         point_marker.color.r = 0
         point_marker.color.g = 1
         point_marker.color.b = 1
 
+        def wait_for_sub():
+            while True:
+                if self.marker_pub.get_num_connections()>0:
+                    break
+
+        wait_for_sub() 
         self.marker_pub.publish(point_marker)
-
-
-
 
 if __name__ == "__main__":
     ed = EnvironmentDescriptor("../../config/fur_data.yaml")
