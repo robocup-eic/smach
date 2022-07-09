@@ -671,7 +671,7 @@ class GetObjectBBX(smach.State):
 class GetObjectProperties(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectProperties')
-        smach.State.__init__(self, outcomes=['continue_Place'], 
+        smach.State.__init__(self, outcomes=['continue_Place_object'], 
                              input_keys=['ListBBX_input'], 
                              output_keys=['ObjectPoseList_output', 'ObjectSizeList_output'])
         
@@ -801,7 +801,7 @@ class GetObjectProperties(smach.State):
         userdata.ObjectPoseList_output = self.ObjPoseList
         userdata.ObjectSizeList_output = self.ObjSizeList
 
-        return 'continue_Place'
+        return 'continue_Place_object'
         
 class Place_object(smach.State):
     def __init__(self):
