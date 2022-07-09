@@ -193,10 +193,12 @@ class Check_position(smach.State):
 
         smach.State.__init__(self, outcomes=['continue_stop'])
         rospy.loginfo('Initiating state Check_position')
-        self.detect_radius = 0.2
+        self.detect_radius = 0.5
         
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
+
+        robot_inside = True
 
     def execute(self, userdata):
         
@@ -204,16 +206,15 @@ class Check_position(smach.State):
         rospy.loginfo('Executing state Check_position')
         global robot_inside, is_stop, target_lost, ed
 
-        robot_inside = True
+        
 
-        exit_position = ed.get_center_point("exit")
+        exit_position = ed.get_center_point("bedroom_entrance")
 
         while True:
             
             pose = self.tfBuffer.lookup_transform('map','base_footprint',rospy.Time.now()-rospy.Duration.from_sec(1.0))
 
             distance = ((pose.transform.translation.x-exit_position.x)**2+(pose.transform.translation.y-exit_position.y)**2)**0.5
-
 
             if distance<self.detect_radius:
 
@@ -288,7 +289,8 @@ class Follow_person(smach.State):
                 self.follow_cmd.data = "stop"
                 self.follow_cmd_pub.publish(self.follow_cmd)
 
-                self.realsense_follow_cmd_pub.publish("follow")
+                # self.realsense_follow_cmd_pub.publish("follow")
+                self.realsense_follow_cmd_pub.publish("stop")
                 # rospy.loginfo("realsense follow command")
 
                 try:
@@ -297,13 +299,14 @@ class Follow_person(smach.State):
                         pose = self.tfBuffer.lookup_transform('base_footprint','human_frame',rospy.Time.now()-rospy.Duration.from_sec(1.0))
                         goal = MoveBaseGoal()
                         goal.target_pose.header.frame_id = "base_footprint"
-                        goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1)
+                        goal.target_pose.header.stamp = rospy.Time.now()-rospy.Duration.from_sec(1.0)
                         goal.target_pose.pose.position.x = pose.transform.translation.x
                         goal.target_pose.pose.position.y = pose.transform.translation.y
                         #TODO 
                         delta_x = pose.transform.translation.x
                         delta_y = pose.transform.translation.y
-                        yaw = atan(delta_x/delta_y) # yaw
+                        yaw = atan(delta_y/delta_x) # yaw
+
                         quarternion_orientation = tf.transformations.quaternion_from_euler(0, 0, yaw)
                         goal.target_pose.pose.orientation.x = quarternion_orientation[0]
                         goal.target_pose.pose.orientation.y = quarternion_orientation[1]
@@ -332,6 +335,7 @@ class Follow_person(smach.State):
                             return "continue_stop"
                     else:
                         
+                        
                         # wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
                         if target_lost:
                             self.client.cancel_goal()
@@ -359,12 +363,14 @@ class Follow_person(smach.State):
                         self.realsense_follow_cmd_pub.publish("stop")
                         return "continue_stop"
             else:
+                
                 self.realsense_follow_cmd_pub.publish("stop")
+                speak("Out of map")
                 try:
                     if not self.is_cancelled:
                         self.client.cancel_goal()
-                        self.is_cancelled = True
                         self.follow_cmd_pub.publish("follow")
+                        self.is_cancelled = True
                         
                     if  is_stop:
                         self.follow_cmd_pub.publish("stop")
@@ -432,7 +438,6 @@ class Get_bounding_box(smach.State):
             result = personTrack.req(frame)
             # rescale pixel incase pixel donot match
             frame = rs.check_image_size_for_ros(frame)
-            rospy.loginfo(result)
             # check if there are any person
             if len(result["result"]) == 0:
                 self.image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
@@ -490,6 +495,7 @@ class Get_bounding_box(smach.State):
 
                 if self.lost_frame >= self.lost_threshold:
                     target_lost = True
+                    # person_id = -1
 
                 if last_pose is not None:
                     br = tf.TransformBroadcaster()

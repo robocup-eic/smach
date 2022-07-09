@@ -33,7 +33,7 @@
     <param name="verbose" value="true" />                       # verbose
   </node>
 
-    <node name="urg_node" pkg="urg_node" type="urg_node">
+  <node name="urg_node" pkg="urg_node" type="urg_node">
     <param name="ip_address" value="192.168.5.4"/>
     <param name="frame_id" value="hokuyo"/>
     <param name="angle_max" value="1.57"/>

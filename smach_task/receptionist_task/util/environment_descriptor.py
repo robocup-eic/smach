@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from curses.textpad import rectangle
 import yaml
 import rospy
 from geometry_msgs.msg import Pose, Point
@@ -101,7 +100,7 @@ class EnvironmentDescriptor:
 
         point_marker = Marker()
         point_marker.header.frame_id = "map"
-        point_marker.header.stamp = rospy.Time().now()
+        point_marker.header.stamp = rospy.Time()
         point_marker.id = 99
         point_marker.type = Marker.POINTS
         point_marker.action = Marker.ADD
@@ -109,9 +108,9 @@ class EnvironmentDescriptor:
         point_marker.scale.x = 0.1
         point_marker.scale.y = 0.1
         point_marker.color.a = 1
-        point_marker.color.r = 0
-        point_marker.color.g = 1
-        point_marker.color.b = 1
+        point_marker.color.r = 1
+        point_marker.color.g = 0
+        point_marker.color.b = 0
 
         start = rospy.Time.now()
         print(start)
