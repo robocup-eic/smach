@@ -49,6 +49,28 @@ import socket
 from util.custom_socket import CustomSocket
 from util.realsense import Realsense
 
+import math
+
+class go_to_Navigation():
+    def __init__(self):
+        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    
+    def move(self,location):
+        global ed
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+        goal.target_pose.pose = ed.get_robot_pose(location)
+        self.move_base_client.send_goal(goal)
+        self.move_base_client.wait_for_result()
+        while True:
+            result = self.move_base_client.get_state()
+            rospy.loginfo("status {}".format(result))
+            if result == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
+
 
 class Start_signal(smach.State):
     def __init__(self):
@@ -96,12 +118,44 @@ class Navigate_living_room(smach.State):
         self.bridge = CvBridge()
         self.person_id = -1
 
+        #Pub sub
+        self.stop_pub = rospy.Publisher("/walkie2/cmd_vel",Twist,queue_size=1)
+        self.cancel = Twist()
+        self.cancel.linear.x = 0
+        self.cancel.linear.y = 0
+        self.cancel.angular.z = 0
+
+        #Tranform manager
+        self.tf_buffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
+
+
+
     def execute(self, userdata):
-        global posi, image_pub
+        global posi, image_pub, navigation
         # turn on person tracker model
         # navigate to the center of living room during using person tracker
         # if the model detects a person cancel the goal and find a Pose() of that person and send it to Approach_person state
         # if the robot reaches goal and does not locate a person go to Find_person state
+
+        def transform_pose(input_pose, from_frame, to_frame):
+            # **Assuming /tf2 topic is being broadcasted
+            pose_stamped = PoseStamped()
+            pose_stamped.pose = input_pose
+            pose_stamped.header.frame_id = from_frame
+            pose_stamped.header.stamp = rospy.Time.now()
+            output_pose_stamped = None
+            try:
+                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+                while not self.tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+
+                return output_pose_stamped
+
+
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                raise
         
         # turn on person tracker model
         def detect(frame):
@@ -115,7 +169,7 @@ class Navigate_living_room(smach.State):
             # if there is no person just skip
             if len(result["result"]) == 0:
                 rospy.loginfo("guest not found yet")
-                image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+                image_pu == Trueb.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
                 return
 
             # not found person yet
@@ -162,34 +216,14 @@ class Navigate_living_room(smach.State):
         
         rospy.loginfo('Executing Navigate_living_room state')
         # navigate to the center of living room during using person tracker
-        def go_to_Navigation(location):
-            goal = MoveBaseGoal()
-            goal.target_pose.header.frame_id = "map"
-            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-            goal.target_pose.pose = ed.get_robot_pose(location)
-            self.move_base_client.send_goal(goal)
-            self.move_base_client.wait_for_result()
-            while True:
-                result = self.move_base_client.get_state()
-                rospy.loginfo("status {}".format(result))
-                if result == GoalStatus.SUCCEEDED :
-                    return True
-                else:
-                    return False
         
         # navigate to center of living room position and turn on person tracker
-        standby = go_to_Navigation('living_room')
+        standby = navigation.move('living_room')
+
         while True:
-            if detect(rs.get_image()) == True:
+            if detect(rs.get_image()):
                 # stop moving (cancel goal)
                 self.move_base_client.cancel_goal()
-
-                cancel = Twist()
-                stop_pub = rospy.Publisher("/walkie/cmd_vel",Twist,queue_size=1)
-
-                cancel.linear.x = 0.0
-                cancel.linear.y = 0.0
-                cancel.angular.z = 0.0
 
                 stop_pub.publish(cancel)
                 
@@ -245,6 +279,10 @@ class Find_person(smach.State):
         self.bridge = CvBridge()
         self.person_id = -1
 
+        #Transforming Pose
+        self.tf_buffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
+
         # pub sub
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
         self.rotate_msg = Twist()
@@ -267,16 +305,20 @@ class Find_person(smach.State):
 
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
-            tf_buffer = tf2_ros.Buffer()
             pose_stamped = PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
             pose_stamped.header.stamp = rospy.Time.now()
+            output_pose_stamped = None
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                output_pose_stamped = tf_buffer.transform(
-                    pose_stamped, to_frame, rospy.Duration(1))
-                return output_pose_stamped.pose
+                while not self.tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+
+                return output_pose_stamped
+
+
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
@@ -326,8 +368,6 @@ class Find_person(smach.State):
             # get 3d person point
             # person_pose = Pose()
 
-            # rescale pixel incase pixel donot match
-            x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
             # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
                         
             if 0.75 < z_coord < 8:
@@ -380,14 +420,8 @@ class Ask(smach.State):
                     gm.add_guest_name("guest_{}".format(count_person), person_name) #(role, name)
                     stt.clear()
                     if count_person < 2:
-                        self.rotate_pub.publish(self.rotate_msg)
-                        time.sleep(3)
-                        self.stop_pub.publish(self.cancel)
                         return 'continue_Find_person'
                     else:
-                        self.rotate_pub.publish(self.rotate_msg)
-                        time.sleep(3)
-                        self.stop_pub.publish(self.cancel)
                         return 'continue_Navigate_to_start'
                 else:
                     speak("Pardon?")
@@ -404,28 +438,14 @@ class Navigate_to_start(smach.State):
         smach.State.__init__(self,outcomes=['continue_Announce'])
     def execute(self, userdata):
         rospy.loginfo('Executing Navigate_to_start state')
-        global ed
+        global navigation
         # walk back to the operator (location saved in yaml)
-        def go_to_Navigation(location):
-            goal = MoveBaseGoal()
-            goal.target_pose.header.frame_id = "map"
-            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-            goal.target_pose.pose = ed.get_robot_pose(location)
-            self.move_base_client.send_goal(goal)
-            self.move_base_client.wait_for_result()
-            while True:
-                result = self.move_base_client.get_state()
-                rospy.loginfo("status {}".format(result))
-                if result == GoalStatus.SUCCEEDED :
-                    return True
-                else:
-                    return False
+
+        rospy.loginfo("Moving to start point")
         
-        standby = go_to_Navigation(ed.get_robot_pose('start_point')) #start point will be declare 2H before test
-        if standby:
-            return 'continue_Announce'
-        else
-            return 'continue_Announce'
+        standby = navigation.move('start_point') #start point will be declare 2H before test
+
+        return 'continue_Announce'
 
 
 class Announce(smach.State):
@@ -434,28 +454,42 @@ class Announce(smach.State):
         smach.State.__init__(self,outcomes=['continue_SUCCEEDED'])
     def execute(self, userdata):
         rospy.loginfo('Executing Announce state')
-        global gm
+        global gm, ed
         # announce the person's name 
         # compare the person's location to the furiture's location
         # compare with chair
-        for obj in ed.get_object_poses(): ## TODO ed get chair list
-            obj_pose = obj["position"]
-        
-            distance = float(((chair_pose.position.x - person_pose.position.x)**2 + (chair_pose.position.y - person_pose.position.y)**2)**0.5)
-            if distance < min_distance:
-                min_distance = distance
-                bond_chair = chair
+        closest_locations = {}
+
+        for i in range(1,count_person+1):
+
+            guest_location = gm.get_guest_location("guest_{}".format(i))
+            obj_dist = []
+
+            for obj in ed.get_object_poses(): ## TODO ed get chair list
+
+                obj_pose = obj["position"]
+            
+                distance = math.sqrt((guest_location.position.x - obj_pose.position.x)**2 + (guest_location.position.y - obj_pose.position.y)**2)
+
+                obj_dist.append((obj['name'], distance))
+
+            obj_dist = sorted(obj_dist, key=lambda x: x[1])
+            closest_locations["guest_{}".format(i)] = obj_dist[0][0]
+            rospy.loginfo('{}'.format(obj_dist))
+
         # announce the person's location relative to the closest furniture 
         speak("Hello, I found two people in the room")
-        speak("The first person is {} which is located next to the {}".format(gm.get_guest_name("guest_1"), "table")) # TODO change furniture 
+        speak("The first person is {} which is located next to the {}".format(gm.get_guest_name("guest_1"), closest_locations["guest_1"])) # TODO change furniture 
         rospy.sleep(1)
-        speak("The second person is {} which is located next to the {}".format(gm.get_guest_name("guest_2"), "chair")) # TODO change furniture
+        speak("The second person is {} which is located next to the {}".format(gm.get_guest_name("guest_2"), closest_locations["guest_2"])) # TODO change furniture
         rospy.sleep(2)
         speak("I have finished my task")
         return 'continue_SUCCEEDED'
 
 
 if __name__ == '__main__':
+
+
     # initiate ros node
     rospy.init_node('find_my_friend_task')
     
@@ -467,6 +501,8 @@ if __name__ == '__main__':
     gm = GuestNameManager("../config/find_my_mate_database.yaml")
 
     image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
+
+    navigation = go_to_Navigation()
 
     # connect to server
     host = "0.0.0.0"
