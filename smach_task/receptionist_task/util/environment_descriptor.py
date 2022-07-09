@@ -81,7 +81,7 @@ class EnvironmentDescriptor:
     
     def visual_robotpoint(self):
         point_list = []
-        name_list = []
+        # name_list = []
         for data in self.data_yaml:
             if data.has_key("robot_pose"):
                 robot_pose = Point()
@@ -89,7 +89,7 @@ class EnvironmentDescriptor:
                 robot_pose.y = data["robot_pose"]["position"]["y"]
                 robot_pose.z = data["robot_pose"]["position"]["z"]
                 point_list.append(robot_pose)
-                name_list.append(data["name"])
+                # name_list.append(data["name"])
             
 
         point_marker = Marker()
@@ -106,15 +106,19 @@ class EnvironmentDescriptor:
         point_marker.color.g = 0
         point_marker.color.b = 0
 
-        def waitforsub():
-            if self.marker_pub.get_num_connections
-        
+        start = rospy.Time.now()
+        print(start)
+
+        rospy.logwarn("please add marker topic:= /robot_point_visual to see robot_pose point -*30 SEC REMAIN*-")
         while True:
+
+            if self.marker_pub.get_num_connections()>0:
+                break
+
+            if rospy.Time.now() - start >= rospy.Duration(30):
+                break
+
         self.marker_pub.publish(point_marker)
-        rospy.wait_for_message('robot_point_visual',Marker)
-
-
-
 
 if __name__ == "__main__":
     ed = EnvironmentDescriptor("../../config/fur_data.yaml")
