@@ -86,8 +86,8 @@ class ChasePerson():
         
         if self.is_detected:
             #--- Apply steering, proportional to how close is the object
-            # steer_action   = -1*K_LAT_DIST_TO_STEER*self.rel_x + (-1)*K_ROBOT_STEER*self.robot_angular_z
-            steer_action   = (-1)*K_ROBOT_STEER*self.robot_angular_z
+            # steer_action   = (-1)*K_LAT_DIST_TO_STEER*self.rel_x + (-1)*K_ROBOT_STEER*self.robot_angular_z
+            steer_action   = (-1)*K_LAT_DIST_TO_STEER*self.rel_x
             steer_action   = saturate(steer_action, -3, 3)
         else:
             steer_action   = 0
