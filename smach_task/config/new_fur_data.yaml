@@ -82,17 +82,17 @@
     x: 4.894972
     y: -2.4751634
     z: 0.0
-  robot_pose: 
-    position: 
-      x: 4.00367879868
-      y: -0.838799059391
-      z: 0.0
-    orientation: 
-      x: 0.0
-      y: 0.0
-      z: 0.999939642217
-      w: -0.010986897825
-  height: 0.4
+  # robot_pose: 
+  #   position: 
+  #     x: 4.00367879868
+  #     y: -0.838799059391
+  #     z: 0.0
+  #   orientation: 
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 0.999939642217
+  #     w: -0.010986897825
+  # height: 0.4
 -
   name: lamp #or plant pot/chair
   frame_id: map
@@ -102,16 +102,16 @@
     x: 4.32501125336
     y: -2.49307012558
     z: 0.0
-  robot_pose: #idk if it gonna be used
-    position: 
-      x: 4.00367879868
-      y: -0.838799059391
-      z: 0.0
-    orientation: 
-      x: 0.0
-      y: 0.0
-      z: 0.999939642217
-      w: -0.010986897825
+  # robot_pose: #idk if it gonna be used
+  #   position: 
+  #     x: 4.00367879868
+  #     y: -0.838799059391
+  #     z: 0.0
+  #   orientation: 
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 0.999939642217
+  #     w: -0.010986897825
 -
   name: plantpot
   frame_id: map
@@ -121,16 +121,16 @@
     x: 0.897457122803
     y: -2.80250144005
     z: 0.0
-  robot_pose: #idk if it gonna be used
-    position: 
-      x: 4.00367879868
-      y: -0.838799059391
-      z: 0.0
-    orientation: 
-      x: 0.0
-      y: 0.0
-      z: 0.999939642217
-      w: -0.010986897825
+  # robot_pose: #idk if it gonna be used
+  #   position: 
+  #     x: 4.00367879868
+  #     y: -0.838799059391
+  #     z: 0.0
+  #   orientation: 
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 0.999939642217
+  #     w: -0.010986897825
 -
   name: shelf
   frame_id: map
@@ -223,7 +223,7 @@
   robot_pose: #idk if it gonna be used
     position: 
       x: 8.3407
-      y: 1.40976
+      y: 2.40976
       z: 0.0
     orientation: 
       x: 0.0

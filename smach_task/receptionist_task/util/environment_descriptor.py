@@ -100,7 +100,7 @@ class EnvironmentDescriptor:
 
         point_marker = Marker()
         point_marker.header.frame_id = "map"
-        point_marker.header.stamp = rospy.Time()
+        point_marker.header.stamp = rospy.Time.now()
         point_marker.id = 99
         point_marker.type = Marker.POINTS
         point_marker.action = Marker.ADD
@@ -127,6 +127,6 @@ class EnvironmentDescriptor:
         self.marker_pub.publish(point_marker)
 
 if __name__ == "__main__":
-    ed = EnvironmentDescriptor("../../config/fur_data.yaml")
-    print(ed.get_robot_pose("table1"))
-    print(ed.get_chair_poses())
+    rospy.init_node("test_ed")
+    ed = EnvironmentDescriptor("../../config/new_fur_data.yaml")
+    ed.visual_robotpoint()
