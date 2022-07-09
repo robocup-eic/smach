@@ -105,8 +105,16 @@ class EnvironmentDescriptor:
         point_marker.color.g = 1
         point_marker.color.b = 1
 
+        start = rospy.Time.now()
+        print(start)
+
+        rospy.logwarn("please add marker topic:= /robot_point_visual to see robot_pose point -*30 SEC REMAIN*-")
         while True:
+
             if self.marker_pub.get_num_connections()>0:
+                break
+
+            if rospy.Time.now() - start >= rospy.Duration(30):
                 break
 
         self.marker_pub.publish(point_marker)
