@@ -105,12 +105,10 @@ class EnvironmentDescriptor:
         point_marker.color.g = 1
         point_marker.color.b = 1
 
-        def wait_for_sub():
-            while True:
-                if self.marker_pub.get_num_connections()>0:
-                    break
+        while True:
+            if self.marker_pub.get_num_connections()>0:
+                break
 
-        wait_for_sub() 
         self.marker_pub.publish(point_marker)
 
 if __name__ == "__main__":
