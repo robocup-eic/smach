@@ -1,4 +1,7 @@
+#!/usr/bin/env python
+
 import yaml
+from geometry_msgs.msg import Pose
 
 class GuestNameManager:
     def __init__(self, yaml_path):
@@ -9,13 +12,15 @@ class GuestNameManager:
         with open(self.yaml_path, "r") as f:
             try:
                 yaml_data = yaml.safe_load(f)
-                for data in yaml_data:
-                    if data is None:
-                        yaml_data.remove(data)
+                if not yaml_data:
+                    return []
+                if None in yaml_data:
+                    yaml_data.remove(None)
                 return yaml_data
             except yaml.YAMLError as exc:
                 print(exc)
                 return None
+                
     def write_yaml(self, data):
         with open(self.yaml_path, 'w') as file:
             yaml.dump(data, file, encoding=('utf-8'))
@@ -47,6 +52,33 @@ class GuestNameManager:
                 self.data_yaml[i] = data
         self.write_yaml(self.data_yaml)
 
+    def add_guest_location(self, role, location):
+        """
+        add gueset location in Pose tf with map frame
+        """
+        for i, data in enumerate(self.data_yaml):
+            if data["role"] == role:
+                position = {"x": location.position.x, "y": location.position.y, "z":location.position.z}
+                orientation = {"x": location.orientation.x, "y": location.orientation.y, "z": location.orientation.z, "w":location.orientation.w}
+                data["location"] = {}
+                data["location"]["position"] = position
+                data["location"]["orientation"] = orientation
+                self.data_yaml[i] = data
+        self.write_yaml(self.data_yaml)
+
+    def get_guest_location(self, role):
+        for data in self.data_yaml:
+            if data["role"] == role:
+                location = Pose()
+                location.position.x = data["location"]["position"]["x"]
+                location.position.y = data["location"]["position"]["y"]
+                location.position.z = data["location"]["position"]["z"]
+                location.orientation.x = data["location"]["orientation"]["x"]
+                location.orientation.y = data["location"]["orientation"]["y"]
+                location.orientation.z = data["location"]["orientation"]["z"]
+                location.orientation.w = data["location"]["orientation"]["w"]
+                return location
+
     def reset(self):
         host = {}
         for data in self.data_yaml:
@@ -57,7 +89,18 @@ class GuestNameManager:
         
 if __name__ == "__main__":
     gm = GuestNameManager("../../config/receptionist_database.yaml")
-    gm.add_guest_name("guest_3","earth")
-    gm.add_guest_fav_drink("guest_3", "jack daniel")
-    print(gm.get_guest_fav_drink("guest_3"))
-    gm.reset()
+    # print(type(gm.data_yaml))
+    # gm.add_guest_fav_drink("guest_3", "jack daniel")
+    # print(gm.get_guest_fav_drink("guest_3"))
+
+    # person_pose = Pose()
+    # person_pose.position.x = 0.1
+    # person_pose.position.y = 0.2
+    # person_pose.position.z = 0.3
+    # person_pose.orientation.x = 0
+    # person_pose.orientation.y = 0
+    # person_pose.orientation.w = 0
+    # person_pose.orientation.w = 1
+    # # gm.add_guest_location("guest_1", person_pose)
+    # print(gm.get_guest_location("guest_1"))
+    # # gm.reset()
