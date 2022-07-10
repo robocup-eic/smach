@@ -138,6 +138,7 @@ class Navigate_object(smach.State):
             return 'continue_GetObjectPose'
         else:
             return 'continue_ABORTED'
+            
 
 class GetObjectPose(smach.State):
     def __init__(self):
