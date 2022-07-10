@@ -136,7 +136,7 @@ class Navigate_object(smach.State):
 
 class Get_pose(smach.State):
     def __init__(self):
-        rospy.loginfo('Initiating state GetObjectPose')
+        rospy.loginfo('Initiating state Get_pose')
         smach.State.__init__(self, outcomes=['continue_Pick', 'continue_Navigate_object'], 
                                    input_keys=['Get_pose_out'],
                                    output_keys=['Get_pose_out'])
@@ -153,8 +153,8 @@ class Get_pose(smach.State):
         
 
     def execute(self, userdata):
-        rospy.loginfo('Executing state GetObjectPose')
-        global count_location
+        rospy.loginfo('Executing state Get_pose')
+        global count_location, rs
         
         def run_once():
             while self.intrinsics is None:
@@ -208,7 +208,7 @@ class Get_pose(smach.State):
             for center_pixel in self.center_pixel_list:
                 rospy.loginfo("found {}".format(center_pixel))
                 depth = self.depth_image[center_pixel[1], center_pixel[0]] # [y, x] for numpy array
-                result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [center_pixel[0], center_pixel[1]], depth) # [x, y] for realsense lib
+                result = rs.rs2_deproject_pixel_to_point(self.intrinsics, [center_pixel[0], center_pixel[1]], depth) # [x, y] for realsense lib
                 x_coord, y_coord, z_coord = result[0]/1000, result[1]/1000, result[2]/1000
 
                 # filter only object with more than 50 cm
@@ -283,7 +283,7 @@ class Get_pose(smach.State):
             try:
                 if self.intrinsics:
                     return
-                self.intrinsics = rs2.intrinsics()
+                self.intrinsics = rs.intrinsics()
                 self.intrinsics.width = cameraInfo.width
                 self.intrinsics.height = cameraInfo.height
                 self.intrinsics.ppx = cameraInfo.K[2]
@@ -291,7 +291,7 @@ class Get_pose(smach.State):
                 self.intrinsics.fx = cameraInfo.K[0]
                 self.intrinsics.fy = cameraInfo.K[4]
                 if cameraInfo.distortion_model == 'plumb_bob':
-                    self.intrinsics.model = rs2.distortion.brown_conrady
+                    self.intrinsics.model = rs.distortion.brown_conrady
                 elif cameraInfo.distortion_model == 'equidistant':
                     self.intrinsics.model = rs2.distortion.kannala_brandt4
                 self.intrinsics.coeffs = [i for i in cameraInfo.D]
@@ -360,10 +360,6 @@ class Get_pose(smach.State):
             detect()
             userdata.Get_pose_out = self.object_pose
             return 'continue_Pick'
-
-
-
-
         
 class Pick(smach.State):
     def __init__(self):
@@ -417,7 +413,6 @@ class Pick(smach.State):
         self.success = pick_service(transformed_pose, 'front')
 
         return 'continue_Navigate_table'
-
 
 class Navigate_table(smach.State):
     def __init__(self):
@@ -563,7 +558,6 @@ class GetObjectBBX(smach.State):
             userdata.ListBBX_output = self.bbxA_list
         return 'continue_GetObjectProperties'
         
-
 class GetObjectProperties(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectProperties')

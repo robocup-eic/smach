@@ -50,6 +50,9 @@ from util.environment_descriptor import EnvironmentDescriptor
 from cr3_moveit_control.srv import PickWithSide
 from cr3_moveit_control.srv import cr3_place
 
+# std msgs variable 
+from std_msgs.msg import Bool, Int16, Float32
+
 class go_to_Navigation():
     def __init__(self):
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
@@ -174,6 +177,8 @@ class GetObjectPose(smach.State):
             result = obj_tracker.req(frame)
             frame = rs.check_image_size_for_ros(frame)
             rospy.loginfo("result {}".format(result))
+            
+            # result['n'] is number of object
             if result['n'] == 0:
                 return None 
             # object detection bounding box 2d
@@ -182,14 +187,14 @@ class GetObjectPose(smach.State):
                     continue
                 else:
                     # receive xyxy
-                    x_pixel = int(bbox[0] + (bbox[2]-bbox[0])/2)
-                    y_pixel = int(bbox[1] + (bbox[3]-bbox[1])/2)
+                    x_pixel = int((bbox[0]+bbox[2])/2)
+                    y_pixel = int((bbox[3]+bbox[1])/2)
                     (x_pixel, y_pixel) = rs.rescale_pixel(x_pixel, y_pixel)
                     object_id = 1 # TODO change to object tracker
                     self.center_pixel_list.append((x_pixel, y_pixel, object_id))
                     # visualize purpose
                     frame = cv2.circle(frame, (x_pixel, y_pixel), 5, (0, 255, 0), 2)
-                    frame = cv2.rectangle(frame, rs.rescale_pixel(bbox[0], bbox[1]), rescale_pixel(bbox[2], bbox[3]), (0, 255, 0), 2)
+                    frame = cv2.rectangle(frame, rs.rescale_pixel(bbox[0], bbox[1]), rs.rescale_pixel(bbox[2], bbox[3]), (0, 255, 0), 2)
             
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
 
@@ -207,7 +212,7 @@ class GetObjectPose(smach.State):
                     self.object_pose_list.append((x_coord, y_coord, z_coord, center_pixel[2]))
 
                     self.tf_stamp = TransformStamped()
-                    self.tf_stamp.header.frame_id = "/camera_link"
+                    self.tf_stamp.header.frame_id = "/realsense_link"
                     self.tf_stamp.header.stamp = rospy.Time.now()
                     self.tf_stamp.child_frame_id = "/object_frame_{}".format(center_pixel[2]) # object_id
                     self.tf_stamp.transform.translation.x = z_coord
@@ -257,6 +262,11 @@ class GetObjectPose(smach.State):
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
 
+        # command realsense pitch to -45 degree
+        pub = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        pub.publish(-45)
+        time.sleep(1)
+        
         # run_once function
         run_once()
         while not rospy.is_shutdown():
@@ -277,16 +287,8 @@ class Pick(smach.State):
         rospy.loginfo('Executing state Pick')
         # recieving Pose() from GetObjectPose state
         recieved_pose = userdata.objectpose_input
-        rospy.loginfo('------ Position ------')
-        rospy.loginfo('x = %s', recieved_pose.position.x)
-        rospy.loginfo('x = %s', recieved_pose.position.x)
-        rospy.loginfo('y = %s', recieved_pose.position.y)
-        rospy.loginfo('z = %s', recieved_pose.position.z)
-        rospy.loginfo('------ Orientation ------')
-        rospy.loginfo('x = %s', recieved_pose.orientation.x)
-        rospy.loginfo('y = %s', recieved_pose.orientation.y)
-        rospy.loginfo('z = %s', recieved_pose.orientation.z)
-        rospy.loginfo('w = %s', recieved_pose.orientation.w)
+        rospy.loginfo('--------------------------')
+        rospy.loginfo(recieved_pose)
 
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
@@ -736,7 +738,7 @@ if __name__ == '__main__':
     ###############################
     # cereal is on table
     CEREAL_FUR = "table1"
-    MILK_FUR = "bed"
+    MILK_FUR = "table2"
     FLAT_SURFACE = "flat_surface"
     PLACE_TABLE = "table1"
     ###############################
@@ -783,6 +785,7 @@ if __name__ == '__main__':
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectname_input': 'string_name',
                                           'objectpose_output': 'object_pose'})
+
         smach.StateMachine.add('Pick', Pick(),
                                transitions={'continue_Navigate_table': 'Navigate_table',
                                             'continue_ABORTED': 'ABORTED'},
@@ -790,14 +793,17 @@ if __name__ == '__main__':
 
         smach.StateMachine.add('Navigate_table', Navigate_table(),
                                transitions={'continue_GetObjectBBX':'GetObjectBBX'})
+
         smach.StateMachine.add('GetObjectBBX', GetObjectBBX(), 
                                 transitions={'continue_GetObjectProperties':'GetObjectProperties'},
                                 remapping=   {'ListBBX_output': 'bbx_list'})
+
         smach.StateMachine.add('GetObjectProperties', GetObjectProperties(),
                                 transitions={'continue_Place_object':'Place_object'},
                                 remapping=   {'ListBBX_input'           : 'bbx_list',
                                               'ObjectPoseList_output'   : 'object_pose_list',
                                               'ObjectSizeList_output'   : 'object_size_list'})
+
         smach.StateMachine.add('Place_object', Place_object(),
                                transitions={'continue_Navigate_object':'Navigate_object',
                                             'continue_SUCCEEDED':'SUCCEEDED'},
