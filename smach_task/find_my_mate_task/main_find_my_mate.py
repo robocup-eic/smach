@@ -71,6 +71,15 @@ class go_to_Navigation():
                 return True
             else:
                 return False
+    
+    def move_no_block(self, location):
+        global ed
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+        goal.target_pose.pose = ed.get_robot_pose(location)
+        self.move_base_client.send_goal(goal)
+
 
     def move_position(self, position):
         goal = MoveBaseGoal()
@@ -257,9 +266,14 @@ class Navigate_living_room(smach.State):
         # navigate to the center of living room during using person tracker
         
         # navigate to center of living room position and turn on person tracker
-        standby = navigation.move('living_room')
-
+        navigation.move_no_block('living_room')
         while True:
+
+            result = navigation.move_base_client.get_state()
+            # rospy.loginfo("status {}".format(result))
+            if result == GoalStatus.SUCCEEDED :
+                rospy.loginfo('Arrived at center of living room')
+                return 'continue_Find_person'
             if detect(rs.get_image()):
                 # stop moving (cancel goal)
                 navigation.move_base_client.cancel_goal()
@@ -271,16 +285,7 @@ class Navigate_living_room(smach.State):
                 self.y_pixel = None
                 self.person_id = -1
                 
-                
                 return 'continue_Approach_person'
-
-            if standby:
-                rospy.loginfo('Arrived at center of living room')
-                return 'continue_Find_person'
-            else:
-                rospy.logerr('Navigation failed')
-                return 'continue_Find_person'
-
          # -------------------------------------------------------------------------------------
 
 
@@ -331,13 +336,18 @@ class Find_person(smach.State):
         self.cancel.linear.x = 0
         self.cancel.linear.y = 0
         self.cancel.angular.z = 0
+
+        self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
         
 
     def execute(self, userdata):
         rospy.loginfo('Executing Find_person state')
-        global posi, image_pub, rs, tracked_person_id
+        global posi, image_pub, rs, tracked_person_id, personTrack
+        # rotate 90 degree to avoid the first person
+
         # turn on person tracker model
-        # rotate around during using person tracker
+        
+        # rotate around to find the next person while turning a person tracker model
         # if the model detects a person cancel the goal and check the face in the database
         # if it does not match the database send pose  
         # send the pose to the approach person
@@ -362,7 +372,6 @@ class Find_person(smach.State):
                 raise
 
         def detect(frame):
-            global posi
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
             # send frame to server and recieve the result
@@ -436,16 +445,22 @@ class Find_person(smach.State):
             else:
                 return False         
         # -------------------------------------------------------------------------------------
+        # rotate 90 degree to avoid the first person
+        start_time = time.time()
 
-        self.rotate_pub.publish(self.rotate_msg)
+        while time.time() - start_time < 3.0:
+            self.rotate_pub.publish(self.rotate_msg)
             
-        is_found = False
-        while not is_found:
+    
+        while True:
+            self.rotate_pub.publish(self.rotate_msg)
             if detect(rs.get_image()) : 
                 self.stop_pub.publish(self.cancel)
-                is_found = True
-
+                break
+            
+        self.rotate_pub.publish(self.cancel)
         return 'continue_Approach_person'
+        
 
 
 class Ask(smach.State):
@@ -455,8 +470,6 @@ class Ask(smach.State):
                                             'continue_Navigate_to_start'])
 
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
-        self.rotate_msg = Twist()
-        self.rotate_msg.angular.z = 0.1
 
         self.stop_pub = rospy.Publisher("/walkie2/cmd_vel",Twist,queue_size=1)
         self.cancel = Twist()
