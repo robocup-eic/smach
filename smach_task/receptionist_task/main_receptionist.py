@@ -375,7 +375,7 @@ class Navigation(smach.State):
                 person_id      = person[0]
                 min_distance = 10000000
                 person_pose = person[1]
-                person_pose = transform_pose(person_pose, "realsense", "map")
+                person_pose = transform_pose(person_pose, "realsense_pitch_joint", "map")
                 closest_chair = -1
 
                 chairs_distance = []
