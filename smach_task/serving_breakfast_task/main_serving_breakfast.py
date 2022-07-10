@@ -318,7 +318,7 @@ class Pick(smach.State):
                 return 'continue_ABORTED'
 
         transformed_pose = transform_pose(
-            recieved_pose, "camera_link", "base_link")
+            recieved_pose, "realsense_pitch", "base_link")
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
@@ -339,8 +339,8 @@ class Navigate_table(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Executing Navigate_table state')
         # navigate to the table (can be any location chosen by our team )
-        global navigation
-        nav_status = navigation.move(FLAT_SURFACE)
+        global navigation, PLACE_TABLE
+        nav_status = navigation.move(PLACE_TABLE)
         if nav_status:
             return 'continue_GetObjectBBX'
         else:
@@ -739,7 +739,7 @@ if __name__ == '__main__':
     # cereal is on table
     CEREAL_FUR = "table1"
     MILK_FUR = "table2"
-    FLAT_SURFACE = "flat_surface"
+    # FLAT_SURFACE = "flat_surface"
     PLACE_TABLE = "table1"
     ###############################
 
@@ -771,6 +771,7 @@ if __name__ == '__main__':
     sm_top.userdata.object_size_list = []
 
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed.visual_robotpoint()
     
     with sm_top:
         smach.StateMachine.add('Start_signal', Start_signal(),

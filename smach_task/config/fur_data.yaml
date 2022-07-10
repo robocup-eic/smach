@@ -51,14 +51,14 @@
     z: 0.0
   robot_pose:
     position:
-      x: 3.44686
+      x: 3.64686
       y: -0.918418
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: 0.0
-      w: -1.0
+      z: 1.0
+      w: 0.0
   height: 0.82
 -
   name: bed
