@@ -4,6 +4,7 @@ import yaml
 import rospy
 from geometry_msgs.msg import Pose, Point
 from visualization_msgs.msg import Marker
+from move_base_msgs.msg import *
 
 class EnvironmentDescriptor:
     def __init__(self, yaml_path = "../../config/fur_data.yaml"):
@@ -33,6 +34,7 @@ class EnvironmentDescriptor:
                 robot_pose.orientation.z = data["robot_pose"]["orientation"]["z"]
                 robot_pose.orientation.w = data["robot_pose"]["orientation"]["w"]
                 return robot_pose
+
     def get_chair_poses(self):
         chair_poses = []
         for data in self.data_yaml:
@@ -58,15 +60,59 @@ class EnvironmentDescriptor:
         for data in self.data_yaml:
             if data["name"] == name:
                 return data["height"]
+
     def get_center_point(self, name):
         for data in self.data_yaml:
             if data["name"] == name:
-                center_point = Point()
-                center_point.x = data["position"]["x"]
-                center_point.y = data["position"]["y"]
-                center_point.z = data["position"]["z"]
-                return center_point
+                if data["shape"]== "rectangle":
+                    center_point = Point()
+                    xc1 = data["corner1"]["x"]
+                    xc2 = data["corner2"]["x"]
+                    xc3 = data["corner3"]["x"]
+                    xc4 = data["corner4"]["x"]
+                    yc1 = data["corner1"]["y"]
+                    yc2 = data["corner2"]["y"]
+                    yc3 = data["corner3"]["y"]
+                    yc4 = data["corner4"]["y"]
+
+                    center_point.x = (xc1+xc2+xc3+xc4)/4
+                    center_point.y = (yc1+yc2+yc3+yc4)/4
+                    center_point.z = 0
+                
+                elif data["shape"] == "circle":
+                    center_point = Point()
+                    center_point.x = data["position"]["x"]
+                    center_point.y = data["position"]["y"]
+                    center_point.z = data["position"]["z"]
+                    
+            return center_point
     
+    def out_of_areana(self,robot_pose):
+        for data in self.data_yaml:
+            if data["name"] == "AREANA":
+                xc1 = data["corner1"]["x"]
+                xc2 = data["corner2"]["x"]
+                xc3 = data["corner3"]["x"]
+                xc4 = data["corner4"]["x"]
+                yc1 = data["corner1"]["y"]
+                yc2 = data["corner2"]["y"]
+                yc3 = data["corner3"]["y"]
+                yc4 = data["corner4"]["y"]
+
+                min_x = min((xc1,xc2,xc3,xc4))
+                max_x = max((xc1,xc2,xc3,xc4))
+                min_y = min((yc1,yc2,yc3,yc4))
+                max_y = max((yc1,yc2,yc3,yc4))
+
+                robot_x = robot_pose.position.x
+                robot_y = robot_pose.position.y
+
+                if (min_x <= robot_x <= max_x) and (min_y <= robot_y <= max_y):
+                    return False
+                else:
+                    return True
+
+
     def visual_robotpoint(self):
         point_list = []
         # name_list = []
@@ -82,7 +128,7 @@ class EnvironmentDescriptor:
 
         point_marker = Marker()
         point_marker.header.frame_id = "map"
-        point_marker.header.stamp = rospy.Time()
+        point_marker.header.stamp = rospy.Time.now()
         point_marker.id = 99
         point_marker.type = Marker.POINTS
         point_marker.action = Marker.ADD
@@ -97,18 +143,28 @@ class EnvironmentDescriptor:
         start = rospy.Time.now()
         print(start)
 
-        rospy.logwarn("please add marker topic:= /robot_point_visual to see robot_pose point -*30 SEC REMAIN*-")
+        rospy.logwarn("please add marker topic:= /robot_point_visual to see robot_pose point -*60 SEC REMAIN*-")
         while True:
 
             if self.marker_pub.get_num_connections()>0:
                 break
 
-            if rospy.Time.now() - start >= rospy.Duration(30):
+            if rospy.Time.now() - start >= rospy.Duration(60):
                 break
 
         self.marker_pub.publish(point_marker)
 
+    
+
 if __name__ == "__main__":
+    rospy.init_node("test_ed")
+    
     ed = EnvironmentDescriptor("../../config/fur_data.yaml")
-    print(ed.get_robot_pose("table1"))
-    print(ed.get_chair_poses())
+    ed.visual_robotpoint()
+    def cb(goal):
+        goa = goal.goal.target_pose.pose
+        print(ed.out_of_areana(goa))
+
+    while not rospy.is_shutdown():
+        rospy.sleep(1)
+        rospy.Subscriber("/move_base/goal",MoveBaseActionGoal,cb)
