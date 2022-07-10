@@ -90,6 +90,15 @@ class Realsense():
         while self.intrinsics is None or self.depth_image is None or self.frame is None:
             rospy.loginfo("no camera intrinsics received")
             time.sleep(0.1)
+    
+    def reset(self):
+            rospy.loginfo("Reseting the value")
+            self.frame = None
+            rospy.sleep(0.1)
+            rospy.loginfo("Finished reseting")
+            rospy.Subscriber("/camera/color/image_raw", Image, self.yolo_callback, queue_size=1, buff_size=52428800)
+            rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.depth_callback, queue_size=1, buff_size=52428800)
+
 
 if __name__ == "__main__":
     rospy.init_node('realsense_module')
