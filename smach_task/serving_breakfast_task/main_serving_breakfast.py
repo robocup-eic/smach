@@ -148,18 +148,11 @@ class GetObjectPose(smach.State):
         self.object_name = ""
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
         self.object_pose_list = [] # [(x1, y1, z1, id), (x1, y1, z1, id), ...] im meters
-        self.intrinsics = None
         self.bridge = CvBridge()
-        self.frame = None
         self.object_pose = Pose()
         self.tf_stamp = None
 
-        # connect to CV server
-        host = "192.168.8.99"
-        port = 10001
-        self.c = CustomSocket(host, port)
-        self.c.clientConnect()
-        rospy.loginfo("connected object detection server")
+        
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectPose')
@@ -199,9 +192,7 @@ class GetObjectPose(smach.State):
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
 
             # 3d pose
-            if not self.intrinsics:
-                rospy.logerr("no camera intrinsics")
-                return None
+
             for center_pixel in self.center_pixel_list:
                 rospy.loginfo("found {}".format(center_pixel))
                 x_coord, y_coord, z_coord = rs.get_coordinate(center_pixel[0], center_pixel[1], ref=(frame.shape[1], frame.shape[0]))
@@ -353,7 +344,6 @@ class GetObjectBBX(smach.State):
                                 output_keys= ['ListBBX_output'])
         # initiate variables
         self.bbxA_list= []
-        self.intrinsics = None
         self.bridge = CvBridge()
         self.frame = None
         self.tf_stamp = None
@@ -392,9 +382,9 @@ class GetObjectBBX(smach.State):
                 x_pixel = int(bbox[0] + (bbox[2]-bbox[0])/2)
                 y_pixel = int(bbox[1] + (bbox[3]-bbox[1])/2)
 
-                (xcen_pixel, ycen_pixel) = rescale_pixel(x_pixel, y_pixel)
-                (xmin_pixel, ymin_pixel) = rescale_pixel(bbox[0], bbox[1])
-                (xmax_pixel, ymax_pixel) = rescale_pixel(bbox[2], bbox[3])
+                (xcen_pixel, ycen_pixel) = rs.rescale_pixel(x_pixel, y_pixel)
+                (xmin_pixel, ymin_pixel) = rs.rescale_pixel(bbox[0], bbox[1])
+                (xmax_pixel, ymax_pixel) = rs.rescale_pixel(bbox[2], bbox[3])
 
                 object_id = 1 # TODO change to object tracker
 
@@ -427,10 +417,6 @@ class GetObjectBBX(smach.State):
             #  |                    |        |                     |
             #  '----------(xmax,ymax)        corner12-------corner22
 
-            # check camera intrinsics
-            if not self.intrinsics:
-                rospy.logerr("no camera intrinsics")
-                return None
 
             # init each pixel of bouding box
             xmin_pixel = int(xmin_pixel)
@@ -442,15 +428,15 @@ class GetObjectBBX(smach.State):
 
             rospy.loginfo("found {}".format(xcen_pixel,ycen_pixel))
             # rescale pixel incase pixel donot match
-            self.depth_image = check_image_size_for_ros(self.depth_image)
+            self.depth_image = rs.check_image_size_for_ros(self.depth_image)
             depth = self.depth_image[ycen_pixel,  xcen_pixel] # [y, x] for numpy array
 
             # [x, y] for realsense lib
-            center00_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xcen_pixel, ycen_pixel], depth)
-            corner11_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmin_pixel, ymin_pixel], depth)
-            corner12_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmin_pixel, ymax_pixel], depth)
-            corner21_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmax_pixel, ymin_pixel], depth)
-            corner22_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmax_pixel, ymax_pixel], depth)
+            center00_result = rs.get_coordinate(xcen_pixel,ycen_pixel)
+            corner11_result = rs.get_coordinate(xmin_pixel,ymin_pixel)
+            corner12_result = rs.get_coordinate(xmin_pixel,ymax_pixel)
+            corner21_result = rs.get_coordinate(xmax_pixel,ymin_pixel)
+            corner22_result = rs.get_coordinate(xmax_pixel,ymax_pixel)
             
             all_result = (center00_result, corner11_result, corner12_result, corner21_result, corner22_result)
 
@@ -461,7 +447,7 @@ class GetObjectBBX(smach.State):
         # run_once function
         run_once()
         if not rospy.is_shutdown():
-            reset()
+            rs.reset()
             detect()
             userdata.ListBBX_output = self.bbxA_list
         return 'continue_GetObjectProperties'
