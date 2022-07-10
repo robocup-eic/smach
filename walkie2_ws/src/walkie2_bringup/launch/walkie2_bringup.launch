@@ -4,7 +4,7 @@
   <arg default="$(find walkie2_description)/launch/urdf.rviz" name="rvizconfig"/>
   <param command="$(find xacro)/xacro $(arg model)" name="robot_description"/>
   <param name="use_gui" value="$(arg gui)"/>
-  <arg default="false" name="use_imu"/>
+  <arg default="true" name="use_imu"/>
   <arg default="false" name="rviz"/>
   <arg default="/dev/ttyACM0" name="port"/>
   
@@ -13,8 +13,6 @@
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
       <remap from="/joint_states" to="/walkie2/joint_states" />
   </node>
-
-  <node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
 
     <!-- Run LaserScan node -->
   <node name="urg_node" pkg="urg_node" type="urg_node">
@@ -34,7 +32,7 @@
     <param name="base_frame_id" value="base_footprint"/>       # frame_id (tf) of the mobile robot base. A tf transform from the laser_frame to the base_frame is mandatory
     <param name="odom_frame_id" value="odom" />                # frame_id (tf) to publish the odometry estimations    
     <param name="init_pose_from_topic" value="" />              # (Odom topic) Leave empty to start at point (0,0)
-    <param name="freq" value="20.0"/>                           # Execution frequency.
+    <param name="freq" value="8.0"/>                           # Execution frequency.
     <param name="verbose" value="true" />                       # verbose
   </node>
 
@@ -50,6 +48,8 @@
       <arg name="filters" value="pointcloud"/>
   </include>
 
+<node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
+
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>
   </group>
@@ -61,7 +61,7 @@
     </node>
 
     <!-- Run serial_node for IMU data -->
-    <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+    <node name="imu_node" pkg="rosserial_python" type="serial_node.py">
       <param name="port" value="$(arg port)"/>
     </node>
 

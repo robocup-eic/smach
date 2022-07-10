@@ -270,16 +270,32 @@
   shape: None
   robot_pose: #idk if it gonna be used
     position:
-      x: 1.54
-      y: 0.975
+      x: 1.263
+      y: 0.978
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: -0.505
-      w: 0.864
+      z: -0.701
+      w: 0.714
 -
-
-
-
-
+  name: AREANA #or table/bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 0.36059576273
+    y: -3.42323875427
+    z: 0.0
+  corner2:
+    x: 0.348737210035
+    y: 2.06488251686
+    z: 0.0
+  corner3:
+    x: 9.31900024414
+    y: -3.69963932037
+    z: 0.0
+  corner4:
+    x: 9.5057964325
+    y: 1.88926339149
+    z: 0.0        
+-

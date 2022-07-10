@@ -72,6 +72,28 @@ class EnvironmentDescriptor:
 
         return obj_data
 
+    def out_of_areana(self,robot_pose):
+        for data in self.data_yaml:
+            if data["name"] == "AREANA":
+                xc1 = data["corner1"]["x"]
+                xc2 = data["corner2"]["x"]
+                xc3 = data["corner3"]["x"]
+                xc4 = data["corner4"]["x"]
+                yc1 = data["corner1"]["y"]
+                yc2 = data["corner2"]["y"]
+                yc3 = data["corner3"]["y"]
+                yc4 = data["corner4"]["y"]
+                min_x = min((xc1,xc2,xc3,xc4))
+                max_x = max((xc1,xc2,xc3,xc4))
+                min_y = min((yc1,yc2,yc3,yc4))
+                max_y = max((yc1,yc2,yc3,yc4))
+                robot_x = robot_pose.position.x
+                robot_y = robot_pose.position.y
+                if (min_x <= robot_x <= max_x) and (min_y <= robot_y <= max_y):
+                    return False
+                else:
+                    return True
+
 
     def get_center_point(self, name):
 
