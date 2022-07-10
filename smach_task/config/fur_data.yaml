@@ -270,14 +270,14 @@
   shape: None
   robot_pose: #idk if it gonna be used
     position:
-      x: 1.2478
-      y: 1.3548
+      x: 1.54
+      y: 0.975
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: -0.5158
-      w: 0.85667
+      z: -0.505
+      w: 0.864
 -
 
 

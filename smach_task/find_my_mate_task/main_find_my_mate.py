@@ -48,6 +48,7 @@ from std_msgs.msg import Bool,Int64
 import socket
 from util.custom_socket import CustomSocket
 from util.realsense import Realsense
+import tf2_geometry_msgs
 
 import math
 
@@ -71,6 +72,35 @@ class go_to_Navigation():
             else:
                 return False
 
+    def move_position(self, position):
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+
+        rospy.loginfo('{}'.format(position))
+
+        delta_x = position.position.x
+        delta_y = position.position.y
+        yaw = math.atan(delta_y/delta_x) # yaw
+        quarternion_orientation = tf.transformations.quaternion_from_euler(0, 0, yaw)
+
+        goal.target_pose.pose.position = position.position
+        goal.target_pose.pose.position.z = 0
+        goal.target_pose.pose.orientation.x = quarternion_orientation[0]
+        goal.target_pose.pose.orientation.y = quarternion_orientation[1]
+        goal.target_pose.pose.orientation.z = quarternion_orientation[2]
+        goal.target_pose.pose.orientation.w = quarternion_orientation[3]
+
+        self.move_base_client.send_goal(goal)
+        self.move_base_client.wait_for_result()
+        while True:
+            result = self.move_base_client.get_state()
+            rospy.loginfo("status {}".format(result))
+            if result == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
+
 
 class Start_signal(smach.State):
     def __init__(self):
@@ -78,7 +108,6 @@ class Start_signal(smach.State):
         smach.State.__init__(self,outcomes=['continue_Navigate_living_room'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
-        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
     
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
@@ -159,6 +188,7 @@ class Navigate_living_room(smach.State):
         
         # turn on person tracker model
         def detect(frame):
+            global posi, tracked_person_id
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
             # send frame to server and recieve the result
@@ -169,7 +199,7 @@ class Navigate_living_room(smach.State):
             # if there is no person just skip
             if len(result["result"]) == 0:
                 rospy.loginfo("guest not found yet")
-                image_pu == Trueb.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+                image_pub == image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
                 return
 
             # not found person yet
@@ -181,14 +211,22 @@ class Navigate_living_room(smach.State):
                     depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
                     center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
                 
-                self.person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
-            
+                self.person_id = min(center_pixel_list , key=lambda x: x[2])[3]
+                rospy.loginfo("Old tracked person ID : {}".format(tracked_person_id[-1]))
+                # self.person_id = min([c for c in center_pixel_list if c[2] < 4.0], key=lambda x: x[2])[3] # get person id with min depth
+                if self.person_id ==tracked_person_id[-1]:
+                    self.person_id = -1
+                else:
+                    tracked_person_id.append(self.person_id)
+
+                rospy.loginfo("Currently tracked person ID : {}".format(self.person_id))
 
 
             for track in result["result"]:
                 # track : [id, class_name, [x1,y1,x2,y2]]
-                # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
+                rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
                 if track[0] == self.person_id:
+                    rospy.loginfo("Found Target")
                     self.x_pixel = int((track[2][0]+track[2][2])/2)
                     self.y_pixel = int((track[2][1]+track[2][3])/2)
                     self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
@@ -198,19 +236,20 @@ class Navigate_living_room(smach.State):
                     frame = cv2.putText(frame, str(self.person_id), rs.rescale_pixel(track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     # found the closest person
                     break
-                    
+                  
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
             # 3d pose
 
+            rospy.loginfo("X_pixel: {}, Y_pixel: {}".format(self.x_pixel, self.y_pixel))
             # rescale pixel incase pixel donot match
             x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
             # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
             
-            if 0.75 < z_coord < 8:
+            if 1.5 < z_coord < 8:
                 # get 3d person point
-                posi.position.x, posi.position.y, posi.position.z = z_coord - 0.5, -x_coord, -y_coord
-                posi.orientation.x, posi.orientation.y, posi.orientation.z, posi.orientaion.w = 0,0,0,1
-                posi = transform_pose(posi, "realsense", "map")
+                posi.position.x, posi.position.y, posi.position.z = z_coord - 1, -x_coord, 0
+                posi.orientation.x, posi.orientation.y, posi.orientation.z, posi.orientation.w = 0,0,0,1
+                posi = transform_pose(posi, "realsense_yaw", "map")
                 return True
             return False
         
@@ -223,9 +262,9 @@ class Navigate_living_room(smach.State):
         while True:
             if detect(rs.get_image()):
                 # stop moving (cancel goal)
-                self.move_base_client.cancel_goal()
+                navigation.move_base_client.cancel_goal()
 
-                stop_pub.publish(cancel)
+                self.stop_pub.publish(self.cancel)
                 
                 # reset parameter
                 self.x_pixel = None
@@ -252,20 +291,19 @@ class Approach_person(smach.State):
         smach.State.__init__(self,outcomes=['continue_Ask'])
     def execute(self, userdata):
         rospy.loginfo('Executing Approach_person state')
-        global posi
+        global posi, navigation, count_person
         # receive the person pose from Navigate_living_room state or Find_person state
         # approach the person in order to ask the person
         # reset the pose() to zero before return 
-        goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "map"
-        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-        self.move_base_client.send_goal(posi)
-        self.move_base_client.wait_for_result()
+        reach_person = navigation.move_position(posi.pose)
+        rospy.loginfo("Arrived at person#{}".format(count_person+1))
         
         # when the robot arrived at the destination save person's location and reset posi
+ 
         count_person += 1
-        gm.add_guest_location("guest_{}".format(count_person), posi)
+        gm.add_guest_location("guest_{}".format(count_person), posi.pose)
         posi = Pose()
+
         return 'continue_Ask'
 
 
@@ -293,10 +331,11 @@ class Find_person(smach.State):
         self.cancel.linear.x = 0
         self.cancel.linear.y = 0
         self.cancel.angular.z = 0
+        
 
     def execute(self, userdata):
         rospy.loginfo('Executing Find_person state')
-        global posi, image_pub, rs
+        global posi, image_pub, rs, tracked_person_id
         # turn on person tracker model
         # rotate around during using person tracker
         # if the model detects a person cancel the goal and check the face in the database
@@ -323,6 +362,7 @@ class Find_person(smach.State):
                 raise
 
         def detect(frame):
+            global posi
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
             # send frame to server and recieve the result
@@ -345,12 +385,25 @@ class Find_person(smach.State):
                     depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
                     center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
                 
-                self.person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
+                self.person_id = min(center_pixel_list, key=lambda x: x[2])[3]
+
+                rospy.loginfo("Old tracked person ID : {}".format(tracked_person_id[-1]))  
+                if self.person_id ==tracked_person_id[-1]:
+                    self.person_id = -1
+                else:
+                    tracked_person_id.append(self.person_id)
+                # self.person_id = min([c for c in center_pixel_list if c[2] < 4.0], key=lambda x: x[2])[3] # get person id with min depth
+
+            rospy.loginfo("Currently tracking person id: {}".format(self.person_id))
+            self.x_pixel = None
+            self.y_pixel = None
+             
             
             for track in result["result"]:
                 # track : [id, class_name, [x1,y1,x2,y2]]
-                # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
+                rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
                 if track[0] == self.person_id:
+                    rospy.loginfo("Found target")
                     self.x_pixel = int((track[2][0]+track[2][2])/2)
                     self.y_pixel = int((track[2][1]+track[2][3])/2)
                     self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
@@ -362,21 +415,26 @@ class Find_person(smach.State):
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
             # 3d pose
 
+            rospy.loginfo("X_pixel: {}, Y_pixel: {}".format(self.x_pixel, self.y_pixel))
             # rescale pixel incase pixel donot match
-            x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
-            # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
-            # get 3d person point
-            # person_pose = Pose()
 
-            # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
-                        
-            if 0.75 < z_coord < 8:
-                rospy.sleep(0.1)
-                posi.position.x, posi.position.y, posi.position.z = z_coord - 0.5, -x_coord, -y_coord
-                posi.orientation.x, posi.orientation.y, posi.orientation.z, posi.orientaion.w = 0,0,0,1
-                posi = transform_pose(posi, "realsense", "map")
-                return True
-            return False         
+            if self.x_pixel and self.y_pixel:
+                x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
+                # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
+                # get 3d person point
+                # person_pose = Pose()
+
+                # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
+                            
+                if 1.5 < z_coord < 8:
+                    rospy.sleep(0.1)
+                    posi.position.x, posi.position.y, posi.position.z = z_coord - 1, -x_coord, 0
+                    posi.orientation.x, posi.orientation.y, posi.orientation.z, posi.orientation.w = tf.transformations.quaternion_from_euler(0, 0, 0)
+                    posi = transform_pose(posi, "realsense_yaw", "map")
+                    return True
+                return False
+            else:
+                return False         
         # -------------------------------------------------------------------------------------
 
         self.rotate_pub.publish(self.rotate_msg)
@@ -415,7 +473,7 @@ class Ask(smach.State):
 
         while True:
             if stt.body is not None:
-                if stt.body["intent"] == "my_name" and "people" in stt.body.keys()
+                if stt.body["intent"] == "my_name" and "people" in stt.body.keys():
                     person_name = stt.body["people"]
                     gm.add_guest_name("guest_{}".format(count_person), person_name) #(role, name)
                     stt.clear()
@@ -443,7 +501,7 @@ class Navigate_to_start(smach.State):
 
         rospy.loginfo("Moving to start point")
         
-        standby = navigation.move('start_point') #start point will be declare 2H before test
+        standby = navigation.move('living_room') #start point will be declare 2H before test
 
         return 'continue_Announce'
 
@@ -454,7 +512,7 @@ class Announce(smach.State):
         smach.State.__init__(self,outcomes=['continue_SUCCEEDED'])
     def execute(self, userdata):
         rospy.loginfo('Executing Announce state')
-        global gm, ed
+        global gm, ed, count_person
         # announce the person's name 
         # compare the person's location to the furiture's location
         # compare with chair
@@ -467,9 +525,12 @@ class Announce(smach.State):
 
             for obj in ed.get_object_poses(): ## TODO ed get chair list
 
+                if not "position" in obj.keys():
+                    continue
+
                 obj_pose = obj["position"]
             
-                distance = math.sqrt((guest_location.position.x - obj_pose.position.x)**2 + (guest_location.position.y - obj_pose.position.y)**2)
+                distance = math.sqrt((guest_location.position.x - obj_pose.x)**2 + (guest_location.position.y - obj_pose.y)**2)
 
                 obj_dist.append((obj['name'], distance))
 
@@ -499,18 +560,19 @@ if __name__ == '__main__':
 
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
     gm = GuestNameManager("../config/find_my_mate_database.yaml")
+    
+    # ed.visual_robotpoint()
 
     image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
 
     navigation = go_to_Navigation()
 
+    tracked_person_id = [-99]
+
     # connect to server
     host = "0.0.0.0"
     # host = socket.gethostname()
-    # face recognition model
-    port_faceRec = 10006
-    faceRec = CustomSocket(host,port_faceRec)
-    faceRec.clientConnect()
+
     # person tracker model
     port_personTrack = 11000
     personTrack = CustomSocket(host,port_personTrack)
