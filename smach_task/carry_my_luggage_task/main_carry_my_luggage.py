@@ -215,7 +215,7 @@ class Check_position(smach.State):
             pose = self.tfBuffer.lookup_transform('map','base_footprint',rospy.Time.now()-rospy.Duration.from_sec(1.0))
 
             distance = ((pose.transform.translation.x-exit_position.x)**2+(pose.transform.translation.y-exit_position.y)**2)**0.5
-
+            rospy.loginfo(distance)
             if distance<self.detect_radius:
 
                 robot_inside = False
@@ -289,8 +289,8 @@ class Follow_person(smach.State):
                 self.follow_cmd.data = "stop"
                 self.follow_cmd_pub.publish(self.follow_cmd)
 
-                # self.realsense_follow_cmd_pub.publish("follow")
-                self.realsense_follow_cmd_pub.publish("stop")
+                self.realsense_follow_cmd_pub.publish("follow")
+                # self.realsense_follow_cmd_pub.publish("stop")
                 # rospy.loginfo("realsense follow command")
 
                 try:
@@ -318,7 +318,7 @@ class Follow_person(smach.State):
                         last_pose = (last_pose_tf.transform.translation.x, last_pose_tf.transform.translation.y, last_pose_tf.transform.translation.z)
                         start_time = time.time()
 
-                        rospy.loginfo("Sending new goal: X,Y,Z is {}, {}, {}".format(pose.transform.translation.x,pose.transform.translation.y,pose.transform.translation.z))
+                        # rospy.loginfo("Sending new goal: X,Y,Z is {}, {}, {}".format(pose.transform.translation.x,pose.transform.translation.y,pose.transform.translation.z))
 
                         if  is_stop:
                             self.client.cancel_goal()
@@ -505,7 +505,7 @@ class Get_bounding_box(smach.State):
                 # 3d pose
                 x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
             
-                rospy.loginfo("Target is at {}, {}, {}".format(x_coord, y_coord, z_coord))
+                # rospy.loginfo("Target is at {}, {}, {}".format(x_coord, y_coord, z_coord))
 
                 self.abs_point.x = x_coord
                 self.abs_point.y = y_coord
