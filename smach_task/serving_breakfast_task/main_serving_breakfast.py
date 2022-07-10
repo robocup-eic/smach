@@ -138,12 +138,9 @@ class Navigate_object(smach.State):
             return 'continue_GetObjectPose'
         else:
             return 'continue_ABORTED'
+            
 
-<<<<<<< HEAD
-class Get_pose(smach.State):
-=======
 class GetObjectPose(smach.State):
->>>>>>> 73e6de0c31230a9985ce19990c401245d2e914a1
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectPose')
         smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=[
