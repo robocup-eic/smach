@@ -448,7 +448,7 @@ class Find_person(smach.State):
         # rotate 90 degree to avoid the first person
         start_time = time.time()
 
-        while time.time() - start_time < 3.0:
+        while time.time() - start_time < 3.5:
             self.rotate_pub.publish(self.rotate_msg)
             
     
