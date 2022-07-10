@@ -134,27 +134,6 @@ class Navigate_object(smach.State):
         else:
             return 'continue_ABORTED'
 
-
-class Get_pose(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating Get_pose state')
-        smach.State.__init__(self, outcomes=['continue_Pick','continue_Navigate_object'],
-                             input_keys = ['Get_pose_out'],
-                             output_keys = ['Get_pose_out'])
-    def execute(self, userdata):
-        rospy.loginfo('Executing Get_pose state')
-        global count_location 
-        # getting the object pose and send it to the Pick state
-        # sending Pose() to Pick state
-        userdata.Get_pose_out.position.x = 1
-        userdata.Get_pose_out.position.y = 2
-        userdata.Get_pose_out.position.z = 3
-        userdata.Get_pose_out.orientation.x = 4
-        userdata.Get_pose_out.orientation.y = 5
-        userdata.Get_pose_out.orientation.z = 6        
-        userdata.Get_pose_out.orientation.w = 7
-        return 'continue_Pick'
-
 class Get_pose(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectPose')
