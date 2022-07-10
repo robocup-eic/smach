@@ -281,7 +281,7 @@ class Get_bounding_box(smach.State):
                 frame = cv2.resize(frame, (self.intrinsics.width, self.intrinsics.height))
             return frame
 
-        def rescale_pixel(x, y):receptionist
+        def rescale_pixel(x, y):
             x = int(x*self.intrinsics.width/1280)
             y = int(y*self.intrinsics.height/720)
             return (x, y)

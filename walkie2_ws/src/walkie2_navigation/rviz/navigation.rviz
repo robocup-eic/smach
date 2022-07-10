@@ -180,7 +180,12 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        realsense:
+        realsense_pitch:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        realsense_yaw:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -340,7 +345,7 @@ Visualization Manager:
           Topic: /move_base/TrajectoryPlannerROS/local_plan
           Unreliable: false
           Value: true
-      Enabled: false
+      Enabled: true
       Name: Local Map
     - Alpha: 1
       Arrow Length: 0.05000000074505806
@@ -413,6 +418,14 @@ Visualization Manager:
       Shape: Arrow
       Topic: /move_base/current_goal
       Unreliable: false
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /robot_point_visual
+      Name: Marker
+      Namespaces:
+        "": true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:

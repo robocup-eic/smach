@@ -3,59 +3,89 @@
   frame_id: map
   shape: rectangle
   corner1:
-    x: 3.2658033371
-    y: 0.0
+    x: 1.86223518848
+    y: -1.34660696983
     z: 0.0
   corner2:
-    x: 3.26580286026
-    y: -1.69568741322
+    x: 1.87320899963
+    y: -0.507723331451
     z: 0.0
   corner3:
-    x: 1.86145830154
-    y: -1.69568729401
+    x: 2.4550685826
+    y: -0.539697408676
     z: 0.0
   corner4:
-    x: 1.86145853996
-    y: -0.04141664505
+    x: 2.49384474754
+    y: -1.3342294693
     z: 0.0
-  robot_pose: 
-    position: 
-      x: 1.52914
-      y: -0.868551
+  robot_pose:
+    position:
+      x: 1.5223518848
+      y: -0.927165151
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
+      z: 1.0
+      w: 0.0
+  height: 0.82
+-
+  name: table2 #or table/bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 2.49384474754
+    y: -1.3342294693
+    z: 0.0
+  corner2:
+    x: 2.4550685826
+    y: -0.539697408676
+    z: 0.0
+  corner3:
+    x: 3.09296645699
+    y: -0.508465230465
+    z: 0.0
+  corner4:
+    x: 3.10686779022
+    y: -1.32837247849
+    z: 0.0
+  robot_pose:
+    position:
+      x: 3.64686
+      y: -0.918418
       z: 0.0
-      w: 1.0
-  height: 0.5
-
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+      w: 0.0
+  height: 0.82
 -
   name: bed
   frame_id: map
   shape: rectangle
   corner1:
-    x: 7.59784984589
-    y: -2.0170211792
+    x: 7.451459
+    y: -3.6339
     z: 0.0
   corner2:
-    x: 7.59784984589
-    y: -3.18334150314
+    x: 7.4486341
+    y: -2.45058
     z: 0.0
   corner3:
-    x: 5.07478904724
-    y: -3.21904468536
+    x: 4.825729
+    y: -3.592233
     z: 0.0
   corner4:
-    x: 5.09859228134
-    y: -0.12413167953
+    x: 4.894972
+    y: -2.4751634
     z: 0.0
-  robot_pose: 
-    position: 
+  robot_pose:
+    position:
       x: 4.00367879868
       y: -0.838799059391
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 0.999939642217
@@ -71,11 +101,11 @@
     y: -2.49307012558
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position: 
+    position:
       x: 4.00367879868
       y: -0.838799059391
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 0.999939642217
@@ -90,11 +120,11 @@
     y: -2.80250144005
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position: 
+    position:
       x: 4.00367879868
       y: -0.838799059391
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 0.999939642217
@@ -104,108 +134,108 @@
   frame_id: map
   shape: rectangle
   corner1:
-    x: 7.59784984589
-    y: -2.0170211792
+    x: 8.96595
+    y: -2.285533
     z: 0.0
   corner2:
-    x: 7.59784984589
-    y: -3.18334150314
+    x: 8.96488952
+    y: -1.195539
     z: 0.0
   corner3:
-    x: 5.07478904724
-    y: -3.21904468536
+    x: 9.4315
+    y: -1.195539
     z: 0.0
   corner4:
-    x: 5.09859228134
-    y: -0.12413167953
+    x: 9.4503
+    y: -2.24866
     z: 0.0
-  robot_pose: 
-    position: 
-      x: 4.00367879868
-      y: -0.838799059391
+  robot_pose:
+    position:
+      x: 8.62720886615
+      y: -1.74053645
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
-      z: 0.999939642217
-      w: -0.010986897825
-  height: [0.2,0.4,0.6,0.8]
+      z: 1.0
+      w: 0.0
+  height: [1.53,1.17,0.83,0.49,0.13]
 -
   name: standby
   frame_id: map
   shape: None
   robot_pose: #idk if it gonna be used
-    position: 
-      x: 1.45399
-      y: 0.70910
+    position:
+      x: 1.4681
+      y: 1.26366
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
-      z: 0.95820
-      w: -0.270
+      z: 0.89293
+      w: -0.45018
 -
-  name: livingroom entrance
+  name: livingroom_entrance
   frame_id: map
   shape: None
   position:
-    x: 0.347816706
-    y: -0.040645222
+    x: 0.32709
+    y: -0.02505
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position: 
-      x: -0.152183
-      y: -0.040645
+    position:
+      x: -0.1729
+      y: -0.02505
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
-      z: 0.0
-      w: 1.0
+      z: 1.0
+      w: 0.0
 -
-  name: bedroom entrance
+  name: bedroom_entrance
   frame_id: map
   shape: None
   position:
-    x: 4.99664354324
-    y: -0.693402233
+    x: 4.88136
+    y: -0.96100
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position: 
-      x: 4.9966435
-      y: -0.693402
+    position:
+      x: 4.88136
+      y: -0.96100
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
-      z: 0.963
-      w: -0.270
+      z: 1
+      w: 0
 -
   name: exit
   frame_id: map
   shape: None
   position:
-    x: 8.116175652
-    y: 2.371572375
+    x: 8.340711
+    y: 1.90976
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position: 
-      x: 8.11617
-      y: 1.871572
+    position:
+      x: 8.3407
+      y: 1.40976
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
-      z: 0.963
-      w: -0.270
+      z: 0.707
+      w: 0.707
 -
   name: chair1
   frame_id: map
   shape: circle
   radius: 0.5
   position:
-    x: 2.87515640259
-    y: -1.3882590847
+    x: 2.121
+    y: -1.619
     z: 0.0
 -
   name: chair2
@@ -213,8 +243,8 @@
   shape: circle
   radius: 0.5
   position:
-    x: 2.23473596573
-    y: -1.371849823
+    x: 2.771
+    y: -1.569
     z: 0.0
 -
   name: chair3
@@ -222,8 +252,8 @@
   shape: circle
   radius: 0.5
   position:
-    x: 2.87828636167
-    y: -0.237636879086
+    x: 2.170
+    y: -0.254
     z: 0.0
 -
   name: chair4
@@ -231,21 +261,21 @@
   shape: circle
   radius: 0.5
   position:
-    x: 2.18905568123
-    y: -0.206265673041
+    x: 2.7651
+    y: -0.2863
     z: 0.0
 -
   name: living_room
   frame_id: map
   shape: None
   robot_pose: #idk if it gonna be used
-    position: 
-      x: 1.34468591213
-      y: 1.16354131699
+    position:
+      x: 1.54
+      y: 0.975
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
-      z: -0.5051607299
-      w: 0.86302528172
+      z: -0.505
+      w: 0.864
 -
