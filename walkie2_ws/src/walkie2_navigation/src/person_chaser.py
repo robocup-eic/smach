@@ -106,21 +106,21 @@ class ChasePerson():
             while not rospy.is_shutdown():
                 #-- Get the control action 
                 steer_action, throttle_action   = self.get_control_action() 
-                
-                rospy.loginfo("linear x = {}, angular_z = {}".format(throttle_action, steer_action))
 
                 if self.cmd != 'follow':
                     steer_action = 0
                     throttle_action = 0
 
-                rospy.loginfo("linear x = {}, angular_z = {}".format(throttle_action, steer_action))
-                
-                #-- update the message
-                self._message.linear.x  = throttle_action
-                self._message.angular.z = steer_action
-                
-                #-- publish it
-                self.pub_twist.publish(self._message)
+                else:
+
+                    rospy.loginfo("linear x = {}, angular_z = {}".format(throttle_action, steer_action))
+                    
+                    #-- update the message
+                    self._message.linear.x  = throttle_action
+                    self._message.angular.z = steer_action
+                    
+                    #-- publish it
+                    self.pub_twist.publish(self._message)
 
                 rate.sleep()
         except KeyboardInterrupt:
