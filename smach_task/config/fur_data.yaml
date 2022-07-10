@@ -145,7 +145,7 @@
       z: 0.95820
       w: -0.270
 -
-  name: livingroom entrance
+  name: livingroom_entrance
   frame_id: map
   shape: None
   position:
@@ -163,7 +163,7 @@
       z: 0.0
       w: 1.0
 -
-  name: bedroom entrance
+  name: bedroom_entrance
   frame_id: map
   shape: None
   position:
@@ -186,7 +186,7 @@
   shape: None
   position:
     x: 8.116175652
-    y: 2.371572375
+    y: 1.871572
     z: 0.0
   robot_pose: #idk if it gonna be used
     position: 

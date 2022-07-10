@@ -4,7 +4,7 @@
   <arg default="$(find walkie2_description)/launch/urdf.rviz" name="rvizconfig"/>
   <param command="$(find xacro)/xacro $(arg model)" name="robot_description"/>
   <param name="use_gui" value="$(arg gui)"/>
-  <arg default="false" name="use_imu"/>
+  <arg default="true" name="use_imu"/>
   <arg default="false" name="rviz"/>
   <arg default="/dev/ttyACM0" name="port"/>
   
@@ -18,8 +18,8 @@
   <node name="urg_node" pkg="urg_node" type="urg_node">
     <param name="ip_address" value="192.168.5.4"/>
     <param name="frame_id" value="hokuyo"/>
-    <param name="angle_max" value="2.35"/>
-    <param name="angle_min" value="-2.35"/>
+    <param name="angle_max" value="2.35"/> # 2.35
+    <param name="angle_min" value="-2.35"/> # -2.35
     <remap from="/scan" to="/walkie2/scan"/>
   </node>
 
@@ -47,6 +47,8 @@
       <arg name="depth_fps" value="30" />
       <arg name="filters" value="pointcloud"/>
   </include>
+
+  <node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
 
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>
@@ -85,6 +87,9 @@
     <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/>
 
   </group>
+
+  <node name="realsense_follow" pkg="walkie2_navigation" type="person_servo.py"/>
+  <node name="person_follow" pkg="walkie2_navigation" type="person_chaser.py"/>
 
   
 </launch>

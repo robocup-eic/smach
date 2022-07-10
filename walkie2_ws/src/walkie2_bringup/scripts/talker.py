@@ -55,7 +55,7 @@ def cmd_vel_callback(msg):
 
 def start_odrive():
     vel_subscribe = rospy.Subscriber("/walkie2/cmd_vel", Twist, cmd_vel_callback, queue_size=2)
-    rate = rospy.Rate(50) # 50hz
+    rate = rospy.Rate(20)
     try:
         while not rospy.is_shutdown():
             try:

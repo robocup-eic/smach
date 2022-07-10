@@ -33,18 +33,37 @@ from cr3_moveit_control.srv import cr3_place
 
 from environment_descriptor import *
 
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int16, Float32
 
 import time
+
+from sensor_msgs.msg import JointState
 
 # /home/tanas/smach/walkie2_ws/src/cr3_moveit_control/srv/cr3_place.srv
 class Input(smach.State):
     def __init__(self):
         rospy.loginfo('initiating input state')
-        smach.State.__init__(self, outcomes = ['continue_GetObjectBBX'])
+        smach.State.__init__(self, outcomes = ['continue_Servo_Realsense'])
 
     def execute(self, userdata):
-        return 'continue_GetObjectBBX'
+        return 'continue_Servo_Realsense'
+        
+
+class Servo_Realsense(smach.State) :
+    
+    def __init__(self):
+        rospy.loginfo('initiating servo realsense')
+        smach.State.__init__(self, outcomes = ['continue_GetObjectBBX', 'continue_succeeded'])
+
+    def execute(self, userdata):
+
+        pub_servo_command = rospy.Publisher("/servo_command", Float32, queue_size=10)
+
+        time.sleep(1)
+
+        pub_servo_command.publish(45)
+
+        return 'continue_succeeded'
 
 class GetObjectBBX(smach.State):
     def __init__(self):
@@ -456,7 +475,7 @@ class Place(smach.State):
         corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list("table1")
         high.z = ed.get_height("table1")
 
-        robot_pose = transform_pose(Pose(), "world", "robot_pose")
+        robot_pose = transform_pose(Pose(), "base_link", "robot_pose")
 
         robot_pose.position.x *= -1
         robot_pose.position.y *= -1
@@ -464,10 +483,10 @@ class Place(smach.State):
 
         # rospy.loginfo(robot_pose)
 
-        corner1 = transform_pose(corner1, "world", "robot_pose")
-        corner2 = transform_pose(corner2, "world", "robot_pose")
-        corner3 = transform_pose(corner3, "world", "robot_pose")
-        corner4 = transform_pose(corner4, "world", "robot_pose")
+        corner1 = transform_pose(corner1, "base_link", "robot_pose")
+        corner2 = transform_pose(corner2, "base_link", "robot_pose")
+        corner3 = transform_pose(corner3, "base_link", "robot_pose")
+        corner4 = transform_pose(corner4, "base_link", "robot_pose")
 
         corner_x = sorted([corner1.position.x, corner2.position.x, corner3.position.x, corner4.position.x])
         corner_y = sorted([corner1.position.y, corner2.position.y, corner3.position.y, corner4.position.y])
@@ -487,11 +506,25 @@ class Place(smach.State):
         corner21_pose.y = corner_y[1]
         corner22_pose.y = corner_y[3]
 
-        high.z -= 0.49      #lift state is False
+        high.z -= 0.465      #lift state is False
         if (0.25 < high.z) : 
             lift_command()
             high.z -= 0.20  #lift state is True
+            msg = JointState()
+            msg.name = ["right_wheel_joint","left_wheel_joint","base_cr3_joint","realsense_joint","joint1","joint2","joint3","joint4","joint5","joint6","joint7","joint8","joint9"]
+            
+            # Initialize the time of publishing
+            msg.header.stamp = rospy.Time.now()
 
+             # Joint angle values
+            msg.position[2] = 0.465+0.20
+
+            pub = rospy.Publisher("/joint_states", JointState, queue_size=13)
+
+            time.sleep(1)
+            
+            # Publish message
+            pub.publish(msg)
 
         # rospy.loginfo("object pose list before tf")
 
@@ -499,9 +532,9 @@ class Place(smach.State):
         collision_object_pose = []
         rospy.loginfo("collision_object_pose")
         for object_pose in userdata.object_pose_list_input :
-            rospy.loginfo(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
+            rospy.loginfo(transform_pose(object_pose, "realsense_joint", "base_link"))
             rospy.loginfo(object_pose)
-            collision_object_pose.append(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
+            collision_object_pose.append(transform_pose(object_pose, "realsense_joint", "base_link"))
         # rospy.loginfo("object pose list after tf")
         # rospy.loginfo(collision_object_pose)
         
@@ -530,7 +563,11 @@ def main():
 
     with sm:
         smach.StateMachine.add('INPUT', Input(),
-                                transitions = {'continue_GetObjectBBX':'GetObjectBBX'})
+                                transitions = {'continue_Servo_Realsense':'SERVO_REALSENSE'})
+        
+        smach.StateMachine.add('SERVO_REALSENSE', Servo_Realsense(),
+                                transitions = {'continue_GetObjectBBX':'GetObjectBBX',
+                                               'continue_succeeded':'succeeded'})
 
         smach.StateMachine.add('GetObjectBBX', GetObjectBBX(),
                                 transitions= {'continue_GetProperties'  : 'GetObjectProperties',

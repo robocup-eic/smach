@@ -32,6 +32,9 @@ class SpeechToText():
     def clear(self):
         self.body = None
 
+    def listen(self):
+        requests.get("http://0.0.0.0:5001/stt")
+
 def speak(text) :
     try :
         url = 'http://localhost:5003/tts'

@@ -137,6 +137,20 @@ class Standby(smach.State):
 
         global image_pub, personTrack, rs
 
+        def go_to_Navigation(location):
+            goal = MoveBaseGoal()
+            goal.target_pose.header.frame_id = "map"
+            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+            goal.target_pose.pose = self.ed.get_robot_pose(location)
+            self.move_base_client.send_goal(goal)
+            self.move_base_client.wait_for_result()
+            result = self.move_base_client.get_result()
+            rospy.loginfo("result {}".format(result))
+            if result.status == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
+
         def detect(frame):
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
@@ -457,11 +471,6 @@ class Introduce_guest(smach.State):
         while not is_found:
             self.rotate_pub.publish(rotate_msg)
             detections = faceRec.detect(rs.get_image())
-            ############
-
-
-            # return
-            ############
             for name,location in detections.items():
                 rospy.loginfo('Detected: {}'.format(name))
                 if name == gm.get_guest_name("host") and 400 < location[0] < 800:
@@ -537,6 +546,7 @@ if __name__ == '__main__':
     tf_Buffer = tf2_ros.Buffer()
 
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed.visual_robotpoint()
     gm = GuestNameManager("../config/receptionist_database.yaml")
     gm.reset()
     person_count = 0
