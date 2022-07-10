@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
@@ -14,9 +16,9 @@ class Realsense():
         self.bridge = CvBridge()
         self.ref = (1280,720)
         
-        rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo, self.info_callback)
-        rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.depth_callback, queue_size=1, buff_size=52428800)
-        rospy.Subscriber("/camera/color/image_raw", Image , self.image_callback)
+        self.info_sub = rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo, self.info_callback)
+        self.depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.depth_callback, queue_size=1, buff_size=52428800)
+        self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.image_callback, queue_size=1, buff_size=52428800)
 
     def rescale_pixel(self, x, y):
             x = int(x*self.intrinsics.width/self.ref[0])
@@ -90,6 +92,22 @@ class Realsense():
         while self.intrinsics is None or self.depth_image is None or self.frame is None:
             rospy.loginfo("no camera intrinsics received")
             time.sleep(0.1)
+    
+    def reset(self):
+        self.info_sub.unregister()
+        self.depth_sub.unregister()
+        self.image_sub.unregister()
+        self.intrinsics = None
+        self.depth_image = None
+        self.frame = None
+
+        rospy.sleep(0.1)
+
+        self.info_sub = rospy.Subscriber("/camera/aligned_depth_to_color/camera_info", CameraInfo, self.info_callback)
+        self.depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, self.depth_callback, queue_size=1, buff_size=52428800)
+        self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image , self.image_callback, queue_size=1, buff_size=52428800)
+
+        self.wait()
 
 if __name__ == "__main__":
     rospy.init_node('realsense_module')

@@ -192,15 +192,15 @@
 <joint name="realsense_yaw_joint" type="revolute">
   <origin xyz="-0.189306 0.0 1.463" rpy="0 0 0"/>
   <parent link="base_link"/>
-  <child link="realsense_pitch"/>
+  <child link="realsense_yaw"/>
   <axis xyz="0.0 0.0 1.0"/>
   <limit effort="1000" lower="-1.57" upper="1.57" velocity="0.2"/>
 </joint>
 
 <joint name="realsense_pitch_joint" type="revolute">
   <origin xyz="0.00 0.00 0.0175" rpy="0 0 0"/>
-  <parent link="realsense_pitch"/>
-  <child link="realsense_yaw"/>
+  <parent link="realsense_yaw"/>
+  <child link="realsense_pitch"/>
   <axis xyz="0.0 1.0 0.0"/>
   <limit effort="1000" lower="-1.57" upper="1.57" velocity="0.2"/>
 </joint>

@@ -18,10 +18,41 @@
     x: 2.49384474754
     y: -1.3342294693
     z: 0.0
-  robot_pose: 
-    position: 
+  robot_pose:
+    position:
       x: 1.5223518848
       y: -0.927165151
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+      w: 0.0
+  height: 0.82
+-
+  name: table2 #or table/bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 2.49384474754
+    y: -1.3342294693
+    z: 0.0
+  corner2:
+    x: 2.4550685826
+    y: -0.539697408676
+    z: 0.0
+  corner3:
+    x: 3.09296645699
+    y: -0.508465230465
+    z: 0.0
+  corner4:
+    x: 3.10686779022
+    y: -1.32837247849
+    z: 0.0
+  robot_pose:
+    position:
+      x: 3.44686
+      y: -0.918418
       z: 0.0
     orientation:
       x: 0.0
@@ -156,7 +187,7 @@
       x: 8.62720886615
       y: -1.74053645
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 1.0
@@ -171,7 +202,7 @@
       x: 1.4681
       y: 1.26366
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 0.89293
@@ -189,7 +220,7 @@
       x: -0.1729
       y: -0.02505
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 1.0
@@ -203,11 +234,11 @@
     y: -0.96100
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position: 
+    position:
       x: 4.88136
       y: -0.96100
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 1
@@ -225,7 +256,7 @@
       x: 8.3407
       y: 2.40976
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
       z: 0.707
@@ -271,13 +302,33 @@
   frame_id: map
   shape: None
   robot_pose: #idk if it gonna be used
-    position: 
-      x: 1.2478
-      y: 1.3548
+    position:
+      x: 1.263
+      y: 0.978
       z: 0.0
-    orientation: 
+    orientation:
       x: 0.0
       y: 0.0
-      z: -0.5158
-      w: 0.85667
+      z: -0.701
+      w: 0.714
+-
+  name: AREANA #or table/bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 0.36059576273
+    y: -3.42323875427
+    z: 0.0
+  corner2:
+    x: 0.348737210035
+    y: 2.06488251686
+    z: 0.0
+  corner3:
+    x: 9.31900024414
+    y: -3.69963932037
+    z: 0.0
+  corner4:
+    x: 9.5057964325
+    y: 1.88926339149
+    z: 0.0        
 -
