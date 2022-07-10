@@ -41,7 +41,7 @@ if __name__ == '__main__' :
     realsense_yaw_angle = 0
 
     global lift_state
-    lift_state = 0.465
+    lift_state = 0.0
 
     pub = rospy.Publisher("walkie2/joint_states", JointState, queue_size=10)
     rospy.Subscriber("/realsense_pitch_angle", Int16, realsense_pitch_cb, queue_size=1)

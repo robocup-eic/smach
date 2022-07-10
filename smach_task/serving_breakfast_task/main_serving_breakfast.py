@@ -229,8 +229,10 @@ class GetObjectPose(smach.State):
                 if object_pose[2] < z_min:
                     object_pose_z_min = object_pose
                     z_min = object_pose[2]
-                    
-            return xyz_to_pose(object_pose_z_min[0], object_pose_z_min[1], object_pose_z_min[2])
+            if object_pose_z_min is None:
+                return None
+            else:
+                return xyz_to_pose(object_pose_z_min[0], object_pose_z_min[1], object_pose_z_min[2])
 
         def xyz_to_pose(x, y, z):
             """
@@ -256,16 +258,22 @@ class GetObjectPose(smach.State):
 
         # command realsense pitch to -45 degree
         pub = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        while True:
+            if pub.get_num_connections() > 0:
+                break
+
         pub.publish(-45)
         time.sleep(1)
         
         # run_once function
         run_once()
-        while not rospy.is_shutdown():
+        for i in range(5):
+            rospy.loginfo("detect object")
             rs.reset()
             detect(rs.get_image())
             userdata.objectpose_output = self.object_pose
-            return 'continue_Pick'
+            if self.object_pose is not None:
+                return 'continue_Pick'
         return 'continue_ABORTED'
 
 class Pick(smach.State):
@@ -743,7 +751,7 @@ if __name__ == '__main__':
 
     # connect to CV server
     host = "0.0.0.0"
-    port = 10008
+    port = 10001
     obj_tracker = CustomSocket(host, port)
     obj_tracker.clientConnect()
 
