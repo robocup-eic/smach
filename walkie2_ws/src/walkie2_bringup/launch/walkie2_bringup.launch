@@ -4,7 +4,7 @@
   <arg default="$(find walkie2_description)/launch/urdf.rviz" name="rvizconfig"/>
   <param command="$(find xacro)/xacro $(arg model)" name="robot_description"/>
   <param name="use_gui" value="$(arg gui)"/>
-  <arg default="false" name="use_imu"/>
+  <arg default="true" name="use_imu"/>
   <arg default="false" name="rviz"/>
   <arg default="/dev/ttyACM0" name="port"/>
   
@@ -47,6 +47,8 @@
       <arg name="depth_fps" value="30" />
       <arg name="filters" value="pointcloud"/>
   </include>
+
+<node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
 
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>

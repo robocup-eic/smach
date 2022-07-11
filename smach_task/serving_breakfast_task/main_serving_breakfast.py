@@ -79,6 +79,7 @@ class Start_signal(smach.State):
         smach.State.__init__(self,outcomes=['continue_Navigate_object'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
         
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
@@ -88,6 +89,9 @@ class Start_signal(smach.State):
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
+        
+        rospy.sleep(1)
+        self.pub_realsense_pitch_absolute_command.publish(0)
 
         while True:
             rospy.sleep(0.5)
@@ -117,7 +121,7 @@ class Navigate_object(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigate_object state')
         smach.State.__init__(self, outcomes=['continue_ABORTED', 'continue_GetObjectPose'], output_keys=['objectname_output'])
-
+        
     def execute(self, userdata):
         rospy.loginfo('Execute Navigate_object state')
         global count_location, navigation
@@ -127,6 +131,8 @@ class Navigate_object(smach.State):
         # in this case we will do only 2 objects which are cereal box and milk carton
         # count number of object that the robot has reached
 
+
+        time.sleep(1)
         # 
         if count_location == 1:
             navigation.move(MILK_FUR)
@@ -149,12 +155,17 @@ class GetObjectPose(smach.State):
         self.object_name = ""
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
         self.object_pose_list = [] # [(x1, y1, z1, id), (x1, y1, z1, id), ...] im meters
-        self.intrinsics = None
         self.bridge = CvBridge()
-        self.frame = None
         self.object_pose = Pose()
         self.tf_stamp = None
 
+<<<<<<< HEAD
+=======
+        self.pub_lift_command = rospy.Publisher("/lift_command", Bool, queue_size=1)
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
+
+>>>>>>> 5cd079c2744f3c8ac971e4c2e85b6479ad9f2746
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectPose')
 
@@ -193,9 +204,7 @@ class GetObjectPose(smach.State):
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
 
             # 3d pose
-            if not self.intrinsics:
-                rospy.logerr("no camera intrinsics")
-                return None
+
             for center_pixel in self.center_pixel_list:
                 rospy.loginfo("found {}".format(center_pixel))
                 x_coord, y_coord, z_coord = rs.get_coordinate(center_pixel[0], center_pixel[1], ref=(frame.shape[1], frame.shape[0]))
@@ -221,7 +230,6 @@ class GetObjectPose(smach.State):
                     self.tf_stamp.transform.rotation.z = quat[2]
                     self.tf_stamp.transform.rotation.w = quat[3]
 
-            rospy.loginfo("Object found!")
             self.object_pose = find_closest_object()
 
         def find_closest_object():
@@ -231,8 +239,10 @@ class GetObjectPose(smach.State):
                 if object_pose[2] < z_min:
                     object_pose_z_min = object_pose
                     z_min = object_pose[2]
-                    
-            return xyz_to_pose(object_pose_z_min[0], object_pose_z_min[1], object_pose_z_min[2])
+            if len(self.object_pose_list) == 0:
+                return None
+            else:
+                return xyz_to_pose(object_pose_z_min[0], object_pose_z_min[1], object_pose_z_min[2])
 
         def xyz_to_pose(x, y, z):
             """
@@ -256,18 +266,31 @@ class GetObjectPose(smach.State):
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
 
+<<<<<<< HEAD
         # command realsense pitch to -45 degree
         pub = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
         pub.publish(-35)
         time.sleep(1)
+=======
+        # connect object tracker
+        obj_tracker.clientConnect()
+
+        # command realsense pitch to -35 degree and lifting up
+        rospy.sleep(1)
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        self.pub_lift_command.publish(False)
+>>>>>>> 5cd079c2744f3c8ac971e4c2e85b6479ad9f2746
         
         # run_once function
         run_once()
-        while not rospy.is_shutdown():
-            rs.reset()
+        rs.reset()
+        while True:
+            # rospy.loginfo("detect object")
             detect(rs.get_image())
             userdata.objectpose_output = self.object_pose
-            return 'continue_Pick'
+            if self.object_pose is not None:
+                return 'continue_Pick'
         return 'continue_ABORTED'
 
 class Pick(smach.State):
@@ -287,15 +310,17 @@ class Pick(smach.State):
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
             tf_buffer = tf2_ros.Buffer()
-            listener = tf2_ros.TransformListener(tf_buffer)
+            # listener = tf2_ros.TransformListener(tf_buffer)
             pose_stamped = tf2_geometry_msgs.PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
             pose_stamped.header.stamp = rospy.Time.now()
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                output_pose_stamped = tf_buffer.transform(
-                    pose_stamped, to_frame, rospy.Duration(1))
+                while not tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                rospy.sleep(1)
+                output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
                 return output_pose_stamped.pose
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
@@ -310,8 +335,14 @@ class Pick(smach.State):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 return 'continue_ABORTED'
+<<<<<<< HEAD
 
         transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "base_link")
+=======
+        
+        rospy.loginfo(recieved_pose)
+        transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "cr3_base_link")
+>>>>>>> 5cd079c2744f3c8ac971e4c2e85b6479ad9f2746
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
@@ -346,7 +377,6 @@ class GetObjectBBX(smach.State):
                                 output_keys= ['ListBBX_output'])
         # initiate variables
         self.bbxA_list= []
-        self.intrinsics = None
         self.bridge = CvBridge()
         self.frame = None
         self.tf_stamp = None
@@ -385,9 +415,9 @@ class GetObjectBBX(smach.State):
                 x_pixel = int(bbox[0] + (bbox[2]-bbox[0])/2)
                 y_pixel = int(bbox[1] + (bbox[3]-bbox[1])/2)
 
-                (xcen_pixel, ycen_pixel) = rescale_pixel(x_pixel, y_pixel)
-                (xmin_pixel, ymin_pixel) = rescale_pixel(bbox[0], bbox[1])
-                (xmax_pixel, ymax_pixel) = rescale_pixel(bbox[2], bbox[3])
+                (xcen_pixel, ycen_pixel) = rs.rescale_pixel(x_pixel, y_pixel)
+                (xmin_pixel, ymin_pixel) = rs.rescale_pixel(bbox[0], bbox[1])
+                (xmax_pixel, ymax_pixel) = rs.rescale_pixel(bbox[2], bbox[3])
 
                 object_id = 1 # TODO change to object tracker
 
@@ -420,10 +450,6 @@ class GetObjectBBX(smach.State):
             #  |                    |        |                     |
             #  '----------(xmax,ymax)        corner12-------corner22
 
-            # check camera intrinsics
-            if not self.intrinsics:
-                rospy.logerr("no camera intrinsics")
-                return None
 
             # init each pixel of bouding box
             xmin_pixel = int(xmin_pixel)
@@ -435,15 +461,15 @@ class GetObjectBBX(smach.State):
 
             rospy.loginfo("found {}".format(xcen_pixel,ycen_pixel))
             # rescale pixel incase pixel donot match
-            self.depth_image = check_image_size_for_ros(self.depth_image)
+            self.depth_image = rs.check_image_size_for_ros(self.depth_image)
             depth = self.depth_image[ycen_pixel,  xcen_pixel] # [y, x] for numpy array
 
             # [x, y] for realsense lib
-            center00_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xcen_pixel, ycen_pixel], depth)
-            corner11_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmin_pixel, ymin_pixel], depth)
-            corner12_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmin_pixel, ymax_pixel], depth)
-            corner21_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmax_pixel, ymin_pixel], depth)
-            corner22_result = rs2.rs2_deproject_pixel_to_point(self.intrinsics, [xmax_pixel, ymax_pixel], depth)
+            center00_result = rs.get_coordinate(xcen_pixel,ycen_pixel)
+            corner11_result = rs.get_coordinate(xmin_pixel,ymin_pixel)
+            corner12_result = rs.get_coordinate(xmin_pixel,ymax_pixel)
+            corner21_result = rs.get_coordinate(xmax_pixel,ymin_pixel)
+            corner22_result = rs.get_coordinate(xmax_pixel,ymax_pixel)
             
             all_result = (center00_result, corner11_result, corner12_result, corner21_result, corner22_result)
 
@@ -454,7 +480,7 @@ class GetObjectBBX(smach.State):
         # run_once function
         run_once()
         if not rospy.is_shutdown():
-            reset()
+            rs.reset()
             detect()
             userdata.ListBBX_output = self.bbxA_list
         return 'continue_GetObjectProperties'
@@ -747,11 +773,11 @@ if __name__ == '__main__':
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
 
-    # connect to CV server
+    # # connect to CV server
     host = "0.0.0.0"
-    port = 10008
+    port = 10001
     obj_tracker = CustomSocket(host, port)
-    obj_tracker.clientConnect()
+    # obj_tracker.clientConnect()
 
     
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])

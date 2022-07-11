@@ -189,7 +189,7 @@
   <limit upper="0.0" lower="0.0" effort="100" velocity="100"/>
 </joint>
 
-<joint name="realsense_yaw_join" type="revolute">
+<joint name="realsense_yaw_joint" type="revolute">
   <origin xyz="-0.189306 0.0 1.463" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="realsense_yaw"/>
