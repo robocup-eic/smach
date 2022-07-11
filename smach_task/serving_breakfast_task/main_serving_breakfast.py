@@ -79,6 +79,7 @@ class Start_signal(smach.State):
         smach.State.__init__(self,outcomes=['continue_Navigate_object'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
         
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
@@ -88,6 +89,9 @@ class Start_signal(smach.State):
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
+        
+        rospy.sleep(1)
+        self.pub_realsense_pitch_absolute_command.publish(0)
 
         while True:
             rospy.sleep(0.5)
@@ -117,7 +121,7 @@ class Navigate_object(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigate_object state')
         smach.State.__init__(self, outcomes=['continue_ABORTED', 'continue_GetObjectPose'], output_keys=['objectname_output'])
-
+        
     def execute(self, userdata):
         rospy.loginfo('Execute Navigate_object state')
         global count_location, navigation
@@ -127,6 +131,8 @@ class Navigate_object(smach.State):
         # in this case we will do only 2 objects which are cereal box and milk carton
         # count number of object that the robot has reached
 
+
+        time.sleep(1)
         # 
         if count_location == 1:
             navigation.move(MILK_FUR)
@@ -153,7 +159,9 @@ class GetObjectPose(smach.State):
         self.object_pose = Pose()
         self.tf_stamp = None
 
-        
+        self.pub_lift_command = rospy.Publisher("/lift_command", Bool, queue_size=1)
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectPose')
@@ -219,7 +227,6 @@ class GetObjectPose(smach.State):
                     self.tf_stamp.transform.rotation.z = quat[2]
                     self.tf_stamp.transform.rotation.w = quat[3]
 
-            rospy.loginfo("Object found!")
             self.object_pose = find_closest_object()
 
         def find_closest_object():
@@ -229,7 +236,7 @@ class GetObjectPose(smach.State):
                 if object_pose[2] < z_min:
                     object_pose_z_min = object_pose
                     z_min = object_pose[2]
-            if object_pose_z_min is None:
+            if len(self.object_pose_list) == 0:
                 return None
             else:
                 return xyz_to_pose(object_pose_z_min[0], object_pose_z_min[1], object_pose_z_min[2])
@@ -256,20 +263,20 @@ class GetObjectPose(smach.State):
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
 
-        # command realsense pitch to -45 degree
-        pub = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
-        while True:
-            if pub.get_num_connections() > 0:
-                break
+        # connect object tracker
+        obj_tracker.clientConnect()
 
-        pub.publish(-45)
-        time.sleep(1)
+        # command realsense pitch to -35 degree and lifting up
+        rospy.sleep(1)
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        self.pub_lift_command.publish(False)
         
         # run_once function
         run_once()
-        for i in range(5):
-            rospy.loginfo("detect object")
-            rs.reset()
+        rs.reset()
+        while True:
+            # rospy.loginfo("detect object")
             detect(rs.get_image())
             userdata.objectpose_output = self.object_pose
             if self.object_pose is not None:
@@ -293,15 +300,17 @@ class Pick(smach.State):
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
             tf_buffer = tf2_ros.Buffer()
-            listener = tf2_ros.TransformListener(tf_buffer)
+            # listener = tf2_ros.TransformListener(tf_buffer)
             pose_stamped = tf2_geometry_msgs.PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
             pose_stamped.header.stamp = rospy.Time.now()
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                output_pose_stamped = tf_buffer.transform(
-                    pose_stamped, to_frame, rospy.Duration(1))
+                while not tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                rospy.sleep(1)
+                output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
                 return output_pose_stamped.pose
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
@@ -316,9 +325,9 @@ class Pick(smach.State):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 return 'continue_ABORTED'
-
-        transformed_pose = transform_pose(
-            recieved_pose, "realsense_pitch", "base_link")
+        
+        rospy.loginfo(recieved_pose)
+        transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "cr3_base_link")
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
@@ -749,11 +758,11 @@ if __name__ == '__main__':
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
 
-    # connect to CV server
+    # # connect to CV server
     host = "0.0.0.0"
     port = 10001
     obj_tracker = CustomSocket(host, port)
-    obj_tracker.clientConnect()
+    # obj_tracker.clientConnect()
 
     
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])
