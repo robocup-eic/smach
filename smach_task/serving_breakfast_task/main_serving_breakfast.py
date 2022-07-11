@@ -138,7 +138,7 @@ class Navigate_object(smach.State):
             return 'continue_GetObjectPose'
         else:
             return 'continue_ABORTED'
-            
+
 
 class GetObjectPose(smach.State):
     def __init__(self):
@@ -154,13 +154,6 @@ class GetObjectPose(smach.State):
         self.frame = None
         self.object_pose = Pose()
         self.tf_stamp = None
-
-        # connect to CV server
-        host = "192.168.8.99"
-        port = 10001
-        self.c = CustomSocket(host, port)
-        self.c.clientConnect()
-        rospy.loginfo("connected object detection server")
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectPose')
@@ -265,7 +258,7 @@ class GetObjectPose(smach.State):
 
         # command realsense pitch to -45 degree
         pub = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
-        pub.publish(-45)
+        pub.publish(-35)
         time.sleep(1)
         
         # run_once function
@@ -318,8 +311,7 @@ class Pick(smach.State):
                 print("Service call failed: %s" % e)
                 return 'continue_ABORTED'
 
-        transformed_pose = transform_pose(
-            recieved_pose, "realsense_pitch", "base_link")
+        transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "base_link")
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
@@ -775,8 +767,11 @@ if __name__ == '__main__':
     ed.visual_robotpoint()
     
     with sm_top:
+        # smach.StateMachine.add('Start_signal', Start_signal(),
+        #                        transitions={'continue_Navigate_object':'Navigate_object'})
         smach.StateMachine.add('Start_signal', Start_signal(),
-                               transitions={'continue_Navigate_object':'Navigate_object'})
+                               transitions={'continue_Navigate_object':'GetObjectPose'})
+
         smach.StateMachine.add('Navigate_object', Navigate_object(),
                                transitions={'continue_GetObjectPose':'GetObjectPose',
                                             'continue_ABORTED':'ABORTED'},  
