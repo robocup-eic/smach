@@ -159,13 +159,10 @@ class GetObjectPose(smach.State):
         self.object_pose = Pose()
         self.tf_stamp = None
 
-<<<<<<< HEAD
-=======
         self.pub_lift_command = rospy.Publisher("/lift_command", Bool, queue_size=1)
         self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
         self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
 
->>>>>>> 5cd079c2744f3c8ac971e4c2e85b6479ad9f2746
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectPose')
 
@@ -266,12 +263,6 @@ class GetObjectPose(smach.State):
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
 
-<<<<<<< HEAD
-        # command realsense pitch to -45 degree
-        pub = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
-        pub.publish(-35)
-        time.sleep(1)
-=======
         # connect object tracker
         obj_tracker.clientConnect()
 
@@ -280,7 +271,6 @@ class GetObjectPose(smach.State):
         self.pub_realsense_pitch_absolute_command.publish(-35)
         self.pub_realsense_yaw_absolute_command.publish(0)
         self.pub_lift_command.publish(False)
->>>>>>> 5cd079c2744f3c8ac971e4c2e85b6479ad9f2746
         
         # run_once function
         run_once()
@@ -335,14 +325,9 @@ class Pick(smach.State):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 return 'continue_ABORTED'
-<<<<<<< HEAD
-
-        transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "base_link")
-=======
         
         rospy.loginfo(recieved_pose)
         transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "cr3_base_link")
->>>>>>> 5cd079c2744f3c8ac971e4c2e85b6479ad9f2746
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
