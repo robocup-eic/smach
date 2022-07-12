@@ -536,9 +536,6 @@ class Ask(smach.State):
                     stt.listen()
 
         
-        
-
-        
 class Navigate_to_start(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigate_to_start state')

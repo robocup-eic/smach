@@ -7,6 +7,9 @@ import smach_ros
 
 from geometry_msgs.msg import Pose
 
+# cr3 command
+import moveit_commander
+
 # realsense and computer vision
 import requests
 import numpy as np
@@ -80,8 +83,29 @@ class Start_signal(smach.State):
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
         self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
         
     def execute(self,userdata):
+        def set_home_walkie():
+            group_name = "arm"
+            move_group = moveit_commander.MoveGroupCommander(group_name)
+            joint_goal = move_group.get_current_joint_values()
+            joint_goal[0] = 0.0
+            joint_goal[1] = 0.0
+            joint_goal[2] = 2.267
+            joint_goal[3] = 0.875
+            joint_goal[4] = 1.507
+            # joint_goal[4] = 0.0
+            joint_goal[5] = 2.355
+            move_group.go(joint_goal, wait=True)
+            move_group.stop()
+
+        # set home for cr3, realsense pitch and yaw
+        set_home_walkie()
+        self.pub_realsense_pitch_absolute_command.publish(0)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        rospy.sleep(1)
+
         rospy.loginfo('Executing Start_signal state')
         # wait for the door to open
 
@@ -89,9 +113,6 @@ class Start_signal(smach.State):
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
-        
-        rospy.sleep(1)
-        self.pub_realsense_pitch_absolute_command.publish(0)
 
         while True:
             rospy.sleep(0.5)
@@ -304,7 +325,7 @@ class Pick(smach.State):
             pose_stamped = tf2_geometry_msgs.PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
-            pose_stamped.header.stamp = rospy.Time.now()
+            # pose_stamped.header.stamp = rospy.Time.now()
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
                 while not tf_buffer.can_transform:
