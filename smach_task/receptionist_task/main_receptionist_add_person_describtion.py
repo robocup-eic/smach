@@ -521,7 +521,6 @@ class Introduce_host(smach.State):
             self.rotate_pub.publish(rotate_msg)
             detections = faceRec.detect(rs.get_image())
             ############
-
             # return
             ############
             for name,location in detections.items():
