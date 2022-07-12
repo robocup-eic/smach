@@ -72,7 +72,6 @@ class go_to_Navigation():
             else:
                 return False
 
-#CHECK BY PATTER AND ICE
 class Start_signal(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Start_signal state')
@@ -80,12 +79,14 @@ class Start_signal(smach.State):
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
         self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
     
     def execute(self, userdata):
         rospy.loginfo('Executing Start_signal state')
         global rs
         # wait for the door to open
         self.pub_realsense_pitch_absolute_command.publish(0)
+        self.pub_realsense_yaw_absolute_command.publish(0)
         rospy.sleep(1)
 
         x_pixel, y_pixel = 1280/2, 720/2
@@ -107,39 +108,16 @@ class Start_signal(smach.State):
                 frame_count = 0
         return 'continue_Navigate_table'
 
-#CHECK BY PATTER AND ICE
-class Navigate_table(smach.State):
+class Navigate_Table(smach.State):
     def __init__(self):
-        rospy.loginfo('Initiating Navigate_table state')
+        rospy.loginfo('Initiating Navigate_Table state')
         smach.State.__init__(self,outcomes=['continue_Get_pose', 'continue_ABORTED'],
                              output_keys=['objectname_output', 'objectclass_level_output'])
     def execute(self,userdata):
-        rospy.loginfo('Executing Navigate_table state')
+        rospy.loginfo('Executing Navigate_Table state')
         global navigation, TABLE , count_placeObject
 
         navigation.move(TABLE)
-
-        #objectclass sequence = []
-        if count_placeObject == 1 :
-            userdata.objectname_output = 'milk'
-            userdata.objectclass_level_output = 0
-            return 'continue_Get_pose'
-        elif count_placeObject == 2 :
-            userdata.objectname_output = 'cerial'
-            userdata.objectclass_level_output = 1
-            return 'continue_Get_pose'
-        elif count_placeObject == 3 :
-            userdata.objectname_output = 'glass'
-            userdata.objectclass_level_output = 2
-            return 'continue_Get_pose'
-        elif count_placeObject == 4 :
-            userdata.objectname_output = 'bottle'
-            userdata.objectclass_level_output = 3
-            return 'continue_Get_pose'
-        elif count_placeObject == 5 :
-            userdata.objectname_output = 'orange_juice'
-            userdata.objectclass_level_output = 4
-            return 'continue_Get_pose'
         
         return 'continue_ABORTED'
 
@@ -350,7 +328,7 @@ class Navigate_cabinet(smach.State):
 
         return 'continue_GetObjectBBX'
 
-#COPY FROM SERVING_BREAKFAST BY PATTER
+#COPY FROM SERVING_BREAKFAST BY PATTER AND ICE
 class GetObjectBBX(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectBBX')
@@ -559,7 +537,7 @@ class GetObjectBBX(smach.State):
             userdata.ListBBX_output = self.bbxA_list
         return 'continue_GetProperties'
         
-#COPY FROM SERVING_BREAKFAST BY PATTER
+#COPY FROM SERVING_BREAKFAST BY PATTER AND ICE
 class GetObjectProperties(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectProperties')
@@ -695,7 +673,7 @@ class GetObjectProperties(smach.State):
 
         return 'continue_Place_object'
 
-#CHECK BY PATTER
+#CHECK BY PATTER AND ICE
 class Place_object(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Place_object state')
@@ -797,7 +775,7 @@ class Place_object(smach.State):
         success = place_service(corner11_pose, corner12_pose, corner21_pose, corner22_pose, high, collision_object_pose)
         print(success)
 
-        if success == True:
+        if success:
             if count_placeObject <= 5:
                 count_placeObject += 1
                 return 'continue_Navigate_table'
@@ -809,12 +787,12 @@ class Place_object(smach.State):
 if __name__ == '__main__':
     # before start
     # check TABLE, CABINET, PLACE_CABINET name
-    # fil object name sequence in Navigation Table_state 
+    # fil object name sequence in Navigation starting position state 
     rospy.init_node('main_cabinet')
     #####
-    TABLE = "table" #navigate to table
-    CABINET = "cabinet" #navigate to cabinet
-    PLACE_CABINET = "table1" #Place object
+    TABLE = "storing_groceries_standby" #navigate to storing_groceries_standby
+    CABINET = "cabinet" # navigate to cabinet
+    PLACE_CABINET = "table1" # Place object
     #####
     count_placeObject = 1
     posi = Pose()
@@ -824,8 +802,19 @@ if __name__ == '__main__':
     rs.wait() # wait for camera intrinsics
 
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])
+    
+    obj_2_catagories = {
+        'water':'drinks', 'milk':'drinks','coke':'drinks','tonic':'drinks','bubble_tea':'drinks','ice_tea':'drinks',
+        'corn_flakes':'pantry_items','tuna_can':'pantry_items',"apples" : "fruits", "peach" : "fruits", "orange" : "fruits", 
+        "banana" : "fruits", "strawberry" : "fruits", "pockys": "snack", "pringles": "snack",
+    }
+    category_on_cabinet = ['drinks', 'cleaning supplies', 'pantry items', 'fruit', 'snacks', 'cutlery']
+    
+    #if
+    category_on_level = {'drinks': 1, 'cleaning supplies' : 2, 'pantry items':3, 'fruit':4, 'snacks':5, 'cutlery':6}
+    ranked_category = ['drinks','snacks','pantry items','fruit']
 
-    # variable from Navigate_table state
+    # variable from Navigate_Table state
     sm_top.userdata.objectname = ''
     sm_top.userdata.objectclass_level = 0
     # variable form Get_pose state
@@ -839,9 +828,9 @@ if __name__ == '__main__':
 
     with sm_top:
         smach.StateMachine.add('Start_signal', Start_signal(),
-                                transitions={'continue_Navigate_table':'Navigate_table'},
+                                transitions={'continue_Navigate_table':'Navigate_Table'},
                                 remapping={'object_number_output': 'object_number'})
-        smach.StateMachine.add('Navigate_table', Navigate_table(),
+        smach.StateMachine.add('Navigate_Table', Navigate_Table(),
                                 transitions={'continue_Get_pose':'Get_pose',
                                             'continue_ABORTED':'ABORTED'},
                                 remapping={'object_number_input':'object_number',
@@ -872,7 +861,7 @@ if __name__ == '__main__':
                                 remapping = {'object_pose_list_input':'object_pose_list',
                                              'objectclass_level_input':'objectclass_level'})
         # -----------------------------------------------------------------------------------------
-    sis = smach_ros.IntrospectionServer('Server_name', sm_top, '/Kannroot')
+    sis = smach_ros.IntrospectionServer('Server_name', sm_top, '/storing_groceries_root')
     sis.start()
 
     outcome = sm_top.execute()
@@ -880,72 +869,3 @@ if __name__ == '__main__':
 
     rospy.spin()
     sis.stop()
-
-# #!/usr/bin/env python
-# import roslib
-# import rospy
-# import smach
-# import smach_ros
-
-# class Stand_By(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating the stand by state')
-#         smach.State.__init__(self, outcomes = ['continue_Navigate_To_Shelf'])
-#     def execute(self, userdata):
-#         return 'continue_Navigate_To_Shelf'
-
-# class Navigate_To_Shelf(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating navigate to shelf state')
-#         smach.State.__init__(self, outcomes = ['continue_Place_Object', 'continue_Save_Catagory'])
-#         self.x = 1
-#     def execute(self, userdata):
-#         if self.x == 1:
-#             return 'continue_Place_Object'
-#         else:
-#             return 'continue_Save_Catagory'
-
-# class Place_Object(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating place object state')
-#         smach.State.__init__(self, outcomes = ['continue_succeeded', 'continue_Navigate_To_Table'])
-#         self.x = 1
-#     def execute(self, userdata):
-#         if self.x == 1:
-#             return 'continue_succeeded'
-#         else:
-#             return 'continue_Navigate_To_Table'
-
-# class Save_Catagory(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating the save catagory state')
-#         smach.State.__init__(self, outcomes = ['continue_Navigate_To_Table'])
-#     def execute(self, userdata):
-#         return 'continue_Navigate_To_Table'
-
-# class Navigate_To_Table(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating the navigate to table state')
-#         smach.State.__init__(self, outcomes = ['continue_Pick_Object'])
-#     def execute(self, userdata):
-#         return 'continue_Pick_Object'
-# def main():
-#     rospy.init_node('smach_storing_groceries_state_machine')
-#     # Create the top level state machine
-#     sm_top = smach.StateMachine(outcomes = ['succeeded', 'aborted'])
-
-#     # Open the container
-
-#     with sm_top:
-#         smach.StateMachine.add('STAND_BY', Stand_By(),
-#                                transitions = {'continue_Navigate_To_Shelf':'NAVIGATE_TO_SHELF'})
-#         smach.StateMachine.add('NAVIGATE_TO_SHELF', Navigate_To_Shelf(),
-#                                transitions = {'continue_Place_Object':'PLACE_OBJECT',
-#                                               'continue_Save_Catagory':'SAVE_CATAGORY'})
-#         smach.StateMachine.add('PLACE_OBJECT', Place_Object(),
-#                                transitions = {'continue_succeeded':'succeeded',
-#                                               'continue_Navigate_To_Table':'NAVIGATE_TO_TABLE'})
-#         smach.StateMachine.add('SAVE_CATAGORY', Save_Catagory(),
-#                                transitions = {'continue_Navigate_To_Table':'NAVIGATE_TO_TABLE'})
-# if __name__ == '__main__':
-#     main()
