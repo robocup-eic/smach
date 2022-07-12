@@ -625,7 +625,7 @@ class Place_object(smach.State):
         
     def execute(self, userdata):
         rospy.loginfo('Executing Place_object state')
-        global count_placeObject, PLACE_CABINET
+        global count_placeObject, CABINET
         rospy.loginfo('Number of object placed = %s', count_placeObject)
         # place the object on the cabinet and count it
         # if number of object is more than 5 continue_SUCCEEDED
@@ -677,8 +677,8 @@ class Place_object(smach.State):
         # robot_pose = Pose()
 
         ed = EnvironmentDescriptor("../config/fur_data.yaml")
-        corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list(PLACE_CABINET)
-        high.z = ed.get_height(PLACE_CABINET)[userdata.objectclass_level_input]
+        corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list(CABINET)
+        high.z = ed.get_height(CABINET)[userdata.objectclass_level_input]
 
         corner1 = transform_pose(corner1, "map", "cr3_base_link")
         corner2 = transform_pose(corner2, "map", "cr3_base_link")
@@ -735,7 +735,7 @@ if __name__ == '__main__':
     #####
     TABLE = "storing_groceries_standby" #navigate to storing_groceries_standby
     CABINET = "cabinet" # navigate to cabinet
-    PLACE_CABINET = "table1" # Place object
+    # PLACE_CABINET = "table1" # Place object
     #####
     count_placeObject = 1
     posi = Pose()
