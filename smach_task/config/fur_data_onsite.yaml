@@ -850,3 +850,31 @@
       z: 0.97
       w: -0.22
 -
+  name: storing_groceries_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 9.03440570831
+      y: 4.20595264435
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.862593996303
+      w: 0.505896824997
+-
+  name: serve_breakfast_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 0
+      y: 0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0
+      w: 0
+-
