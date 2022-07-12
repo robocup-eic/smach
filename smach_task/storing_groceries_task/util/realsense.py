@@ -91,6 +91,14 @@ class Realsense():
             rospy.loginfo("no camera intrinsics received")
             time.sleep(0.1)
 
+    def reset(self):
+        self.info_sub.unregister()
+        self.depth_sub.unregister()
+        self.image_sub.unregister()
+        self.intrinsics = None
+        self.depth_image = None
+        self.frame = None
+        
 if __name__ == "__main__":
     rospy.init_node('realsense_module')
     rs = Realsense()
