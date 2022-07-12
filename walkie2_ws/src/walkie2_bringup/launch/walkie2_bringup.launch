@@ -7,6 +7,7 @@
   <arg default="true" name="use_imu"/>
   <arg default="false" name="rviz"/>
   <arg default="/dev/ttyACM0" name="port"/>
+  <arg default="false" name="carry"/>
   
 
   <!-- Set up TF for the robot -->
@@ -94,6 +95,11 @@
     <!-- Open rviz for monitoring -->
     <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/>
 
+  </group>
+
+  <group if="$(arg carry)">
+    <node name="realsense_follow" pkg="walkie2_navigation" type="person_servo.py"/>
+    <node name="person_follow" pkg="walkie2_navigation" type="person_chaser.py"/>
   </group>
 
   

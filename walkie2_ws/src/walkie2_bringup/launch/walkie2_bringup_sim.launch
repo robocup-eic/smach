@@ -1,0 +1,39 @@
+<launch>
+  <arg default="$(find walkie2_description)/urdf/walkie2.xacro" name="model"/>
+  <arg default="$(find walkie2_description)/launch/urdf.rviz" name="rvizconfig"/>
+  <param command="$(find xacro)/xacro $(arg model)" name="robot_description"/>
+  <arg default="false" name="rviz"/>
+  
+
+  <!-- Set up TF for the robot -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+      <remap from="/joint_states" to="/walkie2/joint_states" />
+  </node>
+
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <!-- <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam> -->
+  </node>
+
+  <group if="$(arg rviz)">
+    
+    <!-- Open rviz for monitoring -->
+    <node args="-d $(arg rvizconfig)" name="rviz" pkg="rviz" required="true" type="rviz"/>
+
+  </group>
+
+  <include file="$(find cr3_moveit_config)/launch/move_group.launch">
+      <arg name="allow_trajectory_execution" value="true"/>
+      <arg name="fake_execution" value="true"/>
+      <arg name="info" value="true"/>
+      <arg name="load_robot_description" value="false"/>
+  </include>
+
+  <!-- launch robot control node for moveit motion planning -->
+  <node pkg="cr3_moveit_control" type="pick_service_select_side" name="pick_service_select_side" output="screen" />
+
+  <node pkg="tf" type="static_transform_publisher" name="map_to_base_footprint" args="0 0 0 0 0 0 map base_footprint 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_cr3_base_link" args="0 0 0 0 0 0 base_link cr3_base_link 10"/>
+
+
+  
+</launch>

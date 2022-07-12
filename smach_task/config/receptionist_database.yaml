@@ -1,2 +1,4 @@
 - {fav_drink: coke, name: earth, role: host}
-
+- {fav_drink: water, name: Jack, role: guest_1}
+- {fav_drink: Coca Cola, name: Oliver, role: guest_2}
+- {desc: he is a gay, fav_drink: jack daniel, name: hopper, role: guest_3}

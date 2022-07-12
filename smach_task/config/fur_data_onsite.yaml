@@ -42,19 +42,19 @@
   frame_id: map
   shape: None
   position:
-    x: 0.522051930428
-    y: 4.09418952465
+    x: -0.23
+    y: 4.0
     z: 0.0
-  # robot_pose: 
-  #   position: 
-  #     x: -0.1729
-  #     y: -0.02505
-  #     z: 0.0
-  #   orientation:
-  #     x: 0.0
-  #     y: 0.0
-  #     z: 1.0
-  #     w: 0.0
+  robot_pose: 
+    position: 
+      x: -0.23
+      y: 4.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
 -
   name: office_2_livingroom
   frame_id: map
@@ -324,7 +324,7 @@
     z: 0.0
   robot_pose:
     position:
-      x: 8.11813735962
+      x: 8.0
       y: -0.0265086293221
       z: 0.0
     orientation:
@@ -849,4 +849,18 @@
       y: 0.0
       z: 0.97
       w: -0.22
+-
+  name: operator_position
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 3.825
+      y: -0.468
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.652
+      w: 0.759
 -

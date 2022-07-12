@@ -119,6 +119,8 @@ class Start_signal(smach.State):
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
+        self.moving_msg = Twist()
+        self.moving_msg.linear.x = 0.2
 
         while True:
             rospy.sleep(0.5)
@@ -252,11 +254,11 @@ class Navigate_living_room(smach.State):
 
             # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
                         
-            if 1.0 < z_coord < 8:
+            if 1.0 < z_coord < 4:
                 rospy.sleep(0.1)
-                posi.position.x, posi.position.y, posi.position.z = z_coord, -x_coord, 0
+                posi.position.x, posi.position.y, posi.position.z = z_coord-0.3, -x_coord, 0
 
-                human_posi = transform_pose(posi, "realsense_yaw", "base_footprint")
+                human_posi = transform_pose(posi, "realsense_pitch", "base_footprint")
 
                 delta_x = human_posi.position.x
                 delta_y = human_posi.position.y
@@ -284,7 +286,7 @@ class Navigate_living_room(smach.State):
 
             # result = navigation.move_base_client.get_state()
             # rospy.loginfo("status {}".format(result))
-            if result == GoalStatus.SUCCEEDED :
+            if result:
                 rospy.loginfo('Arrived at center of living room')
                 return 'continue_Find_person'
             if detect(rs.get_image()):
@@ -327,7 +329,7 @@ class Approach_person(smach.State):
  
         count_person += 1
 
-        save_posi.position.x = posi.position.x
+        save_posi.position.x = posi.position.x+0.3
         save_posi.position.y, save_posi.position.z = posi.position.y, posi.position.z
         save_posi.orientation = posi.orientation
 
@@ -444,11 +446,11 @@ class Find_person(smach.State):
 
             # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
                         
-            if 1.0 < z_coord < 8:
+            if 1.0 < z_coord < 4:
                 rospy.sleep(0.1)
-                posi.position.x, posi.position.y, posi.position.z = z_coord , -x_coord, 0
+                posi.position.x, posi.position.y, posi.position.z = z_coord-0.3 , -x_coord, 0
 
-                human_posi = transform_pose(posi, "realsense_yaw", "base_footprint")
+                human_posi = transform_pose(posi, "realsense_pitch", "base_footprint")
 
                 delta_x = human_posi.position.x
                 delta_y = human_posi.position.y
@@ -546,9 +548,6 @@ class Ask(smach.State):
                     stt.listen()
 
         
-        
-
-        
 class Navigate_to_start(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigate_to_start state')
@@ -560,7 +559,7 @@ class Navigate_to_start(smach.State):
 
         rospy.loginfo("Moving to start point")
         
-        standby = navigation.move('living_room') #start point will be declare 2H before test
+        standby = navigation.move('operator_position') #start point will be declare 2H before test
 
         return 'continue_Announce'
 
@@ -582,7 +581,7 @@ class Announce(smach.State):
             guest_location = gm.get_guest_location("guest_{}".format(i))
             obj_dist = []
 
-            for obj in ed.get_object_poses(): ## TODO ed get chair list
+            for obj in ed.get_obj_poses(): ## TODO ed get chair list
 
                 if not "position" in obj.keys():
                     continue
@@ -597,6 +596,8 @@ class Announce(smach.State):
             closest_locations["guest_{}".format(i)] = obj_dist[0][0]
             rospy.loginfo('{}'.format(obj_dist))
 
+        order_dict = {1:'first',2:'second',3:'third'}
+
         # announce the person's location relative to the closest furniture 
         speak("Hello, I found two people in the room")
         speak("The first person is {} which is located next to the {}".format(gm.get_guest_name("guest_1"), closest_locations["guest_1"])) # TODO change furniture 
@@ -605,6 +606,13 @@ class Announce(smach.State):
         speak("The second person is {} which is located next to the {}".format(gm.get_guest_name("guest_2"), closest_locations["guest_2"])) # TODO change furniture
         speak(PERSON2_DES)
         rospy.sleep(2)
+        speak("Hello, I found {} people in the room".format(len(count_person)))
+
+        for i in range(count_person):
+            speak("The {} person is {} which is located next to the {}".format(order_dict[i],gm.get_guest_name("guest_{}".format(i)), closest_locations["guest_{}".format(i)])) # TODO change furniture 
+            # rospy.sleep(1)
+            # speak("The second person is {} which is located next to the {}".format(gm.get_guest_name("guest_2"), closest_locations["guest_2"])) # TODO change furniture
+            # rospy.sleep(2)
         speak("I have finished my task")
         return 'continue_SUCCEEDED'
 
@@ -620,7 +628,7 @@ if __name__ == '__main__':
     posi = Pose()
     save_posi =Pose()
 
-    ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed = EnvironmentDescriptor("../config/fur_data_onsite.yaml")
     gm = GuestNameManager("../config/find_my_mate_database.yaml")
     
     # ed.visual_robotpoint()

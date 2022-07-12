@@ -47,6 +47,8 @@ from math import atan, pi
 from util.environment_descriptor import EnvironmentDescriptor
 from util.realsense import Realsense
 
+import math
+
 class Start_signal(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Start_signal state')
@@ -102,7 +104,7 @@ class Start_signal(smach.State):
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
-                while time.time() - start_time < 4:
+                while time.time() - start_time < 6:
                     rospy.loginfo("Moving Forward...")
                     self.moving_pub.publish(self.moving_msg)
                     rospy.sleep(0.1)
@@ -210,12 +212,15 @@ class Place_luggage(smach.State):
 class Check_position(smach.State):
     def __init__(self):
 
+        global ed
+
         smach.State.__init__(self, outcomes=['continue_stop'])
         rospy.loginfo('Initiating state Check_position')
         self.detect_radius = 0.5
         
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
+        rospy.loginfo("Exit Position: {}".format(ed.get_robot_pose('exit')))
 
         robot_inside = True
 
@@ -227,14 +232,15 @@ class Check_position(smach.State):
 
         
 
-        exit_position = ed.get_center_point("exit")
+        exit_position = ed.get_robot_pose("exit")
 
         while True:
             
             pose = self.tfBuffer.lookup_transform('map','base_footprint',rospy.Time.now()-rospy.Duration.from_sec(1.0))
 
-            distance = ((pose.transform.translation.x-exit_position.x)**2+(pose.transform.translation.y-exit_position.y)**2)**0.5
-            rospy.loginfo("Distance from exit is {}".format(distance))
+            distance = math.sqrt((pose.transform.translation.x-exit_position.position.x)**2 + (pose.transform.translation.y-exit_position.position.y)**2)
+            rospy.loginfo("Distance is {} m".format(distance))
+            rospy.loginfo("Base footprint pose is  {}".format(pose.transform.translation))
             if distance<self.detect_radius:
 
                 robot_inside = False
@@ -384,7 +390,6 @@ class Follow_person(smach.State):
             else:
                 
                 self.realsense_follow_cmd_pub.publish("stop")
-                speak("Out of map")
                 try:
                     if not self.is_cancelled:
                         self.client.cancel_goal()

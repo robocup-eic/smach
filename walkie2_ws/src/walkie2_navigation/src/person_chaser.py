@@ -12,7 +12,7 @@ Publishes commands to
 import time
 import rospy
 from geometry_msgs.msg import Twist, Point
-from std_msgs.msg import String
+from std_msgs.msg import String, Int32MultiArray
 
 
 LINEAR_THRESHOLD = 1.3
@@ -45,11 +45,17 @@ class ChasePerson():
         
         self.sub_cmd = rospy.Subscriber("/human/follow_cmd",String, self.set_cmd)
         rospy.loginfo("Command Subscribers set")
+
+        self.sub_cmd = rospy.Subscriber("/human/distances",Int32MultiArray, self.set_min_distance)
+        rospy.loginfo("Distances Subscribers set")
         
         self.pub_twist = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=5)
         rospy.loginfo("Publisher set")
         
         self._message = Twist()
+
+        # For stopping robot if a person suddenly appears
+        self.min_distance = 999
         
     @property
     def is_detected(self): return(time.time() - self._time_detected < 1.0)
@@ -57,7 +63,9 @@ class ChasePerson():
     def set_cmd(self,message):
         self.cmd = message.data
     
-        
+    def set_min_distance(self, message):
+        self.min_distance = min(message.data)
+
     def rel_update_coor(self, message):
         self.rel_x = message.x
         self.rel_y = message.y
@@ -108,6 +116,10 @@ class ChasePerson():
                 steer_action, throttle_action   = self.get_control_action() 
 
                 if self.cmd != 'follow':
+                    steer_action = 0
+                    throttle_action = 0
+
+                elif self.min_distance < LINEAR_THRESHOLD:
                     steer_action = 0
                     throttle_action = 0
 
