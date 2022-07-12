@@ -1,0 +1,7 @@
+image: athome_arena.pgm
+resolution: 0.050000
+origin: [-21.699290, -10.300000, 0.000000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+

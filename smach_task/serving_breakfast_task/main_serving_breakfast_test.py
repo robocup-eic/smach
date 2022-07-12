@@ -149,8 +149,7 @@ class Navigate_object(smach.State):
 class GetObjectPose(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectPose')
-        smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=[
-                             'objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
+        smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'])
         # initiate variables
         self.object_name = ""
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
@@ -256,14 +255,35 @@ class GetObjectPose(smach.State):
             object_pose.orientation.w = 1
             return object_pose
 
+        def transform_pose(input_pose, from_frame, to_frame):
+
+            # **Assuming /tf2 topic is being broadcasted
+            tf_buffer = tf2_ros.Buffer()
+            listener = tf2_ros.TransformListener(tf_buffer)
+
+            pose_stamped = tf2_geometry_msgs.PoseStamped()
+            pose_stamped.pose = input_pose
+            pose_stamped.header.frame_id = from_frame
+            # pose_stamped.header.stamp = rospy.Time.now()
+
+            try:
+                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+                output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+                return output_pose_stamped.pose
+
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                raise
         # ----------------------------------------------start-----------------------------------------------------
         self.pub_tf = rospy.Publisher("/tf", tf2_msgs.msg.TFMessage, queue_size=1)
 
         # recieving object name from GetObjectName state
-        self.object_name = userdata.objectname_input
+        self.object_name = "Waterbottle"
         rospy.loginfo(self.object_name)
 
-        # connect object tracker
+        # # connect to CV server
+        host = "0.0.0.0"
+        port = 10001
+        obj_tracker = CustomSocket(host, port)
         obj_tracker.clientConnect()
 
         # command realsense pitch to -35 degree and lifting up
@@ -278,8 +298,10 @@ class GetObjectPose(smach.State):
         while True:
             # rospy.loginfo("detect object")
             detect(rs.get_image())
-            userdata.objectpose_output = self.object_pose
+            # userdata.objectpose_output = self.object_pose
             if self.object_pose is not None:
+                transformed_pose = transform_pose(self.object_pose, "realsense_pitch", "cr3_base_link")
+                rospy.loginfo(transformed_pose)
                 return 'continue_Pick'
         return 'continue_ABORTED'
 
@@ -297,21 +319,40 @@ class Pick(smach.State):
         rospy.loginfo('--------------------------')
         rospy.loginfo(recieved_pose)
 
+        # def transform_pose(input_pose, from_frame, to_frame):
+        #     # **Assuming /tf2 topic is being broadcasted
+        #     tf_buffer = tf2_ros.Buffer()
+        #     # listener = tf2_ros.TransformListener(tf_buffer)
+        #     pose_stamped = tf2_geometry_msgs.PoseStamped()
+        #     pose_stamped.pose = input_pose
+        #     pose_stamped.header.frame_id = from_frame
+        #     pose_stamped.header.stamp = rospy.Time.now()
+        #     try:
+        #         # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+        #         while not tf_buffer.can_transform:
+        #             rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+        #         rospy.sleep(1)
+        #         output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+        #         return output_pose_stamped.pose
+        #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        #         raise
+
         def transform_pose(input_pose, from_frame, to_frame):
+
             # **Assuming /tf2 topic is being broadcasted
             tf_buffer = tf2_ros.Buffer()
-            # listener = tf2_ros.TransformListener(tf_buffer)
+            listener = tf2_ros.TransformListener(tf_buffer)
+
             pose_stamped = tf2_geometry_msgs.PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
-            pose_stamped.header.stamp = rospy.Time.now()
+            # pose_stamped.header.stamp = rospy.Time.now()
+
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                while not tf_buffer.can_transform:
-                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
-                rospy.sleep(1)
                 output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
                 return output_pose_stamped.pose
+
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
@@ -757,13 +798,6 @@ if __name__ == '__main__':
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
 
-    # # connect to CV server
-    host = "0.0.0.0"
-    port = 10001
-    obj_tracker = CustomSocket(host, port)
-    # obj_tracker.clientConnect()
-
-    
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])
     # initial userdata Pose()
     sm_top.userdata.sm_pose = Pose()
@@ -774,45 +808,16 @@ if __name__ == '__main__':
     sm_top.userdata.object_size_list = []
 
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
-    ed.visual_robotpoint()
+    # ed.visual_robotpoint()
     
     with sm_top:
-        smach.StateMachine.add('Start_signal', Start_signal(),
-                               transitions={'continue_Navigate_object':'Navigate_object'})
 
-        smach.StateMachine.add('Navigate_object', Navigate_object(),
-                               transitions={'continue_GetObjectPose':'GetObjectPose',
-                                            'continue_ABORTED':'ABORTED'},  
-                                            remapping={'objectname_output': 'string_name'})
+        smach.StateMachine.add('Start_signal', Start_signal(),
+                               transitions={'continue_Navigate_object':'GetObjectPose'})
 
         smach.StateMachine.add('GetObjectPose', GetObjectPose(),
-                               transitions={'continue_Pick': 'Pick',
-                                            'continue_ABORTED': 'ABORTED'},
-                               remapping={'objectname_input': 'string_name',
-                                          'objectpose_output': 'object_pose'})
-
-        smach.StateMachine.add('Pick', Pick(),
-                               transitions={'continue_Navigate_table': 'Navigate_table',
-                                            'continue_ABORTED': 'ABORTED'},
-                               remapping={'objectpose_input': 'object_pose'})
-
-        smach.StateMachine.add('Navigate_table', Navigate_table(),
-                               transitions={'continue_GetObjectBBX':'GetObjectBBX'})
-
-        smach.StateMachine.add('GetObjectBBX', GetObjectBBX(), 
-                                transitions={'continue_GetObjectProperties':'GetObjectProperties'},
-                                remapping=   {'ListBBX_output': 'bbx_list'})
-
-        smach.StateMachine.add('GetObjectProperties', GetObjectProperties(),
-                                transitions={'continue_Place_object':'Place_object'},
-                                remapping=   {'ListBBX_input'           : 'bbx_list',
-                                              'ObjectPoseList_output'   : 'object_pose_list',
-                                              'ObjectSizeList_output'   : 'object_size_list'})
-
-        smach.StateMachine.add('Place_object', Place_object(),
-                               transitions={'continue_Navigate_object':'Navigate_object',
-                                            'continue_SUCCEEDED':'SUCCEEDED'},
-                                            remapping = {'object_pose_list_input':'object_pose_list'})
+                               transitions={'continue_Pick': 'SUCCEEDED',
+                                            'continue_ABORTED': 'ABORTED'})
 
         sis = smach_ros.IntrospectionServer('Service_name', sm_top, '/ServingBreakfast')
         sis.start()

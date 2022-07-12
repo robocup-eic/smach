@@ -102,7 +102,7 @@ def main():
     last_pose = None
 
     # connect to server
-    host = "192.168.8.99"
+    host = "0.0.0.0"
     # an important port
     WIT_lolov5 = 10002
     Face_recog = 10006

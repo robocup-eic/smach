@@ -25,7 +25,7 @@
     <param name="gui_publish_rate"          value="10.0"/>
 
     <remap from="scan"                      to="$(arg scan_topic)"/>
-    <param name="laser_max_range"           value="10"/>
+    <param name="laser_max_range"           value="4.5"/>
     <param name="laser_max_beams"           value="60"/>
     <param name="laser_z_hit"               value="0.9"/>
     <param name="laser_z_short"             value="0.05"/>

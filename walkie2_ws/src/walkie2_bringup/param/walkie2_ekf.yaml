@@ -1,4 +1,4 @@
-frequency: 20
+frequency: 8
 two_d_mode: true
 
 odom0: /walkie2/odom_raw
@@ -11,7 +11,8 @@ odom0_differential: false
 odom0_relative: false
 odom0_pose_rejection_threshold: 0.3
 odom0_twist_rejection_threshold: 0.3
-odom1: /walkie2/odom_rf2o
+
+odom1: /walkie2/odom_lidar
 odom1_config: [false, false, false,
                false, false, false,
                true, false, false,
