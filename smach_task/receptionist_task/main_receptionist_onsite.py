@@ -179,38 +179,41 @@ class Standby(smach.State):
 
             # if there is no person just skip
             if len(result["result"]) == 0:
-                rospy.loginfo("guest not found yet")
+                # rospy.loginfo("guest not found yet")
                 image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
                 return
 
             # not found person yet
-            if self.person_id == -1:
-                center_pixel_list = []
-                for track in result["result"]:
-                    self.x_pixel = int((track[2][0]+track[2][2])/2)
-                    self.y_pixel = int((track[2][1]+track[2][3])/2)
-                    depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
-                    center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
-                
-                self.person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
-            
+            center_pixel_list = []
             for track in result["result"]:
-                # track : [id, class_name, [x1,y1,x2,y2]]
-                # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
-                if track[0] == self.person_id:
-                    self.x_pixel = int((track[2][0]+track[2][2])/2)
-                    self.y_pixel = int((track[2][1]+track[2][3])/2)
-                    self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
-                    # visualize purpose
-                    frame = cv2.circle(frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
-                    frame = cv2.rectangle(frame, rs.rescale_pixel(track[2][0], track[2][1]), rs.rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
-                    frame = cv2.putText(frame, str(self.person_id), rs.rescale_pixel(track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                self.x_pixel = int((track[2][0]+track[2][2])/2)
+                self.y_pixel = int((track[2][1]+track[2][3])/2)
+                depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
+                center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
+            
+            self.x_pixel = min(center_pixel_list, key=lambda x: x[2])[0]
+            self.y_pixel = min(center_pixel_list, key=lambda x: x[2])[1]
+
+            # filter x, y pixel at the edge
+            if not (300 < self.x_pixel < 900):
+                rospy.loginfo("X_pixel: {}, Y_pixel: {}".format(self.x_pixel, self.y_pixel))
+                rospy.loginfo("Human not in the middle")
+                return False
+
+            self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
+            # visualize purpose
+            frame = cv2.circle(frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
+            frame = cv2.rectangle(frame, rs.rescale_pixel(track[2][0], track[2][1]), rs.rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
+            frame = cv2.putText(frame, str(self.person_id), rs.rescale_pixel(track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
             # 3d pose
 
+            rospy.loginfo("X_pixel: {}, Y_pixel: {}".format(self.x_pixel, self.y_pixel))
             # rescale pixel incase pixel donot match
+
             x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
+            rospy.loginfo("Target person is at coordinate: {}".format((x_coord, y_coord, z_coord)))
             # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
 
             if 0.75 < z_coord < 1.5:
@@ -313,7 +316,7 @@ class Ask(smach.State):
                     stt.clear()
                     stt.listen()
 
-        navigation.move('living_room')
+        navigation.move('livingroom')
 
         return 'continue_Navigation'
 
@@ -444,8 +447,9 @@ class Navigation(smach.State):
                     if not result[0] in [r[0] for r in self.person_list]:
                         self.person_list.append(result)
 
-        avaliable_seat = avaliable_seat_list()
-        rospy.loginfo("avaliable seat are:" + str(avaliable_seat))
+        avaliable_seat = ['Walkie']
+        # avaliable_seat = avaliable_seat_list()
+        # rospy.loginfo("avaliable seat are:" + str(avaliable_seat))
         
         if len(avaliable_seat) == 0:
             return 'continue_No_seat'
@@ -570,7 +574,7 @@ if __name__ == '__main__':
 
     tf_Buffer = tf2_ros.Buffer()
 
-    ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed = EnvironmentDescriptor("../config/fur_data_onsite.yaml")
     ed.visual_robotpoint()
     gm = GuestNameManager("../config/receptionist_database.yaml")
     gm.reset()
@@ -592,7 +596,7 @@ if __name__ == '__main__':
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
     # person description model
-    port_personDescription = 10008
+    port_personDescription = 10009
     personDescription = CustomSocket(host, port_personDescription)
     personDescription.clientConnect()
 
