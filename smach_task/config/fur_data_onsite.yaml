@@ -822,3 +822,31 @@
       z: 0.0
       w: 1.0
 -
+  name: carry_my_luggage_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 2.44
+      y: 3.94
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+      w: 0.036
+-
+  name: receptionist_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 3.50
+      y: 0.80
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.97
+      w: -0.22
+-

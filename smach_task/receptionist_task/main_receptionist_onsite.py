@@ -146,7 +146,7 @@ class Standby(smach.State):
     def execute(self,userdata):
         rospy.loginfo('Executing Standby state')
 
-        standby = navigation.move('standby')
+        standby = navigation.move('receptionist_standby')
 
         if standby:
             rospy.loginfo('Walky stand by, Ready for order')

@@ -119,7 +119,7 @@ class Start_signal(smach.State):
         
         # navigate to standby position
         rospy.loginfo("moving to standby")
-        standby = go_to_Navigation('livingroom')
+        standby = go_to_Navigation('carry_my_luggage_standby')
         if standby:
             rospy.loginfo('Walky stand by, Ready for order')
         else:
