@@ -249,7 +249,13 @@ class Ask(smach.State):
         # ask the guest to register's his/her face to the robot
         # ask name and favorite drink
         # save name and favorite drink in dictionary
-        global person_count, faceRec, stt, rs, gm
+        global person_count, faceRec, stt, rs, gm, personDescription, PERSON1_DES
+
+        # capture person description
+        if person_count == 1:
+            frame = rs.get_image()
+            PERSON1_DES = personDescription.req(frame) #string
+    
 
         # listening to the person and save his/her name to the file
         speak("What is your name?")
@@ -480,7 +486,7 @@ class Introduce_guest(smach.State):
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     def execute(self,userdata):
         rospy.loginfo('Executing Introduce_guest state')
-        global person_count, gm, rs
+        global person_count, gm, rs, PERSON1_DES
         # find the host and face the robot to the host
         rotate_msg = Twist()
         rotate_msg.angular.z = 0.1
@@ -502,7 +508,7 @@ class Introduce_guest(smach.State):
 
         # clearly identify the person being introduced and state their name and favorite drink
         if person_count == 1:
-            speak("Hello {host_name}, the guest who is on the {furniture} is {guest_1}".format(host_name = gm.get_guest_name("host"), furniture = "Couch", guest_1 = gm.get_guest_name("guest_1")))
+            speak("Hello {host_name}, the guest name is {guest_1}".format(host_name = gm.get_guest_name("host"), guest_1 = gm.get_guest_name("guest_1")))
             speak("His favorite drink is {fav_drink1}".format(fav_drink1 = gm.get_guest_fav_drink("guest_1")))
         if person_count == 2:
             speak("Hello {host_name}, the new guest is {guest_2}".format(host_name = gm.get_guest_name("host"), guest_2 = gm.get_guest_name("guest_2")))
@@ -522,7 +528,7 @@ class Introduce_host(smach.State):
 
         # clearly identify the person being introduced annd state their name and favorite drink
 
-        global person_count, gm, rs
+        global person_count, gm, rs , PERSON1_DES
         # find the host and face the robot to the host
         rotate_msg = Twist()
         rotate_msg.angular.z = -0.1
@@ -532,7 +538,6 @@ class Introduce_host(smach.State):
             self.rotate_pub.publish(rotate_msg)
             detections = faceRec.detect(rs.get_image())
             ############
-
             # return
             ############
             for name,location in detections.items():
@@ -546,15 +551,17 @@ class Introduce_host(smach.State):
         self.rotate_pub.publish(cancel)
 
         if person_count == 1:
-
             # find the guest1 and face the robot to the guest1
             speak("Hello {guest_1}, the host's name is {host_name}".format(guest_1 = gm.get_guest_name("guest_1"), host_name = gm.get_guest_name("host")))
             speak("His favorite drink is {fav_drink_host}".format(fav_drink_host = gm.get_guest_fav_drink("host")))
         if person_count == 2:
             # find the guest_2 and face the robot the the guest_2
-
             speak("Hello {guest_2}, the host's name is {host_name}".format(guest_2 = gm.get_guest_name("guest_2"), host_name = gm.get_guest_name("host")))
             speak("His favorite drink is {fav_drink_host}".format(fav_drink_host= gm.get_guest_fav_drink("host")))
+            speak("The guest next to you is {guest_1}".format(guest_1 = gm.get_guest_name("guest_1")))
+            speak(PERSON1_DES)
+            # reset the variable 
+            PERSON1_DES = ""
         return 'continue_Navigate_to_Standby'
 
 
@@ -568,6 +575,7 @@ if __name__ == '__main__':
     gm = GuestNameManager("../config/receptionist_database.yaml")
     gm.reset()
     person_count = 0
+    PERSON1_DES = ""
 
     image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
     navigation = go_to_Navigation()
@@ -583,6 +591,10 @@ if __name__ == '__main__':
     port_personTrack = 11000
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
+    # person description model
+    port_personDescription = 10008
+    personDescription = CustomSocket(host, port_personDescription)
+    personDescription.clientConnect()
 
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
