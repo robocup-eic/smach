@@ -46,6 +46,7 @@ from actionlib_msgs.msg import GoalStatus
 from util.custom_socket import CustomSocket
 from util.nlp_server import SpeechToText, speak
 from util.environment_descriptor import EnvironmentDescriptor
+from util.realsense import Realsense
 import time
 import threading
 
@@ -66,11 +67,58 @@ class Stand_by(smach.State):
         smach.State.__init__(self, outcomes =['continue_SM_BRINGIT','continue_SM_FINDITEM','continue_SM_FIND_PERSON', 'continue_SM_GO_TO', 'continue_SM_HOWMANY'])
         self.x = 4
         self.stt = stt
-        self.stt.body = "find_object"
+        self.stt.body = None
+
+        self.FRAME_COUNT_LIMIT = 5
+        self.close_distance = 1 # meter
+
+        self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        self.moving_msg = Twist()
+        self.moving_msg.linear.x = 0.2
+
     def execute(self, userdata):
         rospy.loginfo("Executing Standby state")
-        if self.x == 4:
-            return "continue_SM_FINDITEM"
+        # if self.x == 4:
+        #     return "continue_SM_FINDITEM"
+
+        global rs
+
+        #Detect door open from the depth at the center of the frame
+        x_pixel, y_pixel = 1280/2, 720/2
+        frame_count = 0
+
+        while True:
+            rospy.sleep(0.5)
+            distance = rs.get_coordinate(x_pixel, y_pixel)[2]
+            rospy.loginfo(distance)
+            # filter lower distance
+            if distance < 0.4:
+                continue
+            # check if have available frame consecutively
+            if frame_count >= self.FRAME_COUNT_LIMIT:
+                speak("door open")
+
+                #Moving through entrance door
+                start_time = time.time()
+                while time.time() - start_time < 4:
+                    rospy.loginfo("Moving Forward...")
+                    self.moving_pub.publish(self.moving_msg)
+                    rospy.sleep(0.1)
+                
+                self.moving_msg.linear.x = 0
+                self.moving_pub.publish(self.moving_msg)
+                break
+            if distance > self.close_distance:
+                frame_count += 1
+            else:
+                frame_count = 0
+
+        
+
+        speak("Please state new command")
+        self.stt.listen()
+
+
         while True:
             if self.stt.body is not None:
                 if self.stt.body["intent"] == "bring_desc_to_someone":
@@ -85,6 +133,8 @@ class Stand_by(smach.State):
                     return 'continue_SM_HOWMANY'
                 else:
                     speak("Please state new command")
+                    self.stt.clear()
+                    self.stt.listen()
 # ------- sm_bringit ----------
 # ------- sm_finditem ---------
 # ------- sm_find_person ------
@@ -95,6 +145,8 @@ def main():
     rospy.init_node('rospy_GPSR_state_machine')
     #delcare the globiable
     ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed.read_yaml()
+    print(ed.data_yaml)
     target_lost = False
     is_stop = False
     stop_rotate = False
@@ -111,9 +163,13 @@ def main():
     
     # Flask nlp server
     stt = SpeechToText("nlp")
-    stt.clear()
-    t = threading.Thread(target = stt.run ,name="flask")
+    
+    t = threading.Thread(target = stt.run ,name="nlp")
     t.start()
+
+    global rs
+    rs = Realsense()
+    rs.wait()
 
     sm_top = smach.StateMachine(outcomes = ['succeeded','aborted'])
     with sm_top:

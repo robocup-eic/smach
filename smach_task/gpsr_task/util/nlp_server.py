@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 sudo netstat -nlp | grep 5000
 kill -9 <pid_id>
@@ -31,6 +33,9 @@ class SpeechToText():
     
     def clear(self):
         self.body = None
+
+    def listen(self):
+        requests.get("http://0.0.0.0:5001/stt")
 
 def speak(text) :
     try :

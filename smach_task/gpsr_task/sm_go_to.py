@@ -67,9 +67,9 @@ class sm_go_to_Check_Object_Location(smach.State):
             if self.stt.body is not None:
                 # TODO check again with nlp
                 print(self.stt.body)
-                location = self.stt.body["intent"]
+                location = self.stt.body["placement"]
                 userdata.sm_go_to_Check_Object_Location_out = location
-                print(location)
+                print('Location of object is at : {}'.format(location))
                 return 'continue_sm_go_to_Navigation'
 
 class sm_go_to_Navigation(smach.State):
