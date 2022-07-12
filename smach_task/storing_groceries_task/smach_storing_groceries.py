@@ -757,12 +757,12 @@ class Place_object(smach.State):
 
         ed = EnvironmentDescriptor("../config/fur_data.yaml")
         corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list(PLACE_CABINET)
-        high.z = ed.get_height(PLACE_CABINET)[userdata.objectclass]
+        high.z = ed.get_height(PLACE_CABINET)[userdata.objectclass_level_input]
 
-        corner1 = transform_pose(corner1, "world", "cr3_base_link")
-        corner2 = transform_pose(corner2, "world", "cr3_base_link")
-        corner3 = transform_pose(corner3, "world", "cr3_base_link")
-        corner4 = transform_pose(corner4, "world", "cr3_base_link")
+        corner1 = transform_pose(corner1, "map", "cr3_base_link")
+        corner2 = transform_pose(corner2, "map", "cr3_base_link")
+        corner3 = transform_pose(corner3, "map", "cr3_base_link")
+        corner4 = transform_pose(corner4, "map", "cr3_base_link")
 
         corner_x = sorted([corner1.position.x, corner2.position.x, corner3.position.x, corner4.position.x])
         corner_y = sorted([corner1.position.y, corner2.position.y, corner3.position.y, corner4.position.y])
@@ -787,16 +787,12 @@ class Place_object(smach.State):
             lift_command()
             high.z -= 0.20  #lift state is True
 
-
-        # rospy.loginfo("object pose list before tf")
-
-        # rospy.loginfo(userdata.object_pose_list_input[0])
         collision_object_pose = []
         rospy.loginfo("collision_object_pose")
         for object_pose in userdata.object_pose_list_input :
-            rospy.loginfo(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
+            rospy.loginfo(transform_pose(object_pose, "realsense_pitch_joint", "cr3_base_link"))
             rospy.loginfo(object_pose)
-            collision_object_pose.append(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
+            collision_object_pose.append(transform_pose(object_pose, "realsense_pitch_joint", "cr3_base_link"))
         
         success = place_service(corner11_pose, corner12_pose, corner21_pose, corner22_pose, high, collision_object_pose)
         print(success)
@@ -809,9 +805,6 @@ class Place_object(smach.State):
                 return 'continue_SUCCEEDED'
         else:
             return 'continue_SUCCEEDED'
-
-
-
 
 if __name__ == '__main__':
     # before start
