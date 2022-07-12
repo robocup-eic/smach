@@ -1,0 +1,824 @@
+-
+# Areana and door
+  name: arena
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 0.432383060455
+    y: -3.29375839233
+    z: 0.0
+  corner2:
+    x: 9.18388080597
+    y: -3.59715485573
+    z: 0.0
+  corner3:
+    x: 9.51760864258
+    y: 5.38594532013
+    z: 0.0
+  corner4:
+    x: 0.618358850479
+    y: 5.6759929657
+    z: 0.0        
+-
+  name: entrance
+  frame_id: map
+  shape: None
+  position:
+    x: 0.4156084656715
+    y: -0.07776822149750001
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: -0.1729
+  #     y: -0.02505
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+-
+  name: exit
+  frame_id: map
+  shape: None
+  position:
+    x: 0.522051930428
+    y: 4.09418952465
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: -0.1729
+  #     y: -0.02505
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+-
+  name: office_2_livingroom
+  frame_id: map
+  shape: None
+  position:
+    x: 2.982328414915
+    y: 1.920623600485
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: -0.1729
+  #     y: -0.02505
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+-
+  name: livingroom_2_kitchen
+  frame_id: map
+  shape: None
+  position:
+    x: 4.86491584778
+    y: -0.8944647908215
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: -0.1729
+  #     y: -0.02505
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+-
+  name: office_2_bedroom
+  frame_id: map
+  shape: None
+  position:
+    x: 5.067888021470001
+    y: 4.79198980331
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: -0.1729
+  #     y: -0.02505
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+-
+  name: bedroom_2_kitchen
+  frame_id: map
+  shape: None
+  position:
+    x: 8.175315141675
+    y: 1.725266695025
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: -0.1729
+  #     y: -0.02505
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+-
+# Living room
+  name: couch_table #4
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 3.16636824608
+    y: -1.74874460697
+    z: 0.0
+  corner2:
+    x: 3.20610046387
+    y: -1.1053917408
+    z: 0.0
+  corner3:
+    x: 2.24174022675
+    y: -1.09828591347
+    z: 0.0
+  corner4:
+    x: 2.24746966362
+    y: -1.77169167995
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: side_table #6
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 3.28174424171
+    y: -2.7279086113
+    z: 0.0
+  corner2:
+    x: 3.22596645355
+    y: -3.34088993073
+    z: 0.0
+  corner3:
+    x: 4.39908266068
+    y: -2.73252749443
+    z: 0.0
+  corner4:
+    x: 4.34369707108
+    y: -3.31464242935
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: book_shelf #7
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 4.54722881317
+    y: -0.432592868805
+    z: 0.0
+  corner2:
+    x: 4.83769464493
+    y: -0.408920049667
+    z: 0.0
+  corner3: #
+    x: 4.83984994888
+    y: 1.41617250443
+    z: 0.0
+  corner4:
+    x: 4.57918405533
+    y: 1.42082452774
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height:
+-
+  name: TV #5
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 0.504559993744
+    y: 1.47387051582
+    z: 0.0
+  corner2:
+    x: 2.09621143341
+    y: 1.48781239986
+    z: 0.0
+  corner3:
+    x: 2.06221628189
+    y: 1.87016010284
+    z: 0.0
+  corner4:
+    x: 0.485843896866
+    y: 1.85621809959
+    z: 0.0
+  # robot_pose: 
+  #   position: 
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height:
+-
+  name: sofa #3
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 3.16484045982
+    y: -3.34127140045
+    z: 0.0
+  corner2:
+    x: 3.18776249886
+    y: -2.45303249359
+    z: 0.0
+  corner3:
+    x: 1.13633108139
+    y: -2.43993997574
+    z: 0.0
+  corner4:
+    x: 1.08171057701
+    y: -3.26708722115
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: houseplant #1
+  frame_id: map
+  shape: circle
+  radius: 
+  position:
+    x: 4.5873913765
+    y: -3.20540046692
+    z: 0.0
+-
+  name: houseplant #1
+  frame_id: map
+  shape: circle
+  radius: 
+  position:
+    x: 4.69777965546
+    y: 1.58712363243
+    z: 0.0
+-
+# kitchen room
+  name: dinner_table #10
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 6.24798679352
+    y: -0.466349959373
+    z: 0.0
+  corner2:
+    x: 7.41151618958
+    y: -0.456223964691
+    z: 0.0
+  corner3:
+    x: 7.46653938293
+    y: 0.310100317001
+    z: 0.0
+  corner4:
+    x: 6.27205944061
+    y: 0.299592316151
+    z: 0.0
+  robot_pose:
+    position:
+      x: 8.11813735962
+      y: -0.0265086293221
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+      w: 0.0
+  height: 74.0
+-
+  name: kitchen_shelf #8
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 5.0984621048
+    y: -2.19051766396
+    z: 0.0
+  corner2:
+    x: 5.0476603508
+    y: -3.32381010056
+    z: 0.0
+  corner3:
+    x: 4.78754138947
+    y: -3.35685014725
+    z: 0.0
+  corner4:
+    x: 4.86851882935
+    y: -2.16187047958
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: pantry #9
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 6.43063592911
+    y: 1.43427205086
+    z: 0.0
+  corner2:
+    x: 5.05147981644
+    y: 1.43739283085
+    z: 0.0
+  corner3:
+    x: 6.41229438782
+    y: 1.74034333229
+    z: 0.0
+  corner4:
+    x: 5.04880571365
+    y: 1.7740957737
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: sink #14
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 8.81019592285
+    y: 0.64463865757
+    z: 0.0
+  corner2:
+    x: 9.28323745728
+    y: 0.662849605083
+    z: 0.0
+  corner3:
+    x: 9.2714214325
+    y: 1.66426813602
+    z: 0.0
+  corner4: 
+    x: 8.82595157623
+    y: 1.67911529541
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: fridge #12
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 8.50673294067
+    y: -2.77015280724
+    z: 0.0
+  corner2:
+    x: 9.25671768188
+    y: -2.84022140503
+    z: 0.0
+  corner3:
+    x: 9.26890182495
+    y: -2.27967143059
+    z: 0.0
+  corner4:
+    x: 8.51781082153
+    y: -2.2415907383
+    z: 0.0
+  height: 173
+-
+  name: washing_machine #12
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 8.65620613098
+    y: 0.288876056671
+    z: 0.0
+  corner2: 
+    x: 8.71035766602
+    y: -0.323207497597
+    z: 0.0
+  corner3: 
+    x: 9.23892784119
+    y: -0.310587763786
+    z: 0.0
+  corner4: 
+    x: 9.25435447693
+    y: 0.287522673607
+    z: 0.0
+  height: 85
+-
+# name: kitchen_chair_1
+#   frame_id: map
+#   shape: circle
+#   radius: 
+#   position:
+#     x: 7.17307806015
+#     y: 0.613878905773
+#     z: 0.0
+# -
+# name: kitchen_chair_2
+#   frame_id: map
+#   shape: circle
+#   radius: 
+#   position:
+#     x: 7.09245347977
+#     y: -0.750067710876
+#     z: 0.0
+# -
+# name: kitchen_chair_3
+#   frame_id: map
+#   shape: circle
+#   radius: 
+#   position:
+#     x: 6.43445682526
+#     y: -0.755608439445
+#     z: 0.0
+# -
+# name: kitchen_chair_4
+#   frame_id: map
+#   shape: circle
+#   radius: 
+#   position:
+#     x: 6.43751382828
+#     y: 0.653045535088
+#     z: 0.0
+# -
+  name: kitchen_bin #11
+  frame_id: map
+  shape: circle
+  radius: 
+  position:
+    x: 9.01600265503
+    y: -3.44357204437
+    z: 0.0
+-
+# Bed room
+  name: bed #18
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 7.13639593124
+    y: 2.95660376549
+    z: 0.0
+  corner2: #
+    x: 7.14671278
+    y: 1.82326173782
+    z: 0.0
+  corner3:
+    x: 4.98654556274
+    y: 1.86538565159
+    z: 0.0
+  corner4:
+    x: 5.02206897736
+    y: 2.98320817947
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: small_shelf #15
+  frame_id: map
+  shape: rectangle
+  corner1: 
+    x: 9.11153030396
+    y: 3.00455904007
+    z: 0.0
+  corner2:
+    x: 9.06223678589
+    y: 1.76365232468
+    z: 0.0
+  corner3:
+    x: 9.3689994812
+    y: 1.75116586685
+    z: 0.0
+  corner4:
+    x: 9.41944789886
+    y: 2.97702217102
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: cupboard #16
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 9.08019733429
+    y: 4.8115644455
+    z: 0.0
+  corner2:
+    x: 8.25407218933
+    y: 4.77354383469
+    z: 0.0
+  corner3:
+    x: 8.24834060669
+    y: 5.40154361725
+    z: 0.0
+  corner4:
+    x: 9.09127807617
+    y: 5.39371061325
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: big_shelf #17
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 8.20516204834
+    y: 5.12546825409
+    z: 0.0
+  corner2:
+    x: 7.04086780548
+    y: 5.1610045433
+    z: 0.0
+  corner3:
+    x: 7.00724172592
+    y: 5.49764442444
+    z: 0.0
+  corner4:
+    x: 8.20248699188
+    y: 5.41644620895
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+# Office
+  name: desk #19
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 4.1923866272
+    y: 2.12268424034
+    z: 0.0
+  corner2:
+    x: 4.91862678528
+    y: 2.1589448452
+    z: 0.0
+  corner3:
+    x: 4.90751743317
+    y: 3.44723463058
+    z: 0.0
+  corner4:
+    x: 4.23941230774
+    y: 3.42677211761
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: office_shell #22
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 2.02695178986
+    y: 1.97022044659
+    z: 0.0
+  corner2:
+    x: 0.500513553619
+    y: 1.89697194099
+    z: 0.0
+  corner3:
+    x: 0.555687665939
+    y: 2.23863267899
+    z: 0.0
+  corner4:
+    x: 2.06902432442
+    y: 2.19305753708
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+-
+  name: show_rack #20
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 2.50219774246
+    y: 5.27747631073
+    z: 0.0
+  corner2:
+    x: 0.618244886398
+    y: 5.26027584076
+    z: 0.0
+  corner3:
+    x: 0.614543199539
+    y: 5.6748585701
+    z: 0.0
+  corner4:
+    x: 2.4988656044
+    y: 5.66251945496
+    z: 0.0
+  # robot_pose:
+  #   position:
+  #     x: 
+  #     y: 
+  #     z: 0.0
+  #   orientation:
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 1.0
+  #     w: 0.0
+  # height: 
+# -
+#   name: office_lamp
+#   frame_id: map
+#   shape: circle
+#   radius: 
+#   position:
+#     x: 0.681913137436
+#     y: 3.09852218628
+#     z: 0.0
+-
+  name: bin #21
+  frame_id: map
+  shape: circle
+  radius: 
+  position:
+    x: 2.26302671432
+    y: 2.10568261147
+    z: 0.0
+-
+# robot pose
+  name: standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 1.7052423954
+      y: 0.724906861782
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.964370657012
+      w: -0.264554788078
+-
+  name: livingroom
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 2.72019934654
+      y: 0.468410253525
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.707
+      w: 0.707
+-
+  name: kitchen
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 6.86952972412
+      y: -2.12502741814
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.707
+      w: 0.707
+-
+  name: bedroom
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 8.43318843842
+      y: 3.69135046005
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+      w: 0.0
+-
+  name: office
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 2.19145488739
+      y: 3.66253471375
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+-

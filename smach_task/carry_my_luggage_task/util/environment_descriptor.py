@@ -162,7 +162,7 @@ class EnvironmentDescriptor:
 if __name__ == "__main__":
     rospy.init_node("test_ed")
     
-    ed = EnvironmentDescriptor("../../config/fur_data.yaml")
+    ed = EnvironmentDescriptor("../../config/fur_data_onsite.yaml")
     ed.visual_robotpoint()
     def cb(goal):
         goa = goal.goal.target_pose.pose

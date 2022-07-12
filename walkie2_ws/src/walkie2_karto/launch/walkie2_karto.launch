@@ -1,5 +1,5 @@
 <launch>
-  <param name="/use_sim_time" value="true" />
+  <param name="/use_sim_time" value="false" />
 
   <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find walkie2_karto)/rviz/map.rviz"/>
 

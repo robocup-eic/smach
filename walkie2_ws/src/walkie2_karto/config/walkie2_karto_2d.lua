@@ -47,4 +47,4 @@ POSE_GRAPH.optimization_problem.huber_scale = 1e2
 -- POSE_GRAPH.optimization_problem.odometry_translation_weight = 1
 -- POSE_GRAPH.constraint_builder.loop_closure_translation_weight = 1e2
 
-return optionsoptions
+return options
