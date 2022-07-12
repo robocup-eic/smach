@@ -592,7 +592,7 @@ if __name__ == '__main__':
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
     # person description model
-    port_personDescription = 10008
+    port_personDescription = 10009
     personDescription = CustomSocket(host, port_personDescription)
     personDescription.clientConnect()
 

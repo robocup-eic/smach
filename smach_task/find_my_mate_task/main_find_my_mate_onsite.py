@@ -499,11 +499,23 @@ class Ask(smach.State):
         self.rotate_msg.angular.z = 0.1
 
     def execute(self, userdata):
-        global count_person, gm, save_posi
+        global count_person, gm, save_posi, PERSON1_DES, PERSON2_DES, personDescription
         rospy.loginfo('Executing Ask state')
         # ask name and save person's location
         speak("what is your name?")
         stt.listen()
+
+        if count_person == 1:
+            frame = rs.get_image()
+            PERSON1_DES = personDescription.req(frame) #string
+        elif count_person == 2:
+            frame = rs.get_image()
+            PERSON2_DES = personDescription.req(frame) #string
+        # elif count_person == 3:
+        #     frame = rs.get_image()
+        #     PERSON3_DES = personDescription.req(frame) #string
+        else:
+            pass
 
         
         while True:
@@ -559,7 +571,7 @@ class Announce(smach.State):
         smach.State.__init__(self,outcomes=['continue_SUCCEEDED'])
     def execute(self, userdata):
         rospy.loginfo('Executing Announce state')
-        global gm, ed, count_person
+        global gm, ed, count_person, PERSON1_DES, PERSON2_DES
         # announce the person's name 
         # compare the person's location to the furiture's location
         # compare with chair
@@ -588,8 +600,10 @@ class Announce(smach.State):
         # announce the person's location relative to the closest furniture 
         speak("Hello, I found two people in the room")
         speak("The first person is {} which is located next to the {}".format(gm.get_guest_name("guest_1"), closest_locations["guest_1"])) # TODO change furniture 
+        speak(PERSON1_DES)
         rospy.sleep(1)
         speak("The second person is {} which is located next to the {}".format(gm.get_guest_name("guest_2"), closest_locations["guest_2"])) # TODO change furniture
+        speak(PERSON2_DES)
         rospy.sleep(2)
         speak("I have finished my task")
         return 'continue_SUCCEEDED'
@@ -625,9 +639,18 @@ if __name__ == '__main__':
     port_personTrack = 11000
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
+    # person description model
+    port_personDescription = 10009
+    personDescription = CustomSocket(host, port_personDescription)
+    personDescription.clientConnect()
 
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
+
+    # guest description
+    PERSON1_DES = ""
+    PERSON2_DES = ""
+    PERSON3_DES = ""
 
     # Flask nlp server
     stt = SpeechToText("nlp")
