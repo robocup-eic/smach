@@ -18,14 +18,14 @@
   <node name="urg_node" pkg="urg_node" type="urg_node">
     <param name="ip_address" value="192.168.5.4"/>
     <param name="frame_id" value="hokuyo"/>
-    <param name="angle_max" value="2.35"/>
-    <param name="angle_min" value="-2.35"/>
+    <param name="angle_max" value="2.35"/> # 2.35
+    <param name="angle_min" value="-2.35"/> # -2.35
     <remap from="/scan" to="/walkie2/scan"/>
   </node>
 
 
 <!-- Lidar odometry-->
-  <!-- <node pkg="rf2o_laser_odometry" type="rf2o_laser_odometry_node" name="rf2o_laser_odometry">
+  <node pkg="rf2o_laser_odometry" type="rf2o_laser_odometry_node" name="rf2o_laser_odometry">
     <param name="laser_scan_topic" value="/walkie2/scan"/>        # topic where the lidar scans are being published
     <param name="odom_topic" value="/walkie2/odom_rf2o" />        # topic where tu publish the odometry estimations
     <param name="publish_tf" value="false" />                   # wheter or not to publish the tf::transform (base->odom)
@@ -34,15 +34,7 @@
     <param name="init_pose_from_topic" value="" />              # (Odom topic) Leave empty to start at point (0,0)
     <param name="freq" value="8.0"/>                           # Execution frequency.
     <param name="verbose" value="true" />                       # verbose
-  </node> -->
-
- <node name="Lidar_odom" pkg="rtabmap_ros" type="icp_odometry">
-    <param name="publish_tf" value="false"/>
-    <param name="frame_id" value="base_footprint"/>
-    <param name="scan_voxel_size" value="0.1"/>
-	  <remap from="/scan" to="/walkie2/scan"/>
-    <remap from="/odom" to="/walkie2/odom_lidar"/>
-</node>
+  </node>
 
 
   <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
@@ -56,7 +48,7 @@
       <arg name="filters" value="pointcloud"/>
   </include>
 
-<node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
+  <node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
 
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>
@@ -71,6 +63,7 @@
     <!-- Run serial_node for IMU data -->
     <node name="imu_node" pkg="rosserial_python" type="serial_node.py">
       <param name="port" value="$(arg port)"/>
+      
     </node>
 
     <!-- Filter and fuse raw imu data -->
@@ -86,8 +79,28 @@
       <remap from="/odometry/filtered" to="/walkie2/odom"/>
     </node>
 
-
   </group>
+
+ cr3 bringup
+  <!-- <group>
+
+  <node name="trajectory_follower_server" pkg="cr3_lowlevel_pkg" type="trajectory_follower_server"/>
+  <node name="cr3_controller" pkg="cr3_lowlevel_pkg" type="cr3_controller.py">
+    <remap from="/joint_states" to="/walkie2/joint_states" />
+  </node>
+
+  <include file="$(find cr3_moveit_config)/launch/planning_context.launch"/>
+
+  <include file="$(find cr3_moveit_config)/launch/move_group.launch">
+      <arg name="allow_trajectory_execution" value="true"/>
+      <arg name="fake_execution" value="false"/>
+      <arg name="info" value="true"/>
+      <arg name="load_robot_description" value="false"/>
+  </include>
+
+  <node pkg="cr3_moveit_control" type="pick_service_select_side" name="pick_service_select_side" output="screen" />
+
+</group> -->
 
   <group if="$(arg rviz)">
     

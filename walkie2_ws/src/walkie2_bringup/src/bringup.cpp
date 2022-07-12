@@ -59,14 +59,13 @@ private:
 
   char base_link_name[10] = "base_link";
 
-  std::vector<double> joint_states_pos = { 0.0, 0.0, 0.0};
-  std::vector<double> joint_states_vel = { 0.0, 0.0, 0.0};
+  std::vector<double> joint_states_pos = { 0.0, 0.0};
+  std::vector<double> joint_states_vel = { 0.0, 0.0};
 
   // std::vector<std::string> joint_states_name = { "realsense_yaw_joint", "realsense_pitch_joint",
   //                                                "left_back_wheel_joint", "right_back_wheel_joint" };
                                                  
-  std::vector<std::string> joint_states_name = { "right_wheel_joint", "left_wheel_joint",
-                                                 "base_cr3_joint"};
+  std::vector<std::string> joint_states_name = { "right_wheel_joint", "left_wheel_joint"};
 
   double vel_left=0.0, vel_right=0.0, pos_left=0.0, pos_right=0.0;
   double last_theta = 0.0;

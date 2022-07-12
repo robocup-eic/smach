@@ -30,6 +30,12 @@ from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped
 from std_msgs.msg import Bool,Int64
 import socket
 
+# Utility
+# Utils function
+from math import atan, pi
+from util.environment_descriptor import EnvironmentDescriptor
+from util.realsense import Realsense
+
 # import for text-to-speech
 import requests
 import json
@@ -61,9 +67,9 @@ class sm_go_to_Check_Object_Location(smach.State):
             if self.stt.body is not None:
                 # TODO check again with nlp
                 print(self.stt.body)
-                location = self.stt.body["intent"]
+                location = self.stt.body["placement"]
                 userdata.sm_go_to_Check_Object_Location_out = location
-                print(location)
+                print('Location of object is at : {}'.format(location))
                 return 'continue_sm_go_to_Navigation'
 
 class sm_go_to_Navigation(smach.State):

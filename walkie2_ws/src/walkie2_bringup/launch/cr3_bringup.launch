@@ -1,0 +1,29 @@
+<launch>
+<!-- cr3 bringup -->
+  <group>
+
+  <node name="trajectory_follower_server" pkg="cr3_lowlevel_pkg" type="trajectory_follower_server"/>
+  <!-- cr3 controller-->
+  <node name="cr3_controller" pkg="cr3_lowlevel_pkg" type="cr3_controller.py">
+    <remap from="/joint_states" to="/walkie2/joint_states" />
+  </node>
+
+  <include file="$(find cr3_moveit_config)/launch/planning_context.launch"/>
+
+  <include file="$(find cr3_moveit_config)/launch/move_group.launch">
+      <arg name="allow_trajectory_execution" value="true"/>
+      <arg name="fake_execution" value="false"/>
+      <arg name="info" value="true"/>
+      <arg name="load_robot_description" value="false"/>
+  </include>
+
+  <!-- <include file="$(find cr3_moveit_config)/launch/moveit_rviz.launch" >
+      <arg name="rviz_config" value="$(find cr3_moveit_config)/launch/moveit_real.rviz"/>
+  </include>  -->
+
+  <!-- launch robot control node for moveit motion planning -->
+  <node pkg="cr3_moveit_control" type="pick_service_select_side" name="pick_service_select_side" output="screen" />
+
+</group>
+
+</launch>

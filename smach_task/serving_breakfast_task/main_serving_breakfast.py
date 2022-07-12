@@ -43,6 +43,7 @@ from util.nlp_server import SpeechToText, speak
 import time
 
 # import yaml reader
+from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
 
 # pick place service
@@ -72,84 +73,84 @@ class go_to_Navigation():
             else:
                 return False
 
-#CHECK BY PATTER AND ICE
 class Start_signal(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Start_signal state')
-        smach.State.__init__(self,outcomes=['continue_Navigate_table'])
+        smach.State.__init__(self,outcomes=['continue_Navigate_object'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
         self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
-    
-    def execute(self, userdata):
+        
+    def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
-        global rs
         # wait for the door to open
-        self.pub_realsense_pitch_absolute_command.publish(0)
-        rospy.sleep(1)
 
+        global rs, navigation
+        # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
+        
+        rospy.sleep(1)
+        self.pub_realsense_pitch_absolute_command.publish(0)
+
         while True:
             rospy.sleep(0.5)
             distance = rs.get_coordinate(x_pixel, y_pixel)[2]
+            rospy.loginfo(distance)
             # filter lower distance
             if distance < 0.4:
                 continue
+
             # check if have available frame consecutively
             if frame_count >= self.FRAME_COUNT_LIMIT:
-                speak("Door open")
+                speak("door open")
                 break
 
             if distance > self.close_distance:
                 frame_count += 1
             else:
                 frame_count = 0
-        return 'continue_Navigate_table'
-
-#CHECK BY PATTER AND ICE
-class Navigate_table(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating Navigate_table state')
-        smach.State.__init__(self,outcomes=['continue_Get_pose', 'continue_ABORTED'],
-                             output_keys=['objectname_output', 'objectclass_level_output'])
-    def execute(self,userdata):
-        rospy.loginfo('Executing Navigate_table state')
-        global navigation, TABLE , count_placeObject
-
-        navigation.move(TABLE)
-
-        #objectclass sequence = []
-        if count_placeObject == 1 :
-            userdata.objectname_output = 'milk'
-            userdata.objectclass_level_output = 0
-            return 'continue_Get_pose'
-        elif count_placeObject == 2 :
-            userdata.objectname_output = 'cerial'
-            userdata.objectclass_level_output = 1
-            return 'continue_Get_pose'
-        elif count_placeObject == 3 :
-            userdata.objectname_output = 'glass'
-            userdata.objectclass_level_output = 2
-            return 'continue_Get_pose'
-        elif count_placeObject == 4 :
-            userdata.objectname_output = 'bottle'
-            userdata.objectclass_level_output = 3
-            return 'continue_Get_pose'
-        elif count_placeObject == 5 :
-            userdata.objectname_output = 'orange_juice'
-            userdata.objectclass_level_output = 4
-            return 'continue_Get_pose'
         
-        return 'continue_ABORTED'
+        # navigate to standby position
+       
 
-#COPY FROM SERVING_BREAKFAST BY PATTER (Need to check the algorithm for which object to pick up !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!) checked ICE
-class Get_pose(smach.State):
+   
+        return 'continue_Navigate_object'
+
+class Navigate_object(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating Navigate_object state')
+        smach.State.__init__(self, outcomes=['continue_ABORTED', 'continue_GetObjectPose'], output_keys=['objectname_output'])
+        
+    def execute(self, userdata):
+        rospy.loginfo('Execute Navigate_object state')
+        global count_location, navigation
+        count_location += 1
+        rospy.loginfo('Number of location = %s', count_location)
+        # navigate to the fixed location of an object (each object has different location)
+        # in this case we will do only 2 objects which are cereal box and milk carton
+        # count number of object that the robot has reached
+
+
+        time.sleep(1)
+        # 
+        if count_location == 1:
+            navigation.move(MILK_FUR)
+            userdata.objectname_output = "Milk"
+            return 'continue_GetObjectPose'
+        elif count_location == 2:
+            navigation.move(CEREAL_FUR)
+            userdata.objectname_output = "Cereal"
+            return 'continue_GetObjectPose'
+        else:
+            return 'continue_ABORTED'
+
+
+class GetObjectPose(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectPose')
-        smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'],
-                                   input_keys=['objectname_input'],
-                                   output_keys=['objectpose_output'])
+        smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=[
+                             'objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
         # initiate variables
         self.object_name = ""
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
@@ -280,34 +281,37 @@ class Get_pose(smach.State):
             userdata.objectpose_output = self.object_pose
             if self.object_pose is not None:
                 return 'continue_Pick'
-
         return 'continue_ABORTED'
 
-#CHECK BY PATTER AND ICE
 class Pick(smach.State):
     def __init__(self):
-        rospy.loginfo('Initiating Pick state')
-        smach.State.__init__(self,outcomes=['continue_Navigate_cabinet'],
-                                  input_keys=['objectpose_input'])
-    def execute(self,userdata):
-        rospy.loginfo('Executing Pick state')
-        global posi
+        rospy.loginfo('Initiating state Pick')
+        smach.State.__init__(self, outcomes=['continue_Navigate_table', 'continue_ABORTED'], 
+                                   input_keys=['objectpose_input'])
+        self.success = False
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing state Pick')
+        # recieving Pose() from GetObjectPose state
+        recieved_pose = userdata.objectpose_input
+        rospy.loginfo('--------------------------')
+        rospy.loginfo(recieved_pose)
 
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
             tf_buffer = tf2_ros.Buffer()
-            listener = tf2_ros.TransformListener(tf_buffer)
-
+            # listener = tf2_ros.TransformListener(tf_buffer)
             pose_stamped = tf2_geometry_msgs.PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
-            # pose_stamped.header.stamp = rospy.Time.now()
-
+            pose_stamped.header.stamp = rospy.Time.now()
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+                while not tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                rospy.sleep(1)
                 output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
                 return output_pose_stamped.pose
-
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
@@ -321,83 +325,64 @@ class Pick(smach.State):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 return 'continue_ABORTED'
-
-        posi = userdata.objectpose_input
-        # tell robot's arm to pick the object at specify Pose()
-        rospy.loginfo('--------------------')
-        rospy.loginfo(posi)
-
-        transformed_pose = transform_pose(posi, "realsense_pitch_link", "cr3_base_link")
-        #rospy.loginfo(transformed_pose.position.x)
+        
+        transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "cr3_base_link")
+        rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
         transformed_pose.orientation.z = 0
         transformed_pose.orientation.w = 1
+
         self.success = pick_service(transformed_pose, 'front')
-        return 'continue_Navigate_cabinet'
 
-#CHECK BY PATTER AND ICE
-class Navigate_cabinet(smach.State):
+        if self.success == True:
+            return 'continue_Navigate_table'
+        else:
+            return 'continue_ABORTED'
+
+class Navigate_table(smach.State):
     def __init__(self):
-        rospy.loginfo('Initiating Navigate_cabinet state')
-        smach.State.__init__(self,outcomes=['continue_GetObjectBBX'])
-        
+        rospy.loginfo('Initiating Navigate_table state')
+        smach.State.__init__(self, outcomes=['continue_GetObjectBBX'])
     def execute(self, userdata):
-        rospy.loginfo('Executing Navigate_cabinet state')
-        global navigation, CABINET
+        rospy.loginfo('Executing Navigate_table state')
+        # navigate to the table (can be any location chosen by our team )
+        global navigation, PLACE_TABLE
+        nav_status = navigation.move(PLACE_TABLE)
+        if nav_status:
+            return 'continue_GetObjectBBX'
+        else:
+            return 'continue_GetObjectBBK'
 
-        navigation.move(CABINET)
-
-        return 'continue_GetObjectBBX'
-
-#COPY FROM SERVING_BREAKFAST BY PATTER
 class GetObjectBBX(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectBBX')
-        smach.State.__init__(self, outcomes= ['continue_GetProperties'], 
+        smach.State.__init__(self, outcomes= ['continue_GetObjectProperties'], 
                                 output_keys= ['ListBBX_output'])
         # initiate variables
         self.bbxA_list= []
-        self.intrinsics = None
         self.bridge = CvBridge()
         self.frame = None
         self.tf_stamp = None
 
-        # connect to CV server
-        host = "192.168.8.99"
-        port = 10001
-        self.c = CustomSocket(host, port)
-        self.c.clientConnect()
-        rospy.loginfo("connected object detection server")
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectBBX')
 
         def run_once():
-            while self.intrinsics is None:
-                time.sleep(0.1)
-            rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
-            self.c.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
+            global obj_tracker
+            obj_tracker.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
 
-        def reset():
-            rospy.loginfo("Reseting the value")
-            self.frame = None
-            rospy.sleep(0.1)
-            rospy.loginfo("Finished reseting")
-            self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, yolo_callback, queue_size=1, buff_size=52428800)
-            self.depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, depth_callback, queue_size=1, buff_size=52428800)
-
-        def detect():
+        def detect(frame):
+            global obj_tracker, rs
             rospy.loginfo("Start detecting")
 
             # scale image incase image size donot match cv server
-            self.frame = check_image_size_for_cv(self.frame)
+            frame = rs.check_image_size_for_cv(frame)
             # send frame to server and recieve the result
-            result = self.c.req(self.frame)
-            self.frame = check_image_size_for_ros(self.frame)
+            result = obj_tracker.req(frame)
+            frame = rs.check_image_size_for_ros(frame)
             rospy.loginfo("result {}".format(result))
-            # if result['n'] == 0:
-            #     return None
 
             # object detection bounding box 2d
             for bbox in result['bbox_list']:
@@ -414,9 +399,9 @@ class GetObjectBBX(smach.State):
                 x_pixel = int(bbox[0] + (bbox[2]-bbox[0])/2)
                 y_pixel = int(bbox[1] + (bbox[3]-bbox[1])/2)
 
-                (xcen_pixel, ycen_pixel) = rescale_pixel(x_pixel, y_pixel)
-                (xmin_pixel, ymin_pixel) = rescale_pixel(bbox[0], bbox[1])
-                (xmax_pixel, ymax_pixel) = rescale_pixel(bbox[2], bbox[3])
+                (xcen_pixel, ycen_pixel) = rs.rescale_pixel(x_pixel, y_pixel)
+                (xmin_pixel, ymin_pixel) = rs.rescale_pixel(bbox[0], bbox[1])
+                (xmax_pixel, ymax_pixel) = rs.rescale_pixel(bbox[2], bbox[3])
 
                 object_id = 1 # TODO change to object tracker
 
@@ -449,10 +434,6 @@ class GetObjectBBX(smach.State):
             #  |                    |        |                     |
             #  '----------(xmax,ymax)        corner12-------corner22
 
-            # check camera intrinsics
-            if not self.intrinsics:
-                rospy.logerr("no camera intrinsics")
-                return None
 
             # init each pixel of bouding box
             xmin_pixel = int(xmin_pixel)
@@ -464,102 +445,30 @@ class GetObjectBBX(smach.State):
 
             rospy.loginfo("found {}".format(xcen_pixel,ycen_pixel))
             # rescale pixel incase pixel donot match
-            self.depth_image = check_image_size_for_ros(self.depth_image)
+            self.depth_image = rs.check_image_size_for_ros(self.depth_image)
             depth = self.depth_image[ycen_pixel,  xcen_pixel] # [y, x] for numpy array
 
             # [x, y] for realsense lib
-            center00_result = rs.rs2_deproject_pixel_to_point(self.intrinsics, [xcen_pixel, ycen_pixel], depth)
-            corner11_result = rs.rs2_deproject_pixel_to_point(self.intrinsics, [xmin_pixel, ymin_pixel], depth)
-            corner12_result = rs.rs2_deproject_pixel_to_point(self.intrinsics, [xmin_pixel, ymax_pixel], depth)
-            corner21_result = rs.rs2_deproject_pixel_to_point(self.intrinsics, [xmax_pixel, ymin_pixel], depth)
-            corner22_result = rs.rs2_deproject_pixel_to_point(self.intrinsics, [xmax_pixel, ymax_pixel], depth)
+            center00_result = rs.get_coordinate(xcen_pixel,ycen_pixel)
+            corner11_result = rs.get_coordinate(xmin_pixel,ymin_pixel)
+            corner12_result = rs.get_coordinate(xmin_pixel,ymax_pixel)
+            corner21_result = rs.get_coordinate(xmax_pixel,ymin_pixel)
+            corner22_result = rs.get_coordinate(xmax_pixel,ymax_pixel)
             
             all_result = (center00_result, corner11_result, corner12_result, corner21_result, corner22_result)
 
             return all_result
 
-        # function used in callback functions
-        def check_image_size_for_cv(frame):
-            if frame.shape[0] != 720 and frame.shape[1] != 1280:
-                frame = cv2.resize(frame, (1280, 720))
-            return frame
-
-        def check_image_size_for_ros(frame):
-            if frame.shape[0] != self.intrinsics.height and frame.shape[1] != self.intrinsics.width:
-                frame = cv2.resize(frame, (self.intrinsics.width, self.intrinsics.height))
-            return frame
-
-        def rescale_pixel(x, y):
-            x = int(x*self.intrinsics.width/1280)
-            y = int(y*self.intrinsics.height/720)
-            return (x, y)
-
-        # all call_back functions
-        def info_callback(cameraInfo):
-            try:
-                if self.intrinsics:
-                    return
-                self.intrinsics = rs.intrinsics()
-                self.intrinsics.width = cameraInfo.width
-                self.intrinsics.height = cameraInfo.height
-                self.intrinsics.ppx = cameraInfo.K[2]
-                self.intrinsics.ppy = cameraInfo.K[5]
-                self.intrinsics.fx = cameraInfo.K[0]
-                self.intrinsics.fy = cameraInfo.K[4]
-                if cameraInfo.distortion_model == 'plumb_bob':
-                    self.intrinsics.model = rs.distortion.brown_conrady
-                elif cameraInfo.distortion_model == 'equidistant':
-                    self.intrinsics.model = rs.distortion.kannala_brandt4
-                self.intrinsics.coeffs = [i for i in cameraInfo.D]
-            except CvBridgeError as e:
-                print(e)
-                return
-
-        def yolo_callback(data):
-            try:
-                # change subscribed data to numpy.array and save it as "frame"
-                self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
-                
-            except CvBridgeError as e:
-                print(e)
-
-        def depth_callback(frame):
-            try:
-                # if self.tf_stamp is not None:
-                    # rospy.loginfo("publishing tf")
-                    # self.tf_stamp.header.stamp = rospy.Time.now()
-                    # self.pub_tf.publish(tf2_msgs.msg.TFMessage([self.tf_stamp]))
-
-                self.depth_image = self.bridge.imgmsg_to_cv2(frame, frame.encoding)
-                
-
-            except CvBridgeError as e:
-                print(e)
-                return
-            except ValueError as e:
-                return
-            pass
-
         # ----------------------------------------------start-----------------------------------------------------
-        # subscribe topics
-        rospy.Subscriber(
-            "/camera/aligned_depth_to_color/camera_info", CameraInfo, info_callback)
-        self.image_sub = rospy.Subscriber(
-            "/camera/color/image_raw", Image, yolo_callback, queue_size=1, buff_size=52428800)
-        self.depth_sub = rospy.Subscriber(
-            "/camera/aligned_depth_to_color/image_raw", Image, depth_callback, queue_size=1, buff_size=52428800)
-        self.image_pub = rospy.Publisher(
-            "/blob/image_blob", Image, queue_size=1)
 
         # run_once function
         run_once()
         if not rospy.is_shutdown():
-            reset()
+            rs.reset()
             detect()
             userdata.ListBBX_output = self.bbxA_list
-        return 'continue_GetProperties'
+        return 'continue_GetObjectProperties'
         
-#COPY FROM SERVING_BREAKFAST BY PATTER
 class GetObjectProperties(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectProperties')
@@ -694,21 +603,18 @@ class GetObjectProperties(smach.State):
         userdata.ObjectSizeList_output = self.ObjSizeList
 
         return 'continue_Place_object'
-
-#CHECK BY PATTER
+        
 class Place_object(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Place_object state')
-        smach.State.__init__(self,outcomes=['continue_Navigate_table', 'continue_SUCCEEDED'],
-                                  input_keys = ['object_pose_list_input', 'objectclass_level_input'])
-        
+        smach.State.__init__(self, outcomes=['continue_Navigate_object',
+                                             'continue_SUCCEEDED'],
+                                    input_keys = ['object_pose_list_input'])
     def execute(self, userdata):
+        global count_placeObject,PLACE_TABLE
         rospy.loginfo('Executing Place_object state')
-        global count_placeObject, PLACE_CABINET
+        count_placeObject += 1
         rospy.loginfo('Number of object placed = %s', count_placeObject)
-        # place the object on the cabinet and count it
-        # if number of object is more than 5 continue_SUCCEEDED
-
         def transform_pose(input_pose, from_frame, to_frame):
 
             # **Assuming /tf2 topic is being broadcasted
@@ -747,22 +653,34 @@ class Place_object(smach.State):
             except rospy.ServiceException as e:
                 print("Service call failed: %s"%e)
 
+        # ed = EnvironmentDescriptor("../config/fur_data.yaml")
+        # corner11 = ed.get_pose_environment("....")
+        
+
         #collision object
         corner1 = Pose()
         corner2 = Pose()
         corner3 = Pose()
         corner4 = Pose()
         high = Point()
-        # robot_pose = Pose()
+        robot_pose = Pose()
 
         ed = EnvironmentDescriptor("../config/fur_data.yaml")
-        corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list(PLACE_CABINET)
-        high.z = ed.get_height(PLACE_CABINET)[userdata.objectclass_level_input]
+        corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list(PLACE_TABLE)
+        high.z = ed.get_height(PLACE_TABLE)
 
-        corner1 = transform_pose(corner1, "map", "cr3_base_link")
-        corner2 = transform_pose(corner2, "map", "cr3_base_link")
-        corner3 = transform_pose(corner3, "map", "cr3_base_link")
-        corner4 = transform_pose(corner4, "map", "cr3_base_link")
+        robot_pose = transform_pose(Pose(), "world", "robot_pose")
+
+        robot_pose.position.x *= -1
+        robot_pose.position.y *= -1
+        robot_pose.position.z *= -1
+
+        # rospy.loginfo(robot_pose)
+
+        corner1 = transform_pose(corner1, "world", "robot_pose")
+        corner2 = transform_pose(corner2, "world", "robot_pose")
+        corner3 = transform_pose(corner3, "world", "robot_pose")
+        corner4 = transform_pose(corner4, "world", "robot_pose")
 
         corner_x = sorted([corner1.position.x, corner2.position.x, corner3.position.x, corner4.position.x])
         corner_y = sorted([corner1.position.y, corner2.position.y, corner3.position.y, corner4.position.y])
@@ -782,170 +700,124 @@ class Place_object(smach.State):
         corner21_pose.y = corner_y[1]
         corner22_pose.y = corner_y[3]
 
-        high.z -= 0.465      #lift state is False
+        high.z -= 0.49      #lift state is False
         if (0.25 < high.z) : 
             lift_command()
             high.z -= 0.20  #lift state is True
 
+
+        # rospy.loginfo("object pose list before tf")
+
+        # rospy.loginfo(userdata.object_pose_list_input[0])
         collision_object_pose = []
         rospy.loginfo("collision_object_pose")
         for object_pose in userdata.object_pose_list_input :
-            rospy.loginfo(transform_pose(object_pose, "realsense_pitch_joint", "cr3_base_link"))
+            rospy.loginfo(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
             rospy.loginfo(object_pose)
-            collision_object_pose.append(transform_pose(object_pose, "realsense_pitch_joint", "cr3_base_link"))
+            collision_object_pose.append(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
+        # rospy.loginfo("object pose list after tf")
+        # rospy.loginfo(collision_object_pose)
         
+        # rospy.loginfo(corner11_pose, corner12_pose, corner21_pose, corner22_pose, collision_object_pose)
         success = place_service(corner11_pose, corner12_pose, corner21_pose, corner22_pose, high, collision_object_pose)
+        # success = True
         print(success)
 
-        if success == True:
-            if count_placeObject <= 5:
-                count_placeObject += 1
-                return 'continue_Navigate_table'
-            else:
-                return 'continue_SUCCEEDED'
-        else:
+        # success = True
+
+        if (success) : return 'continue_succeeded'
+        else : return 'continue_aborted'
+
+        if count_placeObject == 2:
             return 'continue_SUCCEEDED'
+        else:
+            return 'continue_Navigate_object'
+
 
 if __name__ == '__main__':
-    # before start
-    # check TABLE, CABINET, PLACE_CABINET name
-    # fil object name sequence in Navigation Table_state 
-    rospy.init_node('main_cabinet')
-    #####
-    TABLE = "table" #navigate to table
-    CABINET = "cabinet" #navigate to cabinet
-    PLACE_CABINET = "table1" #Place object
-    #####
-    count_placeObject = 1
-    posi = Pose()
+    #content in the main function bruh bruh bruh
+    rospy.init_node('serving_breakfast')
+
+    ###############################
+    # cereal is on table
+    CEREAL_FUR = "table1"
+    MILK_FUR = "table2"
+    # FLAT_SURFACE = "flat_surface"
+    PLACE_TABLE = "table1"
+    ###############################
+
+    #declare the global variable
+    count_object = 0
+    count_placeObject = 0
+    count_location = 0
+
+    image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
     navigation = go_to_Navigation()
-    ed = EnvironmentDescriptor("../config/fur_data.yaml")
+
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
 
-    sm_top = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])
+    # # connect to CV server
+    host = "0.0.0.0"
+    port = 10001
+    obj_tracker = CustomSocket(host, port)
+    # obj_tracker.clientConnect()
 
-    # variable from Navigate_table state
-    sm_top.userdata.objectname = ''
-    sm_top.userdata.objectclass_level = 0
-    # variable form Get_pose state
+    
+    sm_top = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])
+    # initial userdata Pose()
     sm_top.userdata.sm_pose = Pose()
-    # ----Place Object------------------------------
-    # variable from GetObjectBBX
+    # userdata from GetObjectBBX
     sm_top.userdata.bbx_list = []
-    # variable from GetObjectBBX
+    # userdata from GetObjectProperties
     sm_top.userdata.object_pose_list = []
     sm_top.userdata.object_size_list = []
 
+    ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed.visual_robotpoint()
+    
     with sm_top:
         smach.StateMachine.add('Start_signal', Start_signal(),
-                                transitions={'continue_Navigate_table':'Navigate_table'},
-                                remapping={'object_number_output': 'object_number'})
-        smach.StateMachine.add('Navigate_table', Navigate_table(),
-                                transitions={'continue_Get_pose':'Get_pose',
-                                            'continue_ABORTED':'ABORTED'},
-                                remapping={'object_number_input':'object_number',
-                                          'objectname_output':'objectname',
-                                          'objectclass_level_output':'objectclass_level'})
-        smach.StateMachine.add('Get_pose', Get_pose(),
-                                transitions={'continue_Pick':'Pick',
-                                            'continue_ABORTED':'ABORTED'},
-                                remapping={'objectname_intput':'objectname',
-                                          'objectpose_output':'sm_pose'})
+                               transitions={'continue_Navigate_object':'Navigate_object'})
+
+        smach.StateMachine.add('Navigate_object', Navigate_object(),
+                               transitions={'continue_GetObjectPose':'GetObjectPose',
+                                            'continue_ABORTED':'ABORTED'},  
+                                            remapping={'objectname_output': 'string_name'})
+
+        smach.StateMachine.add('GetObjectPose', GetObjectPose(),
+                               transitions={'continue_Pick': 'Pick',
+                                            'continue_ABORTED': 'ABORTED'},
+                               remapping={'objectname_input': 'string_name',
+                                          'objectpose_output': 'object_pose'})
+
         smach.StateMachine.add('Pick', Pick(),
-                                transitions={'continue_Navigate_cabinet':'Navigate_cabinet'},
-                               remapping={'objectpose_input':'sm_pose'})
-        smach.StateMachine.add('Navigate_cabinet', Navigate_cabinet(),
-                                transitions={'continue_GetObjectBBX':'GetObjectBBX'})
-        # ----Place Object-----------------------------------------------------------------------
+                               transitions={'continue_Navigate_table': 'Navigate_table',
+                                            'continue_ABORTED': 'ABORTED'},
+                               remapping={'objectpose_input': 'object_pose'})
+
+        smach.StateMachine.add('Navigate_table', Navigate_table(),
+                               transitions={'continue_GetObjectBBX':'GetObjectBBX'})
+
         smach.StateMachine.add('GetObjectBBX', GetObjectBBX(), 
                                 transitions={'continue_GetObjectProperties':'GetObjectProperties'},
-                                remapping=   {'ListBBX_output':'bbx_list'})
+                                remapping=   {'ListBBX_output': 'bbx_list'})
+
         smach.StateMachine.add('GetObjectProperties', GetObjectProperties(),
                                 transitions={'continue_Place_object':'Place_object'},
                                 remapping=   {'ListBBX_input'           : 'bbx_list',
                                               'ObjectPoseList_output'   : 'object_pose_list',
                                               'ObjectSizeList_output'   : 'object_size_list'})
+
         smach.StateMachine.add('Place_object', Place_object(),
-                                transitions={'continue_SUCCEEDED':'SUCCEEDED',
-                                            'continue_Navigate_table':'Navigate_table'},
-                                remapping = {'object_pose_list_input':'object_pose_list',
-                                             'objectclass_level_input':'objectclass_level'})
-        # -----------------------------------------------------------------------------------------
-    sis = smach_ros.IntrospectionServer('Server_name', sm_top, '/Kannroot')
-    sis.start()
+                               transitions={'continue_Navigate_object':'Navigate_object',
+                                            'continue_SUCCEEDED':'SUCCEEDED'},
+                                            remapping = {'object_pose_list_input':'object_pose_list'})
 
-    outcome = sm_top.execute()
+        sis = smach_ros.IntrospectionServer('Service_name', sm_top, '/ServingBreakfast')
+        sis.start()
 
+        outcomes = sm_top.execute()
 
-    rospy.spin()
-    sis.stop()
-
-# #!/usr/bin/env python
-# import roslib
-# import rospy
-# import smach
-# import smach_ros
-
-# class Stand_By(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating the stand by state')
-#         smach.State.__init__(self, outcomes = ['continue_Navigate_To_Shelf'])
-#     def execute(self, userdata):
-#         return 'continue_Navigate_To_Shelf'
-
-# class Navigate_To_Shelf(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating navigate to shelf state')
-#         smach.State.__init__(self, outcomes = ['continue_Place_Object', 'continue_Save_Catagory'])
-#         self.x = 1
-#     def execute(self, userdata):
-#         if self.x == 1:
-#             return 'continue_Place_Object'
-#         else:
-#             return 'continue_Save_Catagory'
-
-# class Place_Object(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating place object state')
-#         smach.State.__init__(self, outcomes = ['continue_succeeded', 'continue_Navigate_To_Table'])
-#         self.x = 1
-#     def execute(self, userdata):
-#         if self.x == 1:
-#             return 'continue_succeeded'
-#         else:
-#             return 'continue_Navigate_To_Table'
-
-# class Save_Catagory(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating the save catagory state')
-#         smach.State.__init__(self, outcomes = ['continue_Navigate_To_Table'])
-#     def execute(self, userdata):
-#         return 'continue_Navigate_To_Table'
-
-# class Navigate_To_Table(smach.State):
-#     def __init__(self):
-#         rospy.loginfo('initiating the navigate to table state')
-#         smach.State.__init__(self, outcomes = ['continue_Pick_Object'])
-#     def execute(self, userdata):
-#         return 'continue_Pick_Object'
-# def main():
-#     rospy.init_node('smach_storing_groceries_state_machine')
-#     # Create the top level state machine
-#     sm_top = smach.StateMachine(outcomes = ['succeeded', 'aborted'])
-
-#     # Open the container
-
-#     with sm_top:
-#         smach.StateMachine.add('STAND_BY', Stand_By(),
-#                                transitions = {'continue_Navigate_To_Shelf':'NAVIGATE_TO_SHELF'})
-#         smach.StateMachine.add('NAVIGATE_TO_SHELF', Navigate_To_Shelf(),
-#                                transitions = {'continue_Place_Object':'PLACE_OBJECT',
-#                                               'continue_Save_Catagory':'SAVE_CATAGORY'})
-#         smach.StateMachine.add('PLACE_OBJECT', Place_Object(),
-#                                transitions = {'continue_succeeded':'succeeded',
-#                                               'continue_Navigate_To_Table':'NAVIGATE_TO_TABLE'})
-#         smach.StateMachine.add('SAVE_CATAGORY', Save_Catagory(),
-#                                transitions = {'continue_Navigate_To_Table':'NAVIGATE_TO_TABLE'})
-# if __name__ == '__main__':
-#     main()
+        rospy.spin()
+        sis.stop()

@@ -69,7 +69,7 @@ class GetObjectPose(smach.State):
         self.tf_stamp = None
 
         # connect to CV server
-        host = "192.168.8.99"
+        host = "0.0.0.0"
         port = 10001
         self.c = CustomSocket(host, port)
         self.c.clientConnect()
@@ -308,7 +308,7 @@ class Pick(smach.State):
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
             tf_buffer = tf2_ros.Buffer()
-            listener = tf2_ros.TransformListener(tf_buffer)
+            # listener = tf2_ros.TransformListener(tf_buffer)
             pose_stamped = tf2_geometry_msgs.PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame

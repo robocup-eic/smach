@@ -56,8 +56,8 @@ class ChasePerson():
         self._message = Int16()
         
     def realsense_set_home(self):
-        self.pub_realsense_absolute_pitch.publish(-35)
-        self.pub_realsense_absolute_yaw.publish(10)
+        self.pub_realsense_absolute_pitch.publish(0)
+        self.pub_realsense_absolute_yaw.publish(0)
         time.sleep(0.5)
 
     @property

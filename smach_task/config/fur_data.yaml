@@ -60,7 +60,6 @@
       z: 1.0
       w: 0.0
   height: 0.82
-
 -
   name: table2 #or table/bed
   frame_id: map
@@ -81,16 +80,16 @@
     x: 3.10686779022
     y: -1.32837247849
     z: 0.0
-  robot_pose: 
-    position: 
-      x: 3.44686
+  robot_pose:
+    position:
+      x: 3.64686
       y: -0.918418
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: 0.0
-      w: -1.0
+      z: 1.0
+      w: 0.0
   height: 0.82
 
 -
@@ -331,4 +330,18 @@
     x: 9.5057964325
     y: 1.88926339149
     z: 0.0        
+-
+  name: living room
+  frame_id: map
+  shape: None
+  robot_pose: #idk if it gonna be used
+    position:
+      x: 2.4
+      y: 0.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
 -

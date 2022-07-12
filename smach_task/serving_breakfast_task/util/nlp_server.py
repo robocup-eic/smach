@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 sudo netstat -nlp | grep 5000
 kill -9 <pid_id>
