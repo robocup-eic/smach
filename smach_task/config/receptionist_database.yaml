@@ -1,3 +1,3 @@
 - {fav_drink: coke, name: earth, role: host}
-- {fav_drink: tea, name: Angel, role: guest_1}
-- {fav_drink: water, name: Parker, role: guest_2}
+- {fav_drink: coke, name: Jack, role: guest_1}
+- {fav_drink: water, name: Oliver, role: guest_2}

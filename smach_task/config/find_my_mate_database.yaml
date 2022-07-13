@@ -1,15 +1,21 @@
-- location:
-    orientation: {w: 0.8231214455227692, x: 0.0, y: 0.0, z: -0.5678653765819035}
-    position: {x: 3.842081104995973, y: -1.7376970151118631, z: 0}
+- desc: !!python/unicode 'He is a man. His apparent age is 17 years old. He is a man
+    in a red shirt. He is a man making a face. He is wearing a suit and tie. '
+  location:
+    orientation: {w: 0.48227390951544646, x: 0.0, y: 0.0, z: 0.8760204770441652}
+    position: {x: 5.692386104502964, y: 0.6967626319477285, z: 0}
   name: non
   role: guest_1
-- location:
-    orientation: {w: 0.8521018498760538, x: 0.0, y: 0.0, z: 0.5233760000590465}
-    position: {x: 4.383291293871106, y: -0.5792071577811726, z: 0}
+- desc: !!python/unicode 'No human detected.'
+  location:
+    orientation: {w: -0.3989657181018749, x: 0.0, y: 0.0, z: 0.9169658422097604}
+    position: {x: 4.024228474636617, y: -1.2130956241973312, z: 0}
   name: jack
   role: guest_2
-- location:
-    orientation: {w: 0.2636935302840506, x: 0.0, y: 0.0, z: 0.964606511530134}
-    position: {x: 3.2952502438330993, y: 0.024371381677752768, z: 0}
+- desc: !!python/unicode 'He is a man. His apparent age is 24 years old. He is wearing
+    a red and white shirt and glasses. He is a man with a red shirt. He is a man holding
+    a cell phone. '
+  location:
+    orientation: {w: 0.9970488987237133, x: 0.0, y: 0.0, z: 0.07676909243849853}
+    position: {x: 6.9064032256116885, y: -0.8384168348748701, z: 0}
   name: ohm
   role: guest_3

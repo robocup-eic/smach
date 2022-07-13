@@ -109,7 +109,7 @@ class Start_signal(smach.State):
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
-                while time.time() - start_time < 2:
+                while time.time() - start_time < 6:
                     rospy.loginfo("Moving Forward...")
                     self.moving_pub.publish(self.moving_msg)
                     rospy.sleep(0.1)
@@ -146,9 +146,13 @@ class Standby(smach.State):
     def execute(self,userdata):
         rospy.loginfo('Executing Standby state')
 
-        standby = navigation.move('carry_my_luggage_standby')
+        speak("I'm moving to standby point")
 
-        # standby = navigation.move('receptionist_standby')
+        # standby = navigation.move('carry_my_luggage_standby')
+
+        standby = navigation.move('receptionist_standby')
+
+        
 
         if standby:
             rospy.loginfo('Walky stand by, Ready for order')
@@ -308,9 +312,9 @@ class Ask(smach.State):
                     stt.clear()
                     stt.listen()
 
-        # navigation.move('livingroom')
+        navigation.move('livingroom')
 
-        navigation.move('carry_my_luggage_standby')
+        # navigation.move('carry_my_luggage_standby')
 
         return 'continue_Navigation'
 

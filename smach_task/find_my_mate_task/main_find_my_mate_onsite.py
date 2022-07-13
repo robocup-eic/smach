@@ -136,7 +136,7 @@ class Start_signal(smach.State):
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
-                while time.time() - start_time < 4:
+                while time.time() - start_time < 2:
                     rospy.loginfo("Moving Forward...")
                     self.moving_pub.publish(self.moving_msg)
                     rospy.sleep(0.1)
@@ -256,7 +256,7 @@ class Navigate_living_room(smach.State):
                         
             if 1.0 < z_coord < 4:
                 rospy.sleep(0.1)
-                posi.position.x, posi.position.y, posi.position.z = z_coord-0.3, -x_coord, 0
+                posi.position.x, posi.position.y, posi.position.z = z_coord-0.5, -x_coord, 0
 
                 human_posi = transform_pose(posi, "realsense_pitch", "base_footprint")
 
@@ -329,7 +329,7 @@ class Approach_person(smach.State):
  
         count_person += 1
 
-        save_posi.position.x = posi.position.x+0.3
+        save_posi.position.x = posi.position.x+0.5
         save_posi.position.y, save_posi.position.z = posi.position.y, posi.position.z
         save_posi.orientation = posi.orientation
 
@@ -448,7 +448,7 @@ class Find_person(smach.State):
                         
             if 1.0 < z_coord < 4:
                 rospy.sleep(0.1)
-                posi.position.x, posi.position.y, posi.position.z = z_coord-0.3 , -x_coord, 0
+                posi.position.x, posi.position.y, posi.position.z = z_coord-0.5 , -x_coord, 0
 
                 human_posi = transform_pose(posi, "realsense_pitch", "base_footprint")
 
@@ -501,7 +501,7 @@ class Ask(smach.State):
         self.rotate_msg.angular.z = 0.1
 
     def execute(self, userdata):
-        global count_person, gm, save_posi, PERSON1_DES, PERSON2_DES, personDescription
+        global count_person, gm, save_posi, personDescription
         rospy.loginfo('Executing Ask state')
         # ask name and save person's location
         speak("what is your name?")
@@ -509,7 +509,7 @@ class Ask(smach.State):
 
         #  person description using image captioning
         frame = rs.get_image()
-        gm.add_desc("guest_{}".count_person, personDescription.req(frame)) #string
+        gm.add_desc("guest_{}".format(count_person), personDescription.req(frame)) #string
         
         while True:
             if stt.body is not None:
@@ -602,7 +602,7 @@ class Announce(smach.State):
 if __name__ == '__main__':
 
     ##################################################################################
-    MATE_ROOM = "livingroom"
+    MATE_ROOM = "kitchen"
     ##################################################################################
 
     # initiate ros node
