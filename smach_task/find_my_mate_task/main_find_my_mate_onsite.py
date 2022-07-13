@@ -280,7 +280,7 @@ class Navigate_living_room(smach.State):
         # navigate to the center of living room during using person tracker
         
         # navigate to center of living room position and turn on person tracker
-        result = navigation.move('livingroom')
+        result = navigation.move(MATE_ROOM)
         # navigation.move_no_block('living_room')
         while True:
 
@@ -507,18 +507,9 @@ class Ask(smach.State):
         speak("what is your name?")
         stt.listen()
 
-        if count_person == 1:
-            frame = rs.get_image()
-            PERSON1_DES = personDescription.req(frame) #string
-        elif count_person == 2:
-            frame = rs.get_image()
-            PERSON2_DES = personDescription.req(frame) #string
-        # elif count_person == 3:
-        #     frame = rs.get_image()
-        #     PERSON3_DES = personDescription.req(frame) #string
-        else:
-            pass
-
+        #  person description using image captioning
+        frame = rs.get_image()
+        gm.add_desc("guest_{}".count_person, personDescription.req(frame)) #string
         
         while True:
             if stt.body is not None:
@@ -599,26 +590,20 @@ class Announce(smach.State):
         order_dict = {1:'first',2:'second',3:'third'}
 
         # announce the person's location relative to the closest furniture 
-        speak("Hello, I found two people in the room")
-        speak("The first person is {} which is located next to the {}".format(gm.get_guest_name("guest_1"), closest_locations["guest_1"])) # TODO change furniture 
-        speak(PERSON1_DES)
-        rospy.sleep(1)
-        speak("The second person is {} which is located next to the {}".format(gm.get_guest_name("guest_2"), closest_locations["guest_2"])) # TODO change furniture
-        speak(PERSON2_DES)
-        rospy.sleep(2)
-        speak("Hello, I found {} people in the room".format(len(count_person)))
-
         for i in range(count_person):
-            speak("The {} person is {} which is located next to the {}".format(order_dict[i],gm.get_guest_name("guest_{}".format(i)), closest_locations["guest_{}".format(i)])) # TODO change furniture 
-            # rospy.sleep(1)
-            # speak("The second person is {} which is located next to the {}".format(gm.get_guest_name("guest_2"), closest_locations["guest_2"])) # TODO change furniture
-            # rospy.sleep(2)
+            speak("The {} person is {} which is located next to the {}".format(order_dict[i],gm.get_guest_name("guest_{}".format(i+1)), closest_locations["guest_{}".format(i)])) # TODO change furniture 
+            rospy.sleep(1)
+            speak(gm.get_desc("guest_{}".format(i+1)))
+            rospy.sleep(2)
         speak("I have finished my task")
         return 'continue_SUCCEEDED'
 
 
 if __name__ == '__main__':
 
+    ##################################################################################
+    MATE_ROOM = "livingroom"
+    ##################################################################################
 
     # initiate ros node
     rospy.init_node('find_my_friend_task')
@@ -654,11 +639,6 @@ if __name__ == '__main__':
 
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
-
-    # guest description
-    PERSON1_DES = ""
-    PERSON2_DES = ""
-    PERSON3_DES = ""
 
     # Flask nlp server
     stt = SpeechToText("nlp")

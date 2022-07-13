@@ -109,7 +109,7 @@ class Start_signal(smach.State):
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
-                while time.time() - start_time < 4:
+                while time.time() - start_time < 2:
                     rospy.loginfo("Moving Forward...")
                     self.moving_pub.publish(self.moving_msg)
                     rospy.sleep(0.1)
@@ -146,7 +146,9 @@ class Standby(smach.State):
     def execute(self,userdata):
         rospy.loginfo('Executing Standby state')
 
-        standby = navigation.move('receptionist_standby')
+        standby = navigation.move('carry_my_luggage_standby')
+
+        # standby = navigation.move('receptionist_standby')
 
         if standby:
             rospy.loginfo('Walky stand by, Ready for order')
@@ -155,19 +157,7 @@ class Standby(smach.State):
 
         global image_pub, personTrack, rs
 
-        def go_to_Navigation(location):
-            goal = MoveBaseGoal()
-            goal.target_pose.header.frame_id = "map"
-            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-            goal.target_pose.pose = self.ed.get_robot_pose(location)
-            self.move_base_client.send_goal(goal)
-            self.move_base_client.wait_for_result()
-            result = self.move_base_client.get_result()
-            rospy.loginfo("result {}".format(result))
-            if result.status == GoalStatus.SUCCEEDED :
-                return True
-            else:
-                return False
+        speak("Welcome guest. You can come in now.")
 
         def detect(frame):
             # scale image incase image size donot match cv server
@@ -262,6 +252,7 @@ class Ask(smach.State):
 
         # listening to the person and save his/her name to the file
         speak("What is your name?")
+        speak("the Please answer after the signal")
         stt.listen()
         person_name = ""
         while True:
@@ -299,6 +290,7 @@ class Ask(smach.State):
         
         # listening to the person and save his his/her fav_drink to the file
         speak("What is your favorite drink?")
+        speak("the Please answer after the signal")
         stt.listen()
         object_name = ""
         while True:
@@ -316,7 +308,9 @@ class Ask(smach.State):
                     stt.clear()
                     stt.listen()
 
-        navigation.move('livingroom')
+        # navigation.move('livingroom')
+
+        navigation.move('carry_my_luggage_standby')
 
         return 'continue_Navigation'
 
@@ -454,6 +448,7 @@ class Navigation(smach.State):
         if len(avaliable_seat) == 0:
             return 'continue_No_seat'
         else:
+            
             userdata.avaliable_seat_out = avaliable_seat
             return 'continue_Seat'
 
@@ -476,11 +471,18 @@ class Seat(smach.State):
         
     def execute(self,userdata):
         rospy.loginfo('Executing Seat state')
+        global person_count
         # list of avaliable seat
         avaliable_seat = userdata.avaliable_seat_in
         # announce that there is available seat
         # point to the furniture
-        speak("There is an available seat here")
+        if person_count==1:
+            speak("There is an available seat at the sofa")
+        elif person_count==2:
+            speak("There is an available seat at the chair")
+
+        speak("Please take a seat there")
+
         return 'continue_Introduce_guest'
 
 class Introduce_guest(smach.State):
@@ -513,10 +515,12 @@ class Introduce_guest(smach.State):
         # clearly identify the person being introduced and state their name and favorite drink
         if person_count == 1:
             speak("Hello {host_name}, the guest name is {guest_1}".format(host_name = gm.get_guest_name("host"), guest_1 = gm.get_guest_name("guest_1")))
-            speak("His favorite drink is {fav_drink1}".format(fav_drink1 = gm.get_guest_fav_drink("guest_1")))
+            speak("Their favorite drink is {fav_drink1}".format(fav_drink1 = gm.get_guest_fav_drink("guest_1")))
+            speak("They are sitting at the sofa")
         if person_count == 2:
             speak("Hello {host_name}, the new guest is {guest_2}".format(host_name = gm.get_guest_name("host"), guest_2 = gm.get_guest_name("guest_2")))
-            speak("His favorite drink is {fav_drink2}".format(fav_drink2 = gm.get_guest_fav_drink("guest_2")))
+            speak("Their favorite drink is {fav_drink2}".format(fav_drink2 = gm.get_guest_fav_drink("guest_2")))
+            speak("They are sitting at the chair")
         return 'continue_Introduce_host'
 
     
@@ -557,11 +561,11 @@ class Introduce_host(smach.State):
         if person_count == 1:
             # find the guest1 and face the robot to the guest1
             speak("Hello {guest_1}, the host's name is {host_name}".format(guest_1 = gm.get_guest_name("guest_1"), host_name = gm.get_guest_name("host")))
-            speak("His favorite drink is {fav_drink_host}".format(fav_drink_host = gm.get_guest_fav_drink("host")))
+            speak("Their favorite drink is {fav_drink_host}".format(fav_drink_host = gm.get_guest_fav_drink("host")))
         if person_count == 2:
             # find the guest_2 and face the robot the the guest_2
             speak("Hello {guest_2}, the host's name is {host_name}".format(guest_2 = gm.get_guest_name("guest_2"), host_name = gm.get_guest_name("host")))
-            speak("His favorite drink is {fav_drink_host}".format(fav_drink_host= gm.get_guest_fav_drink("host")))
+            speak("Their favorite drink is {fav_drink_host}".format(fav_drink_host= gm.get_guest_fav_drink("host")))
             speak("The guest next to you is {guest_1}".format(guest_1 = gm.get_guest_name("guest_1")))
             speak(PERSON1_DES)
             # reset the variable 

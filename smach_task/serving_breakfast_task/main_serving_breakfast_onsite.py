@@ -84,6 +84,8 @@ class Start_signal(smach.State):
         self.close_distance = 1 # meter
         self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
         self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
+
+        self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
         
     def execute(self,userdata):
         def set_home_walkie():
@@ -94,17 +96,16 @@ class Start_signal(smach.State):
             joint_goal[1] = 0.0
             joint_goal[2] = 2.267
             joint_goal[3] = 0.875
-            joint_goal[4] = 1.507
-            # joint_goal[4] = 0.0
+            joint_goal[4] = 3.14
             joint_goal[5] = 2.355
             move_group.go(joint_goal, wait=True)
             move_group.stop()
 
         # set home for cr3, realsense pitch and yaw
-        set_home_walkie()
+        rospy.sleep(1)
+        # set_home_walkie()
         self.pub_realsense_pitch_absolute_command.publish(0)
         self.pub_realsense_yaw_absolute_command.publish(0)
-        rospy.sleep(1)
 
         rospy.loginfo('Executing Start_signal state')
         # wait for the door to open
@@ -113,6 +114,9 @@ class Start_signal(smach.State):
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
+
+        self.moving_msg = Twist()
+        self.moving_msg.linear.x = 0.2
 
         while True:
             rospy.sleep(0.5)
@@ -124,7 +128,19 @@ class Start_signal(smach.State):
 
             # check if have available frame consecutively
             if frame_count >= self.FRAME_COUNT_LIMIT:
-                speak("door open")
+                # speak("door open")
+
+                #Moving through entrance door
+                start_time = time.time()
+                while time.time() - start_time < 0:
+                    rospy.loginfo("Moving Forward...")
+                    self.moving_pub.publish(self.moving_msg)
+                    rospy.sleep(0.1)
+
+                rospy.loginfo("Stop Moving Forward")
+                self.moving_msg.linear.x = 0
+                self.moving_pub.publish(self.moving_msg)
+
                 break
 
             if distance > self.close_distance:
@@ -157,11 +173,11 @@ class Navigate_object(smach.State):
         # 
         if count_location == 1:
             navigation.move(MILK_FUR)
-            userdata.objectname_output = "WaterBottle"
+            userdata.objectname_output = "Waterbottle"
             return 'continue_GetObjectPose'
         elif count_location == 2:
-            navigation.move(CEREAL_FUR)
-            userdata.objectname_output = "Cereal"
+            navigation.move(CORNFLAKES_FUR)
+            userdata.objectname_output = "cornflakes"
             return 'continue_GetObjectPose'
         else:
             return 'continue_ABORTED'
@@ -177,10 +193,9 @@ class GetObjectPose(smach.State):
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
         self.object_pose_list = [] # [(x1, y1, z1, id), (x1, y1, z1, id), ...] im meters
         self.bridge = CvBridge()
-        self.object_pose = Pose()
+        self.object_pose = None
         self.tf_stamp = None
 
-        self.pub_lift_command = rospy.Publisher("/lift_command", Bool, queue_size=1)
         self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
         self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
 
@@ -196,28 +211,31 @@ class GetObjectPose(smach.State):
             rospy.loginfo("Start detecting")
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
+            
+            result = {"n":0, 'result':[[0,0,0,0,0,0]]}
+
             # send frame to server and recieve the result
             result = obj_tracker.req(frame)
+
             frame = rs.check_image_size_for_ros(frame)
             rospy.loginfo("result {}".format(result))
-            
             # result['n'] is number of object
             if result['n'] == 0:
                 return None 
             # object detection bounding box 2d
-            for bbox in result['bbox_list']:
-                if bbox[4] != self.object_name:
+            for bbox in result['result']:
+                if bbox[2] != self.object_name:
                     continue
                 else:
                     # receive xyxy
-                    x_pixel = int((bbox[0]+bbox[2])/2)
-                    y_pixel = int((bbox[3]+bbox[1])/2)
+                    x_pixel = int(bbox[3]+bbox[5]/2)
+                    y_pixel = int(bbox[4]+bbox[6]/2)
                     (x_pixel, y_pixel) = rs.rescale_pixel(x_pixel, y_pixel)
                     object_id = 1 # TODO change to object tracker
                     self.center_pixel_list.append((x_pixel, y_pixel, object_id))
                     # visualize purpose
                     frame = cv2.circle(frame, (x_pixel, y_pixel), 5, (0, 255, 0), 2)
-                    frame = cv2.rectangle(frame, rs.rescale_pixel(bbox[0], bbox[1]), rs.rescale_pixel(bbox[2], bbox[3]), (0, 255, 0), 2)
+                    frame = cv2.rectangle(frame, rs.rescale_pixel(bbox[3], bbox[4]), rs.rescale_pixel(bbox[3] + bbox[5], bbox[4] + bbox[6]), (0, 255, 0), 2)
             
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
 
@@ -233,7 +251,7 @@ class GetObjectPose(smach.State):
                     self.object_pose_list.append((x_coord, y_coord, z_coord, center_pixel[2]))
 
                     self.tf_stamp = TransformStamped()
-                    self.tf_stamp.header.frame_id = "/realsense_link"
+                    self.tf_stamp.header.frame_id = "/realsense_pitch"
                     self.tf_stamp.header.stamp = rospy.Time.now()
                     self.tf_stamp.child_frame_id = "/object_frame_{}".format(center_pixel[2]) # object_id
                     self.tf_stamp.transform.translation.x = z_coord
@@ -251,7 +269,6 @@ class GetObjectPose(smach.State):
             self.object_pose = find_closest_object()
 
         def find_closest_object():
-            object_pose_z_min = None
             z_min = 10000000000
             for object_pose in self.object_pose_list:
                 if object_pose[2] < z_min:
@@ -276,6 +293,16 @@ class GetObjectPose(smach.State):
             object_pose.orientation.z = 0
             object_pose.orientation.w = 1
             return object_pose
+        
+        def lift_cb(data) :
+            while (not data.data) : pass
+
+        def lift_command() :
+            lift_pub = rospy.Publisher('lift_command', Bool, queue_size=1)
+            time.sleep(1)
+            lift_pub.publish(False)
+
+            rospy.Subscriber("done", Bool, lift_cb)
 
         # ----------------------------------------------start-----------------------------------------------------
         self.pub_tf = rospy.Publisher("/tf", tf2_msgs.msg.TFMessage, queue_size=1)
@@ -284,14 +311,18 @@ class GetObjectPose(smach.State):
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
 
-        # connect object tracker
+            # # connect to CV server
+        host = "0.0.0.0"
+        # port = 10001 # object detect
+        port = 10008 # object tracker
+        obj_tracker = CustomSocket(host, port)
         obj_tracker.clientConnect()
 
-        # command realsense pitch to -35 degree and lifting up
+        # command realsense pitch to -35 degree and lifting down
         rospy.sleep(1)
         self.pub_realsense_pitch_absolute_command.publish(-35)
         self.pub_realsense_yaw_absolute_command.publish(0)
-        self.pub_lift_command.publish(False)
+        lift_command()
         
         # run_once function
         run_once()
@@ -310,6 +341,11 @@ class Pick(smach.State):
         smach.State.__init__(self, outcomes=['continue_Navigate_table', 'continue_ABORTED'], 
                                    input_keys=['objectpose_input'])
         self.success = False
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
+
+        self.tf_buffer =  tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Pick')
@@ -320,19 +356,20 @@ class Pick(smach.State):
 
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
-            tf_buffer = tf2_ros.Buffer()
-            # listener = tf2_ros.TransformListener(tf_buffer)
-            pose_stamped = tf2_geometry_msgs.PoseStamped()
+            pose_stamped = PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
-            # pose_stamped.header.stamp = rospy.Time.now()
+            pose_stamped.header.stamp = rospy.Time.now()
+            output_pose_stamped = None
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                while not tf_buffer.can_transform:
+                while not self.tf_buffer.can_transform:
                     rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
-                rospy.sleep(1)
-                output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+                output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+
                 return output_pose_stamped.pose
+
+
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
@@ -346,7 +383,22 @@ class Pick(smach.State):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 return 'continue_ABORTED'
-        
+
+        def lift_cb(data) :
+            while (not data.data) : pass
+
+        def lift_command() :
+            lift_pub = rospy.Publisher('lift_command', Bool, queue_size=1)
+            time.sleep(1)
+            lift_pub.publish(True)
+
+            rospy.Subscriber("done", Bool, lift_cb)
+
+        # command lifting up
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        lift_command()
+
         transformed_pose = transform_pose(recieved_pose, "realsense_pitch", "cr3_base_link")
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
@@ -365,7 +417,26 @@ class Navigate_table(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Navigate_table state')
         smach.State.__init__(self, outcomes=['continue_GetObjectBBX'])
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
+
     def execute(self, userdata):
+        def lift_cb(data) :
+            while (not data.data) : pass
+
+        def lift_command() :
+            lift_pub = rospy.Publisher('lift_command', Bool, queue_size=1)
+            time.sleep(1)
+            lift_pub.publish(False)
+
+            rospy.Subscriber("done", Bool, lift_cb)
+
+        # command lifting down
+        rospy.sleep(1)
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        lift_command()
+
         rospy.loginfo('Executing Navigate_table state')
         # navigate to the table (can be any location chosen by our team )
         global navigation, PLACE_TABLE
@@ -406,7 +477,7 @@ class GetObjectBBX(smach.State):
             rospy.loginfo("result {}".format(result))
 
             # object detection bounding box 2d
-            for bbox in result['bbox_list']:
+            for bbox in result["result"]:
                 # receive xyxy                
                 # (xmin,ymin)----------*
                 # |                    |
@@ -416,9 +487,9 @@ class GetObjectBBX(smach.State):
                 # *----------(xmax,ymax)
                 # Get List of Bounding Box in Pixel
 
-                object_name = bbox[4]
-                x_pixel = int(bbox[0] + (bbox[2]-bbox[0])/2)
-                y_pixel = int(bbox[1] + (bbox[3]-bbox[1])/2)
+                object_name = bbox[2]
+                x_pixel = int(bbox[0] + bbox[2])
+                y_pixel = int(bbox[1] + bbox[3])
 
                 (xcen_pixel, ycen_pixel) = rs.rescale_pixel(x_pixel, y_pixel)
                 (xmin_pixel, ymin_pixel) = rs.rescale_pixel(bbox[0], bbox[1])
@@ -486,7 +557,7 @@ class GetObjectBBX(smach.State):
         run_once()
         if not rospy.is_shutdown():
             rs.reset()
-            detect()
+            detect(rs.get_image())
             userdata.ListBBX_output = self.bbxA_list
         return 'continue_GetObjectProperties'
         
@@ -631,6 +702,9 @@ class Place_object(smach.State):
         smach.State.__init__(self, outcomes=['continue_Navigate_object',
                                              'continue_SUCCEEDED'],
                                     input_keys = ['object_pose_list_input'])
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
+
     def execute(self, userdata):
         global count_placeObject,PLACE_TABLE
         rospy.loginfo('Executing Place_object state')
@@ -676,7 +750,21 @@ class Place_object(smach.State):
 
         # ed = EnvironmentDescriptor("../config/fur_data.yaml")
         # corner11 = ed.get_pose_environment("....")
-        
+        def lift_cb(data) :
+            while (not data.data) : pass
+
+        def lift_command() :
+            lift_pub = rospy.Publisher('lift_command', Bool, queue_size=1)
+            time.sleep(1)
+            lift_pub.publish(True)
+
+            rospy.Subscriber("done", Bool, lift_cb)
+
+        # command lifting up
+        rospy.sleep(1)
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        lift_command()
 
         #collision object
         corner1 = Pose()
@@ -690,18 +778,10 @@ class Place_object(smach.State):
         corner1.position, corner2.position, corner3.position, corner4.position = ed.get_corner_list(PLACE_TABLE)
         high.z = ed.get_height(PLACE_TABLE)
 
-        robot_pose = transform_pose(Pose(), "world", "robot_pose")
-
-        robot_pose.position.x *= -1
-        robot_pose.position.y *= -1
-        robot_pose.position.z *= -1
-
-        # rospy.loginfo(robot_pose)
-
-        corner1 = transform_pose(corner1, "world", "robot_pose")
-        corner2 = transform_pose(corner2, "world", "robot_pose")
-        corner3 = transform_pose(corner3, "world", "robot_pose")
-        corner4 = transform_pose(corner4, "world", "robot_pose")
+        corner1 = transform_pose(corner1, "map", "base_cr3_joint")
+        corner2 = transform_pose(corner2, "map", "base_cr3_joint")
+        corner3 = transform_pose(corner3, "map", "base_cr3_joint")
+        corner4 = transform_pose(corner4, "map", "base_cr3_joint")
 
         corner_x = sorted([corner1.position.x, corner2.position.x, corner3.position.x, corner4.position.x])
         corner_y = sorted([corner1.position.y, corner2.position.y, corner3.position.y, corner4.position.y])
@@ -721,7 +801,7 @@ class Place_object(smach.State):
         corner21_pose.y = corner_y[1]
         corner22_pose.y = corner_y[3]
 
-        high.z -= 0.49      #lift state is False
+        high.z -= 0.465      #lift state is False
         if (0.25 < high.z) : 
             lift_command()
             high.z -= 0.20  #lift state is True
@@ -733,9 +813,9 @@ class Place_object(smach.State):
         collision_object_pose = []
         rospy.loginfo("collision_object_pose")
         for object_pose in userdata.object_pose_list_input :
-            rospy.loginfo(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
+            rospy.loginfo(transform_pose(object_pose, "realsense_pitch_joint", "base_cr3_joint"))
             rospy.loginfo(object_pose)
-            collision_object_pose.append(transform_pose(object_pose, "real_sense_on_sim", "base_link"))
+            collision_object_pose.append(transform_pose(object_pose, "realsense_pitch_joint", "base_cr3_joint"))
         # rospy.loginfo("object pose list after tf")
         # rospy.loginfo(collision_object_pose)
         
@@ -756,15 +836,12 @@ class Place_object(smach.State):
 
 
 if __name__ == '__main__':
-    #content in the main function bruh bruh bruh
     rospy.init_node('serving_breakfast')
 
     ###############################
-    # cereal is on table
-    CEREAL_FUR = "table1"
+    CORNFLAKES_FUR = "sink"
     MILK_FUR = "dinner_table"
-    # FLAT_SURFACE = "flat_surface"
-    PLACE_TABLE = "table1"
+    PLACE_TABLE = "dinner_table"
     ###############################
 
     #declare the global variable
@@ -780,14 +857,19 @@ if __name__ == '__main__':
 
     # # connect to CV server
     host = "0.0.0.0"
-    port = 10001
+    # port = 10001 # object detect
+    port = 10008 # object tracker
     obj_tracker = CustomSocket(host, port)
-    # obj_tracker.clientConnect()
+    obj_tracker.clientConnect()
 
     
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])
     # initial userdata Pose()
     sm_top.userdata.sm_pose = Pose()
+    # userdata from Navigate_object
+    sm_top.userdata.string_name = ''
+    # userdata from GetObjectPose
+    sm_top.userdata.object_pose = Pose()
     # userdata from GetObjectBBX
     sm_top.userdata.bbx_list = []
     # userdata from GetObjectProperties

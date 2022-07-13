@@ -62,10 +62,10 @@ class EnvironmentDescriptor:
                 return data["height"]
 
     def get_center_point(self, name):
+        center_point = Point()
         for data in self.data_yaml:
             if data["name"] == name:
                 if data["shape"]== "rectangle":
-                    center_point = Point()
                     xc1 = data["corner1"]["x"]
                     xc2 = data["corner2"]["x"]
                     xc3 = data["corner3"]["x"]
@@ -80,25 +80,16 @@ class EnvironmentDescriptor:
                     center_point.z = 0
                 
                 elif data["shape"] == "circle":
-                    center_point = Point()
                     center_point.x = data["position"]["x"]
                     center_point.y = data["position"]["y"]
                     center_point.z = data["position"]["z"]
-
                 else:
-                    return None
+                    center_point.x = data["position"]["x"]
+                    center_point.y = data["position"]["y"]
+                    center_point.z = data["position"]["z"]
                     
-                return center_point
-    def get_obj_poses(self):
-        obj_poses = []
-        for data in self.data_yaml:
-            data_dict = {}
-            data_dict['name'] = data['name']
-            center = self.get_center_point(data['name'])
-            if center and data['name']!='arena':
-                data_dict['position'] = self.get_center_point(data['name'])
-                obj_poses.append(data_dict)
-        return obj_poses
+            return center_point
+    
     def out_of_areana(self,robot_pose):
         for data in self.data_yaml:
             if data["name"] == "arena":
@@ -171,14 +162,15 @@ class EnvironmentDescriptor:
 if __name__ == "__main__":
     rospy.init_node("test_ed")
     
+    # ed = EnvironmentDescriptor("../../config/fur_data_onsite.yaml")
     ed = EnvironmentDescriptor('/home/eic/ros/smach/smach_task/config/fur_data_onsite.yaml')
     ed.read_yaml()
-    print(ed.get_obj_poses())
-    # ed.visual_robotpoint()
-    # def cb(goal):
-    #     goa = goal.goal.target_pose.pose
-    #     print(ed.out_of_areana(goa))
+    print(ed.get_robot_pose('exit'))
+    ed.visual_robotpoint()
+    def cb(goal):
+        goa = goal.goal.target_pose.pose
+        print(ed.out_of_areana(goa))
 
-    # while not rospy.is_shutdown():
-    #     rospy.sleep(1)
-    #     rospy.Subscriber("/move_base/goal",MoveBaseActionGoal,cb)
+    while not rospy.is_shutdown():
+        rospy.sleep(1)
+        rospy.Subscriber("/move_base/goal",MoveBaseActionGoal,cb)

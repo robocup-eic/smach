@@ -80,6 +80,10 @@ class GuestNameManager:
             if data["role"] == role:
                 data["desc"] = desc
         self.write_yaml(self.data_yaml)
+    def get_desc(self, role):
+        for data in self.data_yaml:
+            if data["role"] == role:
+                return data["desc"]
 if __name__ == "__main__":
     print("running")
     gm = GuestNameManager("../../config/receptionist_database.yaml")
@@ -99,3 +103,4 @@ if __name__ == "__main__":
     # print(gm.get_guest_location("guest_1"))
     # # gm.reset()
     gm.add_desc("guest_3", "he is a gay")
+    print(gm.get_desc("guest_3"))

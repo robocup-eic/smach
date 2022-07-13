@@ -62,10 +62,10 @@ class EnvironmentDescriptor:
                 return data["height"]
 
     def get_center_point(self, name):
+        center_point = Point()
         for data in self.data_yaml:
             if data["name"] == name:
                 if data["shape"]== "rectangle":
-                    center_point = Point()
                     xc1 = data["corner1"]["x"]
                     xc2 = data["corner2"]["x"]
                     xc3 = data["corner3"]["x"]
@@ -80,7 +80,10 @@ class EnvironmentDescriptor:
                     center_point.z = 0
                 
                 elif data["shape"] == "circle":
-                    center_point = Point()
+                    center_point.x = data["position"]["x"]
+                    center_point.y = data["position"]["y"]
+                    center_point.z = data["position"]["z"]
+                else:
                     center_point.x = data["position"]["x"]
                     center_point.y = data["position"]["y"]
                     center_point.z = data["position"]["z"]
@@ -89,7 +92,7 @@ class EnvironmentDescriptor:
     
     def out_of_areana(self,robot_pose):
         for data in self.data_yaml:
-            if data["name"] == "AREANA":
+            if data["name"] == "arena":
                 xc1 = data["corner1"]["x"]
                 xc2 = data["corner2"]["x"]
                 xc3 = data["corner3"]["x"]
@@ -159,12 +162,15 @@ class EnvironmentDescriptor:
 if __name__ == "__main__":
     rospy.init_node("test_ed")
     
-    ed = EnvironmentDescriptor("../../config/fur_data.yaml")
-    ed.visual_robotpoint()
-    def cb(goal):
-        goa = goal.goal.target_pose.pose
-        print(ed.out_of_areana(goa))
+    # ed = EnvironmentDescriptor("../../config/fur_data_onsite.yaml")
+    ed = EnvironmentDescriptor('/home/eic/ros/smach/smach_task/config/fur_data_onsite.yaml')
+    ed.read_yaml()
+    print(ed.get_robot_pose('exit'))
+    # ed.visual_robotpoint()
+    # def cb(goal):
+    #     goa = goal.goal.target_pose.pose
+    #     print(ed.out_of_areana(goa))
 
-    while not rospy.is_shutdown():
-        rospy.sleep(1)
-        rospy.Subscriber("/move_base/goal",MoveBaseActionGoal,cb)
+    # while not rospy.is_shutdown():
+    #     rospy.sleep(1)
+    #     rospy.Subscriber("/move_base/goal",MoveBaseActionGoal,cb)

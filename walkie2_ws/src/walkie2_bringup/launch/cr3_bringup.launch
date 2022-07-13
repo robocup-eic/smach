@@ -22,7 +22,9 @@
   </include>  -->
 
   <!-- launch robot control node for moveit motion planning -->
-  <node pkg="cr3_moveit_control" type="pick_service_select_side" name="pick_service_select_side" output="screen" />
+  <node pkg="cr3_moveit_control" type="pick_service_select_side" name="pick_service_select_side" output="screen" >
+    <remap from="/joint_states" to="/walkie2/joint_states"/>
+  </node>
 
 </group>
 
