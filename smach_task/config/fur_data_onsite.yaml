@@ -42,19 +42,19 @@
   frame_id: map
   shape: None
   position:
-    x: 0.522051930428
-    y: 4.09418952465
+    x: -0.23
+    y: 4.0
     z: 0.0
-  # robot_pose: 
-  #   position: 
-  #     x: -0.1729
-  #     y: -0.02505
-  #     z: 0.0
-  #   orientation:
-  #     x: 0.0
-  #     y: 0.0
-  #     z: 1.0
-  #     w: 0.0
+  robot_pose: 
+    position: 
+      x: -0.23
+      y: 4.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
 -
   name: office_2_livingroom
   frame_id: map
@@ -324,7 +324,7 @@
     z: 0.0
   robot_pose:
     position:
-      x: 8.11813735962
+      x: 8.0
       y: -0.0265086293221
       z: 0.0
     orientation:
@@ -332,7 +332,7 @@
       y: 0.0
       z: 1.0
       w: 0.0
-  height: 74.0
+  height: 0.74
 -
   name: kitchen_shelf #8
   frame_id: map
@@ -415,17 +415,17 @@
     x: 8.82595157623
     y: 1.67911529541
     z: 0.0
-  # robot_pose:
-  #   position:
-  #     x: 
-  #     y: 
-  #     z: 0.0
-  #   orientation:
-  #     x: 0.0
-  #     y: 0.0
-  #     z: 1.0
-  #     w: 0.0
-  # height: 
+  robot_pose:
+    position:
+      x: 8.16807374954
+      y: 1.1618769764899999
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+  height: 0.81
 -
   name: fridge #12
   frame_id: map
@@ -446,7 +446,7 @@
     x: 8.51781082153
     y: -2.2415907383
     z: 0.0
-  height: 173
+  height: 0.173
 -
   name: washing_machine #12
   frame_id: map
@@ -467,7 +467,7 @@
     x: 9.25435447693
     y: 0.287522673607
     z: 0.0
-  height: 85
+  height: 0.85
 -
 # name: kitchen_chair_1
 #   frame_id: map
@@ -596,17 +596,17 @@
     x: 9.09127807617
     y: 5.39371061325
     z: 0.0
-  # robot_pose:
-  #   position:
-  #     x: 
-  #     y: 
-  #     z: 0.0
-  #   orientation:
-  #     x: 0.0
-  #     y: 0.0
-  #     z: 1.0
-  #     w: 0.0
-  # height: 
+  robot_pose:
+    position:
+      x: 8.6671319613795
+      y: 4.37354140095
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.707
+      w: 0.707
+  height: [0.44,0.80]
 -
   name: big_shelf #17
   frame_id: map
@@ -821,4 +821,74 @@
       y: 0.0
       z: 0.0
       w: 1.0
+-
+  name: carry_my_luggage_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 2.44
+      y: 4.04
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.014
+      w: 1.0
+-
+  name: receptionist_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 3.50
+      y: 0.80
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.97
+      w: -0.22
+-
+  name: operator_position
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 3.825
+      y: -0.468
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.652
+      w: 0.759
+-
+  name: livingroom_exit
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: -0.004
+      y: -0.013
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.000
+      w: 0.011
+-
+  name: find_my_mate_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 2.538
+      y: 0.043
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.000
+      w: -0.026
 -

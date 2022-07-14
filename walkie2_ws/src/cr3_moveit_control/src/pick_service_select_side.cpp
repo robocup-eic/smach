@@ -146,7 +146,7 @@ void set_home_walkie2()
   joint_group_positions[1] = 0.0;   // radians
   joint_group_positions[2] = 2.267; // radians
   joint_group_positions[3] = 0.875; // radians
-  joint_group_positions[4] = 1.507; // radians
+  joint_group_positions[4] = 2.966; // radians
   joint_group_positions[5] = 2.355; // radians
   move_group_interface.setJointValueTarget(joint_group_positions);
 
@@ -427,6 +427,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "pick_service_select_side");
   ros::AsyncSpinner spinner(0);
+  // ros::AsyncSpinner spinner(1);
   spinner.start();
   ros::NodeHandle nh;
   gripper_command_publisher = nh.advertise<std_msgs::Bool>("/cr3_gripper_command", 10);

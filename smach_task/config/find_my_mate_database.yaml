@@ -1,15 +1,7 @@
-- location:
-    orientation: {w: 0.6321207509822915, x: 0.0, y: 0.0, z: -0.7748698962907153}
-    position: {x: 0.7793638911614631, y: -1.830665276860801, z: 0}
-  name: non
+- desc: 'He is a man. His apparent age is 30 years old. He is wearing glasses. He
+    is wearing glasses. He is wearing a red and white shirt. '
+  location:
+    orientation: {w: 0.482696883723855, x: 0.0, y: 0.0, z: 0.8757874847491707}
+    position: {x: 2.3363442548079467, y: 1.1881521227950074, z: 0}
+  name: Sam
   role: guest_1
-- location:
-    orientation: {w: 0.9975776931902466, x: 0.0, y: 0.0, z: -0.06956109580236661}
-    position: {x: 3.3593392572039233, y: -2.0877679311086816, z: 0}
-  name: jack
-  role: guest_2
-- location:
-    orientation: {w: 0.7383460999385026, x: 0.0, y: 0.0, z: 0.6744220019435921}
-    position: {x: 3.5636028118639578, y: 0.5063684402445379, z: 0}
-  name: ohm
-  role: guest_3

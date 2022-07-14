@@ -91,6 +91,7 @@
       z: 1.0
       w: 0.0
   height: 0.82
+
 -
   name: bed
   frame_id: map
@@ -111,17 +112,17 @@
     x: 4.894972
     y: -2.4751634
     z: 0.0
-  robot_pose:
-    position:
-      x: 4.00367879868
-      y: -0.838799059391
-      z: 0.0
-    orientation:
-      x: 0.0
-      y: 0.0
-      z: 0.999939642217
-      w: -0.010986897825
-  height: 0.4
+  # robot_pose: 
+  #   position: 
+  #     x: 4.00367879868
+  #     y: -0.838799059391
+  #     z: 0.0
+  #   orientation: 
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 0.999939642217
+  #     w: -0.010986897825
+  # height: 0.4
 -
   name: lamp #or plant pot/chair
   frame_id: map
@@ -131,16 +132,16 @@
     x: 4.32501125336
     y: -2.49307012558
     z: 0.0
-  robot_pose: #idk if it gonna be used
-    position:
-      x: 4.00367879868
-      y: -0.838799059391
-      z: 0.0
-    orientation:
-      x: 0.0
-      y: 0.0
-      z: 0.999939642217
-      w: -0.010986897825
+  # robot_pose: #idk if it gonna be used
+  #   position: 
+  #     x: 4.00367879868
+  #     y: -0.838799059391
+  #     z: 0.0
+  #   orientation: 
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 0.999939642217
+  #     w: -0.010986897825
 -
   name: plantpot
   frame_id: map
@@ -150,16 +151,16 @@
     x: 0.897457122803
     y: -2.80250144005
     z: 0.0
-  robot_pose: #idk if it gonna be used
-    position:
-      x: 4.00367879868
-      y: -0.838799059391
-      z: 0.0
-    orientation:
-      x: 0.0
-      y: 0.0
-      z: 0.999939642217
-      w: -0.010986897825
+  # robot_pose: #idk if it gonna be used
+  #   position: 
+  #     x: 4.00367879868
+  #     y: -0.838799059391
+  #     z: 0.0
+  #   orientation: 
+  #     x: 0.0
+  #     y: 0.0
+  #     z: 0.999939642217
+  #     w: -0.010986897825
 -
   name: shelf
   frame_id: map
@@ -180,8 +181,8 @@
     x: 9.4503
     y: -2.24866
     z: 0.0
-  robot_pose:
-    position:
+  robot_pose: 
+    position: 
       x: 8.62720886615
       y: -1.74053645
       z: 0.0
@@ -196,7 +197,7 @@
   frame_id: map
   shape: None
   robot_pose: #idk if it gonna be used
-    position:
+    position: 
       x: 1.4681
       y: 1.26366
       z: 0.0
@@ -206,7 +207,7 @@
       z: 0.89293
       w: -0.45018
 -
-  name: livingroom_entrance
+  name: livingroom entrance
   frame_id: map
   shape: None
   position:
@@ -214,7 +215,7 @@
     y: -0.02505
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position:
+    position: 
       x: -0.1729
       y: -0.02505
       z: 0.0
@@ -224,7 +225,7 @@
       z: 1.0
       w: 0.0
 -
-  name: bedroom_entrance
+  name: bedroom entrance
   frame_id: map
   shape: None
   position:
@@ -250,9 +251,9 @@
     y: 1.90976
     z: 0.0
   robot_pose: #idk if it gonna be used
-    position:
+    position: 
       x: 8.3407
-      y: 1.40976
+      y: 2.40976
       z: 0.0
     orientation:
       x: 0.0
