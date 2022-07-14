@@ -26,6 +26,8 @@
     <remap from="/joint_states" to="/walkie2/joint_states"/>
   </node>
 
+  <node pkg="cr3_moveit_control" type="remap_joint_states.py" name="remap_joint_states"/>
+
 </group>
 
 </launch>
