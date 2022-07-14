@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 """
-roslaunch cr3_moveit_control manipulation_pipeline_real.launch
+roslaunch walkie2_bringup walkie2_bringup.launch
+roslaunch wakie2_bringup cr3_bringup.launch
+ssh to pi and $ ./mega.sh
+rviz
+python /home/eic/ros/smach/smach_task/manipulation/manipulation_pipeline_smach.py
 """
 
 import roslib
@@ -312,11 +316,13 @@ class Pick(smach.State):
             pose_stamped = tf2_geometry_msgs.PoseStamped()
             pose_stamped.pose = input_pose
             pose_stamped.header.frame_id = from_frame
-            pose_stamped.header.stamp = rospy.Time.now()
+            # pose_stamped.header.stamp = rospy.Time.now()
             try:
                 # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                output_pose_stamped = tf_buffer.transform(
-                    pose_stamped, to_frame, rospy.Duration(1))
+                while not tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                rospy.sleep(1)
+                output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
                 return output_pose_stamped.pose
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
@@ -333,7 +339,7 @@ class Pick(smach.State):
                 return 'continue_ABORTED'
 
         transformed_pose = transform_pose(
-            recieved_pose, "camera_link", "base_link")
+            recieved_pose, "cr3_base_link", "cr3_base_link")
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
