@@ -828,13 +828,13 @@
   robot_pose:
     position:
       x: 2.44
-      y: 3.94
+      y: 4.04
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: 1.0
-      w: 0.036
+      z: -0.014
+      w: 1.0
 -
   name: receptionist_standby
   frame_id: map
@@ -863,4 +863,32 @@
       y: 0.0
       z: -0.652
       w: 0.759
+-
+  name: livingroom_exit
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: -0.004
+      y: -0.013
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.000
+      w: 0.011
+-
+  name: find_my_mate_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 2.538
+      y: 0.043
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.000
+      w: -0.026
 -

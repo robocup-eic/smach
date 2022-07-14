@@ -55,7 +55,7 @@ class Start_signal(smach.State):
         smach.State.__init__(self,outcomes=['continue_Standby'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
-        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+        
         
         self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
 
@@ -73,6 +73,9 @@ class Start_signal(smach.State):
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
 
+        # just return
+        return 'continue_Standby'
+
         while True:
             rospy.sleep(0.5)
             distance = rs.get_coordinate(x_pixel, y_pixel)[2]
@@ -88,7 +91,7 @@ class Start_signal(smach.State):
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
-                while time.time() - start_time < 1:
+                while time.time() - start_time < 0:
                     rospy.loginfo("Moving Forward...")
                     self.moving_pub.publish(self.moving_msg)
                     rospy.sleep(0.1)
@@ -113,6 +116,7 @@ class Standby(smach.State):
         # image publisher for visualize
         self.image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
         self.bridge = CvBridge()
+        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
         
     def execute(self, userdata):
         global stt, is_stop, target_lost, rs
@@ -137,19 +141,20 @@ class Standby(smach.State):
                     return False
 
         # navigate to standby position
-        speak("I'm moving to standby")
+        # speak("I'm moving to standby")
 
-        standby = go_to_Navigation('carry_my_luggage_standby')
-        if standby:
-            rospy.loginfo('Walky stand by, Ready for order')
-        else:
-            rospy.logerr('Navigation failed')
+        # standby = go_to_Navigation('carry_my_luggage_standby')
+        # if standby:
+        #     rospy.loginfo('Walky stand by, Ready for order')
+        # else:
+        #     rospy.logerr('Navigation failed')
 
-
-        speak("Please put your bag on my arm.")
-        speak("If you are done, say hey walkie, wait for signal and said follow me for me to start following you")
+        speak("Please stand around 1 meter away from me")
+        time.sleep(0.5)
+        speak("when you are ready, please say follow me after the beep")
+        start_time = 0
         while True:
-
+            
             # for visualize
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(rs.get_image(), "bgr8"))
 
@@ -158,15 +163,24 @@ class Standby(smach.State):
                 if stt.body["intent"] == "follow_people": # waiting for "follow me" command
                     stt.clear()
                     speak("I'm following you")
-                    speak("Please say hey walkie stop, brake or pause for me to stop following you")
-                    speak("Please stand 2 meters away from the robot and walk slowly")
+                    time.sleep(0.5)
+                    speak("Please say hey walkie, and after the signal tell me to stop")
                     # Put bag hanger position code in here TODO
                     self.has_bag = True
                     return "continue_follow"
+                else:
+                    stt.clear()
+                    speak("pardon?")
+                    stt.listen()
+                    start_time = time.time()
 
-            # if time.time() - start_time > 10 and not self.has_bag:
-            #     speak("Please put your bag on my arm, and said hey walkie follow")
-            #     start_time = time.time()
+            if time.time() - start_time > 7:
+                if not self.has_bag:
+                    speak("Please put your bag on my arm")
+                speak("when you are ready, please say follow me after the beep")
+                start_time = time.time()
+                stt.listen()
+                
 
             time.sleep(0.01)
 
@@ -183,9 +197,11 @@ class Ask_if_arrived(smach.State):
         rospy.loginfo('Executing state Ask_if_arrived')
         speak("Are we arrived?")
         speak("the Please say yes or no after the signal")
-        
-        while True:
 
+        stt.clear()
+        stt.listen()
+        start_time = time.time()
+        while True:
             
             if stt.body:
                 rospy.loginfo(stt.body["intent"])
@@ -203,6 +219,11 @@ class Ask_if_arrived(smach.State):
                     speak("Please say yes or no")
                     stt.clear()
                     stt.listen()
+
+            if time.time() - start_time > 7:
+                speak("the Please say yes or no after the signal")
+                start_time = time.time()
+                stt.listen()
             time.sleep(0.01)
 
 class Place_luggage(smach.State):
@@ -235,7 +256,7 @@ class Check_position(smach.State):
         
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
-        rospy.loginfo("Exit Position: {}".format(ed.get_robot_pose('exit')))
+        rospy.loginfo("Exit Position: {} and {}".format(ed.get_robot_pose('exit'), ed.get_robot_pose('livingroom_exit')))
 
 
     def execute(self, userdata):
@@ -246,19 +267,22 @@ class Check_position(smach.State):
 
         robot_inside = True
 
-        exit_position = ed.get_robot_pose("exit")
+        exits = [ed.get_robot_pose("exit"), ed.get_robot_pose("livingroom_exit")]
 
         while True:
             
             pose = self.tfBuffer.lookup_transform('map','base_footprint',rospy.Time.now()-rospy.Duration.from_sec(1.0))
 
-            distance = math.sqrt((pose.transform.translation.x-exit_position.position.x)**2 + (pose.transform.translation.y-exit_position.position.y)**2)
+            distance = [math.sqrt((pose.transform.translation.x-exit_position.position.x)**2 + (pose.transform.translation.y-exit_position.position.y)**2) for exit_position in exits]
             rospy.loginfo("Distance is {} m".format(distance))
             rospy.loginfo("Base footprint pose is  {}".format(pose.transform.translation))
-            if distance<self.detect_radius:
+            if distance[0]<self.detect_radius or distance[1] < self.detect_radius:
 
                 if robot_inside:
-                    speak("Exiting the room")
+                    if distance[0]<self.detect_radius:
+                        speak("Exiting the office room")
+                    else:
+                        speak("Exiting the living room")
 
                 robot_inside = False
                 rospy.loginfo("Robot outside exit, Switch to non-move_base person follower")
@@ -504,6 +528,15 @@ class Get_bounding_box(smach.State):
                     self.x_pixel = int((track[2][0]+track[2][2])/2)
                     self.y_pixel = int((track[2][1]+track[2][3])/2)
                     depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
+
+                    w = abs(track[2][0]-track[2][2])
+                    h = abs(track[2][1]-track[2][3])
+                    if (w*h < 200*100) or (self.x_pixel==1280) or (self.y_pixel == 720):
+                        continue
+
+                    if len(center_pixel_list)==0:
+                        return False
+                    
                     center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
                 
                 # find closest person

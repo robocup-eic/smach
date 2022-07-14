@@ -84,7 +84,10 @@ class Start_signal(smach.State):
         self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
         
     def execute(self,userdata):
+
         rospy.loginfo('Executing Start_signal state')
+
+        return 'continue_Standby'
 
         global rs, navigation
         # Detect door opening
@@ -109,7 +112,7 @@ class Start_signal(smach.State):
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
-                while time.time() - start_time < 6:
+                while time.time() - start_time < 0:
                     rospy.loginfo("Moving Forward...")
                     self.moving_pub.publish(self.moving_msg)
                     rospy.sleep(0.1)
@@ -148,9 +151,8 @@ class Standby(smach.State):
 
         speak("I'm moving to standby point")
 
-        # standby = navigation.move('carry_my_luggage_standby')
-
         standby = navigation.move('receptionist_standby')
+        # standby = navigation.move("kitchen")
 
         
 
@@ -162,6 +164,8 @@ class Standby(smach.State):
         global image_pub, personTrack, rs
 
         speak("Welcome guest. You can come in now.")
+        time.sleep(0.5)
+        speak("please come closer to me!")
 
         def detect(frame):
             # scale image incase image size donot match cv server
@@ -256,9 +260,12 @@ class Ask(smach.State):
 
         # listening to the person and save his/her name to the file
         speak("What is your name?")
-        speak("the Please answer after the signal")
+        time.sleep(0.5)
+        speak("thPlease answer after the signal")
         stt.listen()
         person_name = ""
+        start_time = time.time()
+        WAIT_NLP = 8
         while True:
             if stt.body is not None:
                 if (stt.body["intent"] == "my_name") and ("people" in stt.body.keys()):
@@ -267,11 +274,18 @@ class Ask(smach.State):
                     gm.add_guest_name("guest_{}".format(person_count), person_name)
                     # add guest name to database accordingly to the person_count
                     stt.clear()
+                    start_time = time.time()
                     break
                 else:
-                    speak("Pardon?")
+                    speak("Please say my name is")
                     stt.clear()
                     stt.listen()
+                    start_time = time.time()
+            if time.time()-start_time > WAIT_NLP:
+                speak("Please repeat the sentence again after the sound")
+                stt.listen()
+                start_time = time.time()
+
 
         # register face
         speak("Please show your face to the robot's camera")
@@ -290,12 +304,14 @@ class Ask(smach.State):
             if msg["isOk"] or msg["message"] == "name taken":
                 break
             else:
-                print("No face detect.")
+                speak("No face detect.")
         
         # listening to the person and save his his/her fav_drink to the file
         speak("What is your favorite drink?")
-        speak("the Please answer after the signal")
+        time.sleep(0.5)
+        speak("thPlease answer after the signal")
         stt.listen()
+        start_time = time.time()
         object_name = ""
         while True:
             if stt.body is not None:
@@ -305,16 +321,23 @@ class Ask(smach.State):
                     object_name = stt.body["object"]
                     speak('Ok sir')
                     gm.add_guest_fav_drink("guest_{}".format(person_count), object_name)
+                    start_time = time.time()
                     stt.clear()
                     break
                 else:
-                    speak("Pardon?")
+                    speak("Please say my favorite drink is")
                     stt.clear()
                     stt.listen()
+                    start_time = time.time()
+            if time.time()-start_time > WAIT_NLP:
+                speak("Please repeat the sentence again after the sound")
+                stt.listen()
+                start_time = time.time()
+
+        speak("please stand aside")
 
         navigation.move('livingroom')
-
-        # navigation.move('carry_my_luggage_standby')
+        # navigation.move('kitchen')
 
         return 'continue_Navigation'
 
@@ -481,7 +504,7 @@ class Seat(smach.State):
         # announce that there is available seat
         # point to the furniture
         if person_count==1:
-            speak("There is an available seat at the sofa")
+            speak("There is an available seat at the sofa on the left")
         elif person_count==2:
             speak("There is an available seat at the chair")
 

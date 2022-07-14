@@ -75,10 +75,13 @@ class GuestNameManager:
                 host = data
                 self.data_yaml = [host]
                 self.write_yaml(self.data_yaml)
+            else:
+                self.data_yaml.remove(data)
+        self.write_yaml([])
     def add_desc(self, role, desc):
         for data in self.data_yaml:
             if data["role"] == role:
-                data["desc"] = desc
+                data["desc"] = str(desc)
         self.write_yaml(self.data_yaml)
     def get_desc(self, role):
         for data in self.data_yaml:
@@ -86,11 +89,9 @@ class GuestNameManager:
                 return data["desc"]
 if __name__ == "__main__":
     print("running")
-    gm = GuestNameManager("../../config/receptionist_database.yaml")
-    print(gm.data_yaml)
-    gm.add_guest_name("guest_3", "hopper")
-    gm.add_guest_fav_drink("guest_3", "jack daniel")
-    print(gm.get_guest_fav_drink("guest_3"))
+    gm = GuestNameManager("../../config/find_my_mate_database.yaml")
+    # print(gm.data_yaml)
+    print(gm.get_desc("guest_1"))
     # person_pose = Pose()
     # person_pose.position.x = 0.1
     # person_pose.position.y = 0.2
@@ -102,5 +103,4 @@ if __name__ == "__main__":
     # # gm.add_guest_location("guest_1", person_pose)
     # print(gm.get_guest_location("guest_1"))
     # # gm.reset()
-    gm.add_desc("guest_3", "he is a gay")
-    print(gm.get_desc("guest_3"))
+    gm.reset()

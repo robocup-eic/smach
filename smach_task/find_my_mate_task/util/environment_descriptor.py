@@ -66,8 +66,7 @@ class EnvironmentDescriptor:
         for data in self.data_yaml:
             data_dict = {}
             pose = self.get_center_point(data['name'])
-            print(pose)
-            if pose and (data['shape']=='rectangle' or data['shape']=='circle'):
+            if pose:
                 data_dict['name'] = data['name']
                 data_dict['position'] = pose
                 result.append(data_dict)
@@ -97,10 +96,8 @@ class EnvironmentDescriptor:
                     center_point.x = data["position"]["x"]
                     center_point.y = data["position"]["y"]
                     center_point.z = data["position"]["z"]
-                # else:
-                #     center_point.x = data["position"]["x"]
-                #     center_point.y = data["position"]["y"]
-                #     center_point.z = data["position"]["z"]
+                else:
+                    return None
                     
         return center_point
     
@@ -179,7 +176,7 @@ if __name__ == "__main__":
     # ed = EnvironmentDescriptor("../../config/fur_data_onsite.yaml")
     ed = EnvironmentDescriptor('/home/eic/ros/smach/smach_task/config/fur_data_onsite.yaml')
     # ed.read_yaml()
-    print(ed.get_obj_poses())
+    print(ed.get_robot_pose("find_my_mate_standby"))
 
     # print(ed.get_center_point("couch_table"))
     # print(ed.get_robot_pose('exit'))
