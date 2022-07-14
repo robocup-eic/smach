@@ -5,7 +5,7 @@ import rospy
 from geometry_msgs.msg import Pose, Point
 from visualization_msgs.msg import Marker
 from move_base_msgs.msg import *
-
+import re
 class EnvironmentDescriptor:
     def __init__(self, yaml_path = "../../config/fur_data.yaml"):
         self.yaml_path = yaml_path
@@ -87,7 +87,7 @@ class EnvironmentDescriptor:
                     
             return center_point
     
-    def out_of_areana(self,robot_pose):
+    def out_of_areana(self,robot_pose = Pose()):
         for data in self.data_yaml:
             if data["name"] == "arena":
                 xc1 = data["corner1"]["x"]
@@ -108,6 +108,31 @@ class EnvironmentDescriptor:
                 robot_y = robot_pose.position.y
 
                 if (min_x <= robot_x <= max_x) and (min_y <= robot_y <= max_y):
+                    return False
+                else:
+                    return True
+    
+    def out_of_area(self,robot_pose = Pose(), area = str()):
+        for data in self.data_yaml:
+            if data["name"] == area:
+                xc1 = data["corner1"]["x"]
+                xc2 = data["corner2"]["x"]
+                xc3 = data["corner3"]["x"]
+                xc4 = data["corner4"]["x"]
+                yc1 = data["corner1"]["y"]
+                yc2 = data["corner2"]["y"]
+                yc3 = data["corner3"]["y"]
+                yc4 = data["corner4"]["y"]
+
+                min_x = min((xc1,xc2,xc3,xc4))
+                max_x = max((xc1,xc2,xc3,xc4))
+                min_y = min((yc1,yc2,yc3,yc4))
+                max_y = max((yc1,yc2,yc3,yc4))
+
+                robot_x = robot_pose.position.x
+                robot_y = robot_pose.position.y
+
+                if (min_x < robot_x <= max_x) and (min_y < robot_y <= max_y):
                     return False
                 else:
                     return True
@@ -154,7 +179,35 @@ class EnvironmentDescriptor:
 
         self.marker_pub.publish(point_marker)
 
+    def readablename(self,unreadable_name = str()):
+        readable_name = ''
+        nn = unreadable_name.split('_')
+        for n in nn:
+            readable_name += n + ' '
+        return readable_name[:-1]
+
+    def unreadablename(self,readable_name = str()):
+        unreadable_name = ''
+        nn = readable_name.split(' ')
+        for n in nn:
+            unreadable_name += n + '_'
+        return unreadable_name[:-1]
     
+    def furlist(self, room = str()):
+        livingroom = ['couch_table', 'side_table', 'book_shelf', 'TV', 'sofa', 'houseplant']
+        kitchen = ['dinner_table', 'kitchen_shelf', 'pantry', 'sink', 'fridge', 'washing_machine', 'kitchen_bin']
+        bedroom = ['bed', 'small_shelf', 'cupboard', 'big_shelf' ]
+        office = ['desk', 'office_shell', 'show_rack', 'bin' ]
+        if room == 'livingroom':
+            return livingroom
+        elif room == 'kitchen':
+            return kitchen
+        elif room == 'bedroom':
+            return bedroom
+        elif room == 'office':
+            return office
+        else:
+            return []
 
 if __name__ == "__main__":
     rospy.init_node("test_ed")
@@ -163,8 +216,10 @@ if __name__ == "__main__":
     ed.visual_robotpoint()
     def cb(goal):
         goa = goal.goal.target_pose.pose
-        print(ed.out_of_areana(goa))
+        print(ed.out_of_area(goa,'livingroom_area'))
 
     while not rospy.is_shutdown():
         rospy.sleep(1)
+        print(ed.readablename('office_2_bedroom') + '4') 
+        print(ed.unreadablename('office 2 bedroom') + '4') 
         rospy.Subscriber("/move_base/goal",MoveBaseActionGoal,cb)

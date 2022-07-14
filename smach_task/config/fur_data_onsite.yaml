@@ -20,6 +20,86 @@
     y: 5.6759929657
     z: 0.0        
 -
+  name: livingroom_area
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 4.94867992401
+    y: 1.82967877388
+    z: 0.0
+  corner2:
+    x: 0.490394443274
+    y: 1.85807836056
+    z: 0.0
+  corner3:
+    x: 4.73759746552
+    y: -3.37448453903
+    z: 0.0
+  corner4:
+    x: 0.281096458435
+    y: -3.27062010765
+    z: 0.0        
+-
+  name: kitchen_area
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 4.94867992401
+    y: 1.82967877388
+    z: 0.0
+  corner2:
+    x: 9.39398956299
+    y: 1.73670911789
+    z: 0.0
+  corner3:
+    x: 4.73759746552
+    y: -3.37448453903
+    z: 0.0
+  corner4:
+    x: 9.27059268951
+    y: -3.57102227211
+    z: 0.0        
+-
+  name: bedroom_area
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 4.94867992401
+    y: 1.82967877388
+    z: 0.0
+  corner2:
+    x: 9.39398956299
+    y: 1.73670911789
+    z: 0.0
+  corner3:
+    x: 5.0559296608
+    y: 5.6100063324
+    z: 0.0
+  corner4:
+    x: 9.50274085999
+    y: 5.38770484924
+    z: 0.0        
+-
+  name: office_area
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 4.94867992401
+    y: 1.82967877388
+    z: 0.0
+  corner2:
+    x: 0.490394443274
+    y: 1.85807836056
+    z: 0.0
+  corner3:
+    x: 5.0559296608
+    y: 5.6100063324
+    z: 0.0
+  corner4:
+    x: 0.600656509399
+    y: 5.68280982971
+    z: 0.0        
+-
   name: entrance
   frame_id: map
   shape: None
@@ -596,17 +676,17 @@
     x: 9.09127807617
     y: 5.39371061325
     z: 0.0
-  # robot_pose:
-  #   position:
-  #     x: 
-  #     y: 
-  #     z: 0.0
-  #   orientation:
-  #     x: 0.0
-  #     y: 0.0
-  #     z: 1.0
-  #     w: 0.0
-  # height: 
+  robot_pose:
+    position:
+      x: 8.6671319613795
+      y: 5.442554140095
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.707
+      w: 0.707
+  height: [0.44,0.80]
 -
   name: big_shelf #17
   frame_id: map
@@ -850,17 +930,31 @@
       z: 0.97
       w: -0.22
 -
-  name: operator_position
+#   name: operator_position
+#   frame_id: map
+#   shape: None
+#   robot_pose:
+#     position:
+#       x: 3.825
+#       y: -0.468
+#       z: 0.0
+#     orientation:
+#       x: 0.0
+#       y: 0.0
+#       z: -0.652
+#       w: 0.759
+# -
+  name: instruction_point
   frame_id: map
   shape: None
   robot_pose:
     position:
-      x: 3.825
-      y: -0.468
+      x: 4.36098527908
+      y: 4.69722938538
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: -0.652
-      w: 0.759
+      z: 0.985202451836
+      w: -0.171394658305
 -
