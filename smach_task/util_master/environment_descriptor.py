@@ -223,6 +223,7 @@ if __name__ == "__main__":
 
     while not rospy.is_shutdown():
         rospy.sleep(1)
+        print(ed.get_robot_pose('houseplant'))
         print(ed.readablename('office_2_bedroom') + '4') 
         print(ed.unreadablename('office 2 bedroom') + '4') 
         rospy.Subscriber("/move_base/goal",MoveBaseActionGoal,cb)
