@@ -352,7 +352,7 @@ class Pick(smach.State):
         # tune coordinate
         recieved_pose.position.x -= 0.05
         recieved_pose.position.y += 0.03
-        recieved_pose.position.z += 0.05
+        recieved_pose.position.z += 0.07
 
         rospy.loginfo('------ Position ------')
         rospy.loginfo('x = %s', recieved_pose.position.x)
@@ -438,4 +438,5 @@ def main():
 
 if __name__ == "__main__":
     OBJECT_NAME = "Waterbottle"
+    # OBJECT_NAME = "Softdrink"
     main()
