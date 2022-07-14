@@ -62,10 +62,10 @@ class EnvironmentDescriptor:
                 return data["height"]
 
     def get_center_point(self, name):
+        center_point = Point()
         for data in self.data_yaml:
             if data["name"] == name:
                 if data["shape"]== "rectangle":
-                    center_point = Point()
                     xc1 = data["corner1"]["x"]
                     xc2 = data["corner2"]["x"]
                     xc3 = data["corner3"]["x"]
@@ -80,7 +80,10 @@ class EnvironmentDescriptor:
                     center_point.z = 0
                 
                 elif data["shape"] == "circle":
-                    center_point = Point()
+                    center_point.x = data["position"]["x"]
+                    center_point.y = data["position"]["y"]
+                    center_point.z = data["position"]["z"]
+                else:
                     center_point.x = data["position"]["x"]
                     center_point.y = data["position"]["y"]
                     center_point.z = data["position"]["z"]

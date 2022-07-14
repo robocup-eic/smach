@@ -49,7 +49,7 @@ class GetObjectName(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectName')
         # sending object name to GetobjectName state (change string right here)
-        userdata.objectname_output = "Waterbottle"
+        userdata.objectname_output = "water"
         return 'continue_GetObjectPose'
 
 
@@ -97,9 +97,7 @@ class GetObjectPose(smach.State):
             # scale image incase image size donot match cv server
             self.frame = check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
-            result = {"n":0}
-            while result['n'] == 0:
-                result = self.c.req(self.frame)
+            result = self.c.req(self.frame)
             self.frame = check_image_size_for_ros(self.frame)
             rospy.loginfo("result {}".format(result))
             if result['n'] == 0:
@@ -112,7 +110,7 @@ class GetObjectPose(smach.State):
                     # receive xyxy
                     x_pixel = int(bbox[3]+bbox[5]/2)
                     y_pixel = int(bbox[4]+bbox[6]/2)
-                    (x_pixel, y_pixel) = rescale_pixel(x_pixel, y_pixel)
+                    (x_pixel, y_pixel) = rs.rescale_pixel(x_pixel, y_pixel)
                     object_id = 1 # TODO change to object tracker
                     self.center_pixel_list.append((x_pixel, y_pixel, object_id))
                     # visualize purpose
@@ -174,9 +172,7 @@ class GetObjectPose(smach.State):
             return (x, y)
 
         def find_closest_object():
-            if len(self.object_pose_list) == 0:
-                return None
-            
+            object_pose_z_min = None
             z_min = 10000000000
             for object_pose in self.object_pose_list:
                 if object_pose[2] < z_min:
@@ -283,7 +279,6 @@ class GetObjectPose(smach.State):
             reset()
             detect()
             userdata.objectpose_output = self.object_pose
-            rospy.loginfo(self.object_pose)
             return 'continue_Pick'
         return 'continue_ABORTED'
 

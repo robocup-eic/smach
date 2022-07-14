@@ -62,7 +62,7 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
   moveit::planning_interface::MoveGroupInterface move_group_interface(PLANNING_GROUP_ARM);
   const moveit::core::JointModelGroup *joint_model_group = move_group_interface.getCurrentState()->getJointModelGroup(PLANNING_GROUP_ARM);
 
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  moveit_visual_tools::MoveItVisualTools visual_tools("base_cr3_joint");
   visual_tools.deleteAllMarkers();
   geometry_msgs::Pose target_pose1;
   //Step1 Execute along X-Y coordinate
@@ -167,7 +167,7 @@ void set_home_walkie2(void)
   joint_group_positions[2] = 2.267;  // radians
   joint_group_positions[3] = 0.875;  // radians
   // joint_group_positions[4] = 1.507;  // radians
-  joint_group_positions[4] = 0.0;  // radians
+  joint_group_positions[4] = 3.14;  // radians
   joint_group_positions[5] = 2.355;  // radians
 
   move_group_interface.setJointValueTarget(joint_group_positions);
@@ -196,7 +196,7 @@ void addCollisionObject( float dimension_radius, float dimension_high,
 
   // collision_table
   collision_objects[0].id = object;
-  collision_objects[0].header.frame_id = "base_link";
+  collision_objects[0].header.frame_id = "base_cr3_joint";
 
   // collsion_table dimension
   collision_objects[0].primitives.resize(1);
@@ -227,7 +227,7 @@ void addCollisionTable( float dimension_x, float dimension_y, float dimension_z,
 
   // collision_table
   collision_objects[0].id = object;
-  collision_objects[0].header.frame_id = "base_link";
+  collision_objects[0].header.frame_id = "base_cr3_joint";
 
   // collsion_table dimension
   collision_objects[0].primitives.resize(1);

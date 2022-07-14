@@ -84,7 +84,10 @@ class Start_signal(smach.State):
         self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
         
     def execute(self,userdata):
+
         rospy.loginfo('Executing Start_signal state')
+
+        return 'continue_Standby'
 
         global rs, navigation
         # Detect door opening
@@ -109,7 +112,7 @@ class Start_signal(smach.State):
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
-                while time.time() - start_time < 4:
+                while time.time() - start_time < 0:
                     rospy.loginfo("Moving Forward...")
                     self.moving_pub.publish(self.moving_msg)
                     rospy.sleep(0.1)
@@ -146,7 +149,12 @@ class Standby(smach.State):
     def execute(self,userdata):
         rospy.loginfo('Executing Standby state')
 
+        speak("I'm moving to standby point")
+
         standby = navigation.move('receptionist_standby')
+        # standby = navigation.move("kitchen")
+
+        
 
         if standby:
             rospy.loginfo('Walky stand by, Ready for order')
@@ -155,19 +163,9 @@ class Standby(smach.State):
 
         global image_pub, personTrack, rs
 
-        def go_to_Navigation(location):
-            goal = MoveBaseGoal()
-            goal.target_pose.header.frame_id = "map"
-            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-            goal.target_pose.pose = self.ed.get_robot_pose(location)
-            self.move_base_client.send_goal(goal)
-            self.move_base_client.wait_for_result()
-            result = self.move_base_client.get_result()
-            rospy.loginfo("result {}".format(result))
-            if result.status == GoalStatus.SUCCEEDED :
-                return True
-            else:
-                return False
+        speak("Welcome guest. You can come in now.")
+        time.sleep(0.5)
+        speak("please come closer to me!")
 
         def detect(frame):
             # scale image incase image size donot match cv server
@@ -179,38 +177,41 @@ class Standby(smach.State):
 
             # if there is no person just skip
             if len(result["result"]) == 0:
-                rospy.loginfo("guest not found yet")
+                # rospy.loginfo("guest not found yet")
                 image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
                 return
 
             # not found person yet
-            if self.person_id == -1:
-                center_pixel_list = []
-                for track in result["result"]:
-                    self.x_pixel = int((track[2][0]+track[2][2])/2)
-                    self.y_pixel = int((track[2][1]+track[2][3])/2)
-                    depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
-                    center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
-                
-                self.person_id = min(center_pixel_list, key=lambda x: x[2])[3] # get person id with min depth
-            
+            center_pixel_list = []
             for track in result["result"]:
-                # track : [id, class_name, [x1,y1,x2,y2]]
-                # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
-                if track[0] == self.person_id:
-                    self.x_pixel = int((track[2][0]+track[2][2])/2)
-                    self.y_pixel = int((track[2][1]+track[2][3])/2)
-                    self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
-                    # visualize purpose
-                    frame = cv2.circle(frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
-                    frame = cv2.rectangle(frame, rs.rescale_pixel(track[2][0], track[2][1]), rs.rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
-                    frame = cv2.putText(frame, str(self.person_id), rs.rescale_pixel(track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                self.x_pixel = int((track[2][0]+track[2][2])/2)
+                self.y_pixel = int((track[2][1]+track[2][3])/2)
+                depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
+                center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
+            
+            self.x_pixel = min(center_pixel_list, key=lambda x: x[2])[0]
+            self.y_pixel = min(center_pixel_list, key=lambda x: x[2])[1]
+
+            # filter x, y pixel at the edge
+            if not (300 < self.x_pixel < 900):
+                rospy.loginfo("X_pixel: {}, Y_pixel: {}".format(self.x_pixel, self.y_pixel))
+                rospy.loginfo("Human not in the middle")
+                return False
+
+            self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
+            # visualize purpose
+            frame = cv2.circle(frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
+            frame = cv2.rectangle(frame, rs.rescale_pixel(track[2][0], track[2][1]), rs.rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
+            frame = cv2.putText(frame, str(self.person_id), rs.rescale_pixel(track[2][0], track[2][1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
             # 3d pose
 
+            rospy.loginfo("X_pixel: {}, Y_pixel: {}".format(self.x_pixel, self.y_pixel))
             # rescale pixel incase pixel donot match
+
             x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
+            rospy.loginfo("Target person is at coordinate: {}".format((x_coord, y_coord, z_coord)))
             # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
 
             if 0.75 < z_coord < 1.5:
@@ -259,8 +260,12 @@ class Ask(smach.State):
 
         # listening to the person and save his/her name to the file
         speak("What is your name?")
+        time.sleep(0.5)
+        speak("thPlease answer after the signal")
         stt.listen()
         person_name = ""
+        start_time = time.time()
+        WAIT_NLP = 8
         while True:
             if stt.body is not None:
                 if (stt.body["intent"] == "my_name") and ("people" in stt.body.keys()):
@@ -269,11 +274,18 @@ class Ask(smach.State):
                     gm.add_guest_name("guest_{}".format(person_count), person_name)
                     # add guest name to database accordingly to the person_count
                     stt.clear()
+                    start_time = time.time()
                     break
                 else:
-                    speak("Pardon?")
+                    speak("Please say my name is")
                     stt.clear()
                     stt.listen()
+                    start_time = time.time()
+            if time.time()-start_time > WAIT_NLP:
+                speak("Please repeat the sentence again after the sound")
+                stt.listen()
+                start_time = time.time()
+
 
         # register face
         speak("Please show your face to the robot's camera")
@@ -292,11 +304,14 @@ class Ask(smach.State):
             if msg["isOk"] or msg["message"] == "name taken":
                 break
             else:
-                print("No face detect.")
+                speak("No face detect.")
         
         # listening to the person and save his his/her fav_drink to the file
         speak("What is your favorite drink?")
+        time.sleep(0.5)
+        speak("thPlease answer after the signal")
         stt.listen()
+        start_time = time.time()
         object_name = ""
         while True:
             if stt.body is not None:
@@ -306,14 +321,23 @@ class Ask(smach.State):
                     object_name = stt.body["object"]
                     speak('Ok sir')
                     gm.add_guest_fav_drink("guest_{}".format(person_count), object_name)
+                    start_time = time.time()
                     stt.clear()
                     break
                 else:
-                    speak("Pardon?")
+                    speak("Please say my favorite drink is")
                     stt.clear()
                     stt.listen()
+                    start_time = time.time()
+            if time.time()-start_time > WAIT_NLP:
+                speak("Please repeat the sentence again after the sound")
+                stt.listen()
+                start_time = time.time()
 
-        navigation.move('living_room')
+        speak("please stand aside")
+
+        navigation.move('livingroom')
+        # navigation.move('kitchen')
 
         return 'continue_Navigation'
 
@@ -444,12 +468,14 @@ class Navigation(smach.State):
                     if not result[0] in [r[0] for r in self.person_list]:
                         self.person_list.append(result)
 
-        avaliable_seat = avaliable_seat_list()
-        rospy.loginfo("avaliable seat are:" + str(avaliable_seat))
+        avaliable_seat = ['Walkie']
+        # avaliable_seat = avaliable_seat_list()
+        # rospy.loginfo("avaliable seat are:" + str(avaliable_seat))
         
         if len(avaliable_seat) == 0:
             return 'continue_No_seat'
         else:
+            
             userdata.avaliable_seat_out = avaliable_seat
             return 'continue_Seat'
 
@@ -472,11 +498,18 @@ class Seat(smach.State):
         
     def execute(self,userdata):
         rospy.loginfo('Executing Seat state')
+        global person_count
         # list of avaliable seat
         avaliable_seat = userdata.avaliable_seat_in
         # announce that there is available seat
         # point to the furniture
-        speak("There is an available seat here")
+        if person_count==1:
+            speak("There is an available seat at the sofa on the left")
+        elif person_count==2:
+            speak("There is an available seat at the chair")
+
+        speak("Please take a seat there")
+
         return 'continue_Introduce_guest'
 
 class Introduce_guest(smach.State):
@@ -509,10 +542,12 @@ class Introduce_guest(smach.State):
         # clearly identify the person being introduced and state their name and favorite drink
         if person_count == 1:
             speak("Hello {host_name}, the guest name is {guest_1}".format(host_name = gm.get_guest_name("host"), guest_1 = gm.get_guest_name("guest_1")))
-            speak("His favorite drink is {fav_drink1}".format(fav_drink1 = gm.get_guest_fav_drink("guest_1")))
+            speak("Their favorite drink is {fav_drink1}".format(fav_drink1 = gm.get_guest_fav_drink("guest_1")))
+            speak("They are sitting at the sofa")
         if person_count == 2:
             speak("Hello {host_name}, the new guest is {guest_2}".format(host_name = gm.get_guest_name("host"), guest_2 = gm.get_guest_name("guest_2")))
-            speak("His favorite drink is {fav_drink2}".format(fav_drink2 = gm.get_guest_fav_drink("guest_2")))
+            speak("Their favorite drink is {fav_drink2}".format(fav_drink2 = gm.get_guest_fav_drink("guest_2")))
+            speak("They are sitting at the chair")
         return 'continue_Introduce_host'
 
     
@@ -553,11 +588,11 @@ class Introduce_host(smach.State):
         if person_count == 1:
             # find the guest1 and face the robot to the guest1
             speak("Hello {guest_1}, the host's name is {host_name}".format(guest_1 = gm.get_guest_name("guest_1"), host_name = gm.get_guest_name("host")))
-            speak("His favorite drink is {fav_drink_host}".format(fav_drink_host = gm.get_guest_fav_drink("host")))
+            speak("Their favorite drink is {fav_drink_host}".format(fav_drink_host = gm.get_guest_fav_drink("host")))
         if person_count == 2:
             # find the guest_2 and face the robot the the guest_2
             speak("Hello {guest_2}, the host's name is {host_name}".format(guest_2 = gm.get_guest_name("guest_2"), host_name = gm.get_guest_name("host")))
-            speak("His favorite drink is {fav_drink_host}".format(fav_drink_host= gm.get_guest_fav_drink("host")))
+            speak("Their favorite drink is {fav_drink_host}".format(fav_drink_host= gm.get_guest_fav_drink("host")))
             speak("The guest next to you is {guest_1}".format(guest_1 = gm.get_guest_name("guest_1")))
             speak(PERSON1_DES)
             # reset the variable 
@@ -570,7 +605,7 @@ if __name__ == '__main__':
 
     tf_Buffer = tf2_ros.Buffer()
 
-    ed = EnvironmentDescriptor("../config/fur_data.yaml")
+    ed = EnvironmentDescriptor("../config/fur_data_onsite.yaml")
     ed.visual_robotpoint()
     gm = GuestNameManager("../config/receptionist_database.yaml")
     gm.reset()
@@ -592,7 +627,7 @@ if __name__ == '__main__':
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
     # person description model
-    port_personDescription = 10008
+    port_personDescription = 10009
     personDescription = CustomSocket(host, port_personDescription)
     personDescription.clientConnect()
 

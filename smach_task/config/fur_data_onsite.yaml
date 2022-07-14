@@ -679,7 +679,7 @@
   robot_pose:
     position:
       x: 8.6671319613795
-      y: 5.442554140095
+      y: 4.37354140095
       z: 0.0
     orientation:
       x: 0.0
@@ -908,13 +908,13 @@
   robot_pose:
     position:
       x: 2.44
-      y: 3.94
+      y: 4.04
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: 1.0
-      w: 0.036
+      z: -0.014
+      w: 1.0
 -
   name: receptionist_standby
   frame_id: map
@@ -930,31 +930,45 @@
       z: 0.97
       w: -0.22
 -
-#   name: operator_position
-#   frame_id: map
-#   shape: None
-#   robot_pose:
-#     position:
-#       x: 3.825
-#       y: -0.468
-#       z: 0.0
-#     orientation:
-#       x: 0.0
-#       y: 0.0
-#       z: -0.652
-#       w: 0.759
-# -
-  name: instruction_point
+  name: operator_position
   frame_id: map
   shape: None
   robot_pose:
     position:
-      x: 4.36098527908
-      y: 4.69722938538
+      x: 3.825
+      y: -0.468
       z: 0.0
     orientation:
       x: 0.0
       y: 0.0
-      z: 0.985202451836
-      w: -0.171394658305
+      z: -0.652
+      w: 0.759
+-
+  name: livingroom_exit
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: -0.004
+      y: -0.013
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.000
+      w: 0.011
+-
+  name: find_my_mate_standby
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 2.538
+      y: 0.043
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 1.000
+      w: -0.026
 -
