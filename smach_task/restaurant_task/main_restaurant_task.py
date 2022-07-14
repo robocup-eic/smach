@@ -54,6 +54,25 @@ import time
 from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
 
+class go_to_Navigation():
+    def __init__(self):
+        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    
+    def move(self,location):
+        global ed
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+        goal.target_pose.pose = ed.get_robot_pose(location)
+        self.move_base_client.send_goal(goal)
+        self.move_base_client.wait_for_result()
+        while True:
+            result = self.move_base_client.get_state()
+            rospy.loginfo("status {}".format(result))
+            if result == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
 #---------------------------------------------------------------
 class Walkie_Rotate(smach.State) :
     def __init__(self):
@@ -108,13 +127,6 @@ if __name__ == '__main__':
 
     ed = EnvironmentDescriptor("../config/fur_data_onsite.yaml")
     ed.visual_robotpoint()
-    gm = GuestNameManager("../config/receptionist_database.yaml")
-    gm.reset()
-    person_count = 0
-    PERSON1_DES = ""
-
-    image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
-    navigation = go_to_Navigation()
 
     # connect to server
     host = "0.0.0.0"
@@ -123,10 +135,6 @@ if __name__ == '__main__':
     port_HandRaising = 10011
     HandRaising = CustomSocket(host, port_HandRaising)
     HandRaising.clientConnect()
-    # person tracker model
-    port_personTrack = 11000
-    personTrack = CustomSocket(host,port_personTrack)
-    personTrack.clientConnect()
 
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
