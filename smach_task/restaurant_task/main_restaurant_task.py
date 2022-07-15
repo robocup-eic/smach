@@ -53,6 +53,7 @@ import time
 # import yaml reader
 from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
+import copy
 
 class go_to_Navigation():
     def __init__(self):
@@ -79,30 +80,70 @@ class Walkie_Rotate(smach.State) :
         rospy.loginfo('Initiating Walkie_Rotate state')
         smach.State.__init__(self,outcomes=['continue_Walkie_Speak'])
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        self.bridge = CvBridge()
     
     def execute(self,userdata):
         rospy.loginfo('Executing Walkie_Rotate state')
+        global image_pub, personDescription
+
+        def draw_bbox(frame, res):
+            for id in res.keys():
+                x, y, w, h, hand_raised = (res[id][k] for k in ("x", "y", "w", "h", "hand_raised"))
+                # max_x, min_x, max_y, min_y, hand_raised = res[id]
+                color = (0, 255, 0) if hand_raised else (0, 0, 255)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 3)
+
         # find people raising hand
         rotate_msg = Twist()
-        rotate_msg.angular.z = 0.1
+        # rotate_msg.angular.z = 0.1
+        rotate_msg.angular.z = 0.0
 
-        is_found = False
-        while not is_found:
+        # speak to start
+        speak("I'm ready")
+        time.sleep(0.5)
+        speak("I'm looking for the waving customer")
+
+        start_time = time.time()
+
+        is_found = 0
+        FRAME_THRES = 20
+        frame_ori = None
+        while is_found < FRAME_THRES:
             self.rotate_pub.publish(rotate_msg)
-            detections = HandRaising(rs.get_image())
-            for people in detections:
+            frame = rs.get_image()
+            frame_ori = copy.copy(frame)
+            detections = HandRaising.req(frame)
+            draw_bbox(frame, detections)
+            for key in detections.keys():
+                rospy.loginfo("found {} person, raised {}".format(len(detections), detections[key]["hand_raised"]))
+                x_relative = detections[key]["x"] + (detections[key]["w"] / 2)
 
-                x_relative = people["x"] + (people["w"] / 2)
-
-                if (people["hand_raised"] == True) and (400 < x_relative < 800) :
+                if (detections[key]["hand_raised"] == True) and (400 < x_relative < 800) :
                     cancel = Twist()
                     cancel.linear.x = 0
                     cancel.linear.y = 0
                     cancel.angular.z = 0
-                    is_found = True
+                    is_found += 1
+            
+            image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+
+            # tell the person to show hand higher
+            if time.time() - start_time > 10:
+                speak("Please raise your hand higher")
+                start_time = time.time()
+
 
         self.rotate_pub.publish(cancel)
         rospy.sleep(1)
+
+        desc = personDescription.req(frame_ori)
+        speak("I found the customer raising hand")
+        time.sleep(0.5)
+        speak(desc)
+        time.sleep(1.0)
+        speak("I will come to you")
+        
+
 
         return 'continue_Walkie_Speak'
             
@@ -114,8 +155,15 @@ class Walkie_Speak(smach.State) :
     def execute(self,userdata):
         rospy.loginfo('Executing Walkie_Speak state')
 
-        speak("Okey I found")
-        speak("I will follow on you")
+
+        # speak("I found the customer raising hand")
+        # time.sleep(0.5)
+        # speak("I will come to you")
+
+
+        
+
+        
 
         return 'continue_succeed'
 #---------------------------------------------------------------
@@ -126,7 +174,7 @@ if __name__ == '__main__':
     tf_Buffer = tf2_ros.Buffer()
 
     ed = EnvironmentDescriptor("../config/fur_data_onsite.yaml")
-    ed.visual_robotpoint()
+    # ed.visual_robotpoint()
 
     # connect to server
     host = "0.0.0.0"
@@ -135,6 +183,11 @@ if __name__ == '__main__':
     port_HandRaising = 10011
     HandRaising = CustomSocket(host, port_HandRaising)
     HandRaising.clientConnect()
+
+    # person description model
+    port_personDescription = 10009
+    personDescription = CustomSocket(host, port_personDescription)
+    personDescription.clientConnect()
 
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
@@ -147,7 +200,7 @@ if __name__ == '__main__':
     # Create a SMACH state machine
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED'])
 
-    # smach userdata
+    image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
 
     # Open the container
     with sm_top:
