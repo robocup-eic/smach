@@ -274,27 +274,22 @@ class Pose(smach.State):
         
         # if there is no object
         if len(self.list_object) == 0:
-            userdata.pose_output = 'no_object'
+            userdata.pose_output = []
             return 'continue_text_to_speech'
-        # if there is an object, find most common object
-        else:
+        # if there is an object, find most common objecteeee
             print("You' =", max(set(self.list_object), key=self.list_object.count))
-            userdata.pose_output = max(set(self.list_object), key=self.list_object.count)
+            object_list_unique = list(set(self.list_object))
+            userdata.pose_output = object_list_unique.sort(key=self.list_object.count)
             return 'continue_text_to_speech'
 
 
 class Text_to_speech(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_succeeded'],
-                                    input_keys=['tts_input'])
-    def execute(self, userdata):
-        rospy.loginfo('Executing state Text_to_speech')
-        print("You are pointing at " + userdata.tts_input)
-        if userdata.tts_input == 'no_object':
-            speak("You are not pointing at any object")
-        else:
-            speak("You are pointing at " + userdata.tts_input)
-        return 'continue_succeeded'
+        
+        
+        
+        
+        ded'
     
 
 if __name__ == '__main__':
