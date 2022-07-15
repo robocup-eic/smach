@@ -50,11 +50,9 @@ import math
 class Start_signal(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Start_signal state')
-        smach.State.__init__(self,outcomes=['continue_Standby'])
+        smach.State.__init__(self,outcomes=['continue_Navigate_operator'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
-        
-        
         self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
 
 
@@ -62,7 +60,6 @@ class Start_signal(smach.State):
         rospy.loginfo('Executing Start_signal state')
 
         global rs
-
         self.moving_msg = Twist()
         self.moving_msg.linear.x = 0.2
 
@@ -77,11 +74,9 @@ class Start_signal(smach.State):
             # filter lower distance
             if distance < 0.4:
                 continue
-
             # check if have available frame consecutively
             if frame_count >= self.FRAME_COUNT_LIMIT:
                 speak("door open")
-
                 # move forward
                 #Moving through entrance door
                 start_time = time.time()
@@ -99,13 +94,35 @@ class Start_signal(smach.State):
                 frame_count += 1
             else:
                 frame_count = 0
-        
-        return 'continue_Standby'
+        return 'continue_Navigate_operator'
 
-class Standby(smach.State):
+
+class Navigate_operator(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_follow','continue_pointing'])
-        rospy.loginfo('Initiating state Standby')
+        smach.State.__init__(self, outcomes={'continue_ask'})
+        rospy.loginfo('Initiating state Navigate_operator')
+    def execute(self, userdata):
+        rospy.loginfo('Executing state Navigate_operator')
+        # walk to the given position
+        navigation = go_to_Navigation("kitchen")
+        return 'continue_ask'
+
+
+class Ask(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes={'continue_find_operator'})
+        rospy.loginfo('Initiating state Ask')
+    def execute(self, userdata):
+        rospy.loginfo('Executing state Navigate_operator')
+        # ask what do you need
+        speak("What do you need?")
+        return 'continue_find_operator'
+
+
+class Find_operator(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['continue_pose'])
+        rospy.loginfo('Initiating state Find_operator')
 
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
         self.rotate_msg = Twist()
@@ -118,7 +135,9 @@ class Standby(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Standby')
-        global personTrack, ed
+        global personTrack, ed, count_group
+
+        count_group += 1
 
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
@@ -134,7 +153,6 @@ class Standby(smach.State):
                 output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
 
                 return output_pose_stamped.pose
-
 
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
@@ -224,19 +242,17 @@ class Standby(smach.State):
                 self.rotate_pub.publish(self.cancel)
                 break
             time.sleep(0.01)
-            
-        self.rotate_pub.publish(self.cancel)
-        return 'continue_OBJECT_DETECTION'
+        return 'continue_pose'
+
 
 class Pose(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_text_to_speech'],
-                                    output_keys=['pose_output'])
-        rospy.loginfo('Initiate state Pose')
+        smach.State.__init__(self, outcomes=['continue_text_to_speech'])
+        rospy.loginfo('Initiating state Pose')
         self.bridge = CvBridge()
 
         # initiate list_object and countFrame
-        self.list_object=[]
+        self.object_list_all=[]
         self.countFrame=0
     
     def callback(self, data):
@@ -250,7 +266,7 @@ class Pose(smach.State):
         # add countFrame counter and append the object to the list
         self.countFrame += 1
         if len(result['what_is_that']) > 0:
-            self.list_object.append(str(result['what_is_that'][0]))
+            self.object_list_all.append(str(result['what_is_that'][0]))
         
         # Print list of detected objects
         # print("list_object = ",self.list_object)
@@ -260,8 +276,9 @@ class Pose(smach.State):
             
     def execute(self, userdata):
         rospy.loginfo('Executing state Pose')
-        self.list_object=[]
-        self.countFrame=0
+        global object_list
+        self.object_list_all = []
+        self.countFrame = 0
 
         self.sub = rospy.Subscriber("/camera/color/image_raw", Image, self.callback)
         
@@ -273,35 +290,73 @@ class Pose(smach.State):
         self.sub.unregister()
         
         # if there is no object
-        if len(self.list_object) == 0:
-            userdata.pose_output = 'no_object'
+        if len(self.object_list_all) == 0:
+            object_list = []
             return 'continue_text_to_speech'
         # if there is an object, find most common object
         else:
-            print("You' =", max(set(self.list_object), key=self.list_object.count))
-            userdata.pose_output = max(set(self.list_object), key=self.list_object.count)
+            print("found object", set(self.object_list_all).sort(key=self.object_list_all.count))
+            object_list = set(self.object_list_all).sort(key=self.object_list_all.count)
             return 'continue_text_to_speech'
 
 
 class Text_to_speech(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_succeeded'],
-                                    input_keys=['tts_input'])
+        smach.State.__init__(self, outcomes=['continue_find_operator','continue_succeeded'])
     def execute(self, userdata):
         rospy.loginfo('Executing state Text_to_speech')
-        print("You are pointing at " + userdata.tts_input)
-        if userdata.tts_input == 'no_object':
+        global object_list, count_group
+        if len(object_list) == 0:
             speak("You are not pointing at any object")
+            if count_group < 5:
+                return 'continue_find_operator'
+            else:
+                return 'continue_succeeded'
         else:
-            speak("You are pointing at " + userdata.tts_input)
-        return 'continue_succeeded'
-    
+            is_correct = False
+            for i in range(len(object_list)):
+                if is_correct == True:
+                    break
+                speak("You are pointing at " + object_list[i])
+                speak("Did I answer corectly?")
+                
+                stt.clear()
+                stt.listen()
+                start_time = time.time()
+                while True:
+                    
+                    if stt.body:
+                        rospy.loginfo(stt.body["intent"])
+                        if stt.body["intent"] == "affirm": # waiting for "follow me" command
+                            stt.clear()
+                            is_correct = True
+                            break
+                        elif stt.body["intent"] == "deny": # waiting for "carry my luggage" command
+                            stt.clear()
+                            break
+                        else:
+                            speak("Please say yes or no")
+                            stt.clear()
+                            stt.listen()
+
+                    if time.time() - start_time > 7:
+                        speak("the Please say yes or no after the signal")
+                        start_time = time.time()
+                        stt.listen()
+                    time.sleep(0.01)
+            if count_group < 5:
+                return 'continue_find_operator'
+            else:
+                return 'continue_succeeded'
+      
 
 if __name__ == '__main__':
     rospy.init_node('hand_me_that')
 
     ###################################################
     DOOR_TIME = 6
+    object_list = []
+    count_group = 0
     ###################################################
 
     # what is that
@@ -331,20 +386,14 @@ if __name__ == '__main__':
     ed = EnvironmentDescriptor("../config/fur_data_onsite.yaml")
 
     # Start state machine
-    sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
+    sm = smach.StateMachine(outcomes=['Succeeded'])
     with sm:
-        smach.StateMachine.add("Start_signal", Start_signal(), transitions={"continue_standby":"Standby"})
-        smach.StateMachine.add('Standby',Standby(),
-                        transitions={'continue_pointing':'OBJECT_DETECTION'})
-        
-        # Create sub smach state machine "OBJECT_DETECTION"
-        sm_object_detection = smach.StateMachine(outcomes=['Succeeded'])
-        with sm_object_detection:
-            smach.StateMachine.add('Pose', Pose(), transitions={'continue_text_to_speech':'Text_to_speech'},
-                                                   remapping={'pose_input':'object_is'})
-            smach.StateMachine.add('Text_to_speech', Text_to_speech(), transitions={'continue_succeeded':'Succeeded'},
-                                                                        remapping={'tts_input':'object_is'})
-        smach.StateMachine.add('OBJECT_DETECTION', sm_object_detection, transitions={'Succeeded':'Standby'})
+        smach.StateMachine.add("Start_signal", Start_signal(), transitions={"continue_navigate_operator":"Navigate_operator"})
+        smach.StateMachine.add('Navigate_operator',Navigate_operator(), transitions={'continue_ask':'Ask'})
+        smach.StateMachine.add("Ask", Ask(), transitions={'continue_find_operator':'Find_operator'})
+        smach.StateMachine.add("Find_operator", Find_operator(), transitions={'continue_pose':'Pose'})
+        smach.StateMachine.add('Pose', Pose(), transitions={'continue_text_to_speech':'Text_to_speech'})
+        smach.StateMachine.add('Text_to_speech', Text_to_speech(), transitions={'continue_succeeded':'Succeeded'})
         
     # Set up
     sis = smach_ros.IntrospectionServer('Server_name',sm,'/Root')
