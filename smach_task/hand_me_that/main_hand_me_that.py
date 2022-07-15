@@ -130,7 +130,7 @@ class Navigate_operator(smach.State):
                 else:
                     return False
         # walk to the given position
-        navigation = go_to_Navigation("bedroom")
+        navigation = go_to_Navigation(OPERATION_POINT)
         speak("i am arrived at operator point")
         return 'continue_ask'
 
@@ -321,7 +321,7 @@ class Get_pose(smach.State):
         time.sleep(1)
         # wait to capture 5 frame
         speak("looking straight")
-        while self.countFrame < 200:
+        while self.countFrame < 40:
             rospy.sleep(0.01)
         
         # realsense -35
@@ -329,7 +329,7 @@ class Get_pose(smach.State):
         self.pub_realsense_pitch_absolute_command.publish(-20)
         time.sleep(1)
         # wait to capture 5 frame
-        while self.countFrame < 200:
+        while self.countFrame < 40:
             rospy.sleep(0.01)
             
         # stop subscribing /camera/color/image_raw
@@ -351,7 +351,7 @@ class Get_pose(smach.State):
 
 class Text_to_speech(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_find_operator','continue_succeeded','continue_get_pose'])
+        smach.State.__init__(self, outcomes=['continue_find_operator','continue_succeeded','continue_get_pose','continue_ask'])
     def execute(self, userdata):
         rospy.loginfo('Executing state Text_to_speech')
         global object_list, count_group, point_time
@@ -359,11 +359,13 @@ class Text_to_speech(smach.State):
 
         rospy.loginfo(object_list)
         if len(object_list) == 0:
-            if point_time < 4:
+            if point_time < 3:
                 speak("You are not pointing at any object")
                 return 'continue_get_pose'
             else:
-                return 'continue_succeeded'
+                speak("Let's move to the next group")
+                point_time = 0
+                return 'continue_ask'
         else:
             point_time = 0
             is_correct = False
@@ -400,6 +402,7 @@ class Text_to_speech(smach.State):
             if count_group < 5:
                 speak("Let's move to the next group")
                 rospy.sleep(10)
+                is_correct = False
                 return 'continue_find_operator'
             else:
                 speak("I have finished my task")
@@ -410,7 +413,8 @@ if __name__ == '__main__':
     rospy.init_node('hand_me_that')
 
     ###################################################
-    DOOR_TIME = 0
+    DOOR_TIME = 6
+    OPERATION_POINT = "hand_me_that"
     ###################################################
     object_list = []
     count_group = 0
@@ -450,7 +454,7 @@ if __name__ == '__main__':
         smach.StateMachine.add("Ask", Ask(), transitions={'continue_find_operator':'Find_operator'})
         smach.StateMachine.add("Find_operator", Find_operator(), transitions={'continue_get_pose':'Get_pose'})
         smach.StateMachine.add('Get_pose', Get_pose(), transitions={'continue_text_to_speech':'Text_to_speech'})
-        smach.StateMachine.add('Text_to_speech', Text_to_speech(), transitions={'continue_find_operator':"Find_operator", 'continue_succeeded':'Succeeded','continue_get_pose':'Get_pose'})
+        smach.StateMachine.add('Text_to_speech', Text_to_speech(), transitions={'continue_find_operator':"Find_operator", 'continue_succeeded':'Succeeded','continue_get_pose':'Get_pose','continue_ask':'Ask'})
         
     # Set up
     sis = smach_ros.IntrospectionServer('Server_name',sm,'/Root')
