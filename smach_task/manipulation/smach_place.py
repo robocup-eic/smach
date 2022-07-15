@@ -439,6 +439,26 @@ class Place(smach.State):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
+        def transform_pose(input_pose, from_frame, to_frame):
+            # **Assuming /tf2 topic is being broadcasted
+            
+            
+            # listener = tf2_ros.TransformListener(tf_buffer)
+            pose_stamped = tf2_geometry_msgs.PoseStamped()
+            pose_stamped.pose = input_pose
+            pose_stamped.header.frame_id = from_frame
+            # pose_stamped.header.stamp = rospy.Time.now()
+            try:
+                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+                while not tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                rospy.sleep(1)
+                output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+                return output_pose_stamped.pose
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                raise
+
+
         def lift_cb(data) :
             while (not data.data) : pass
 
