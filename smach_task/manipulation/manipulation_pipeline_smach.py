@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 """
-roslaunch cr3_moveit_control manipulation_pipeline_real.launch
+roslaunch walkie2_bringup walkie2_bringup.launch
+roslaunch wakie2_bringup cr3_bringup.launch
+ssh to pi and $ ./mega.sh
+rviz
+python /home/eic/ros/smach/smach_task/manipulation/manipulation_pipeline_smach.py
 """
 
 import roslib
@@ -39,6 +43,28 @@ from geometry_msgs.msg import Pose
 import tf2_ros
 import tf2_geometry_msgs
 
+# lift
+from std_msgs.msg import Bool
+
+# cr3 command
+import moveit_commander
+
+# useful function
+def lift_cb(data) :
+    while (not data.data) : pass
+
+def lift_command(cmd) :
+    """
+    lift command
+    up is True
+    down is False
+    """
+    lift_pub = rospy.Publisher('lift_command', Bool, queue_size=1)
+    time.sleep(1)
+    lift_pub.publish(cmd)
+
+    rospy.Subscriber("done", Bool, lift_cb)
+
 
 class GetObjectName(smach.State):
     def __init__(self):
@@ -49,7 +75,7 @@ class GetObjectName(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectName')
         # sending object name to GetobjectName state (change string right here)
-        userdata.objectname_output = "Waterbottle"
+        userdata.objectname_output = OBJECT_NAME
         return 'continue_GetObjectPose'
 
 
@@ -256,6 +282,21 @@ class GetObjectPose(smach.State):
                 return
             pass
 
+        def set_home_walkie():
+            group_name = "arm"
+            move_group = moveit_commander.MoveGroupCommander(group_name)
+            joint_goal = move_group.get_current_joint_values()
+            print(joint_goal)
+            joint_goal[0] = 0.0
+            joint_goal[1] = 0.0
+            joint_goal[2] = 2.267
+            joint_goal[3] = 0.875
+            joint_goal[4] = 3.14
+            joint_goal[5] = 2.355
+            move_group.go(joint_goal, wait=True)
+            move_group.stop()
+
+
         # ----------------------------------------------start-----------------------------------------------------
         # subscribe topics
         rospy.Subscriber(
@@ -272,6 +313,12 @@ class GetObjectPose(smach.State):
         # recieving object name from GetObjectName state
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
+
+        # arm sethome
+        set_home_walkie()
+
+        # lift down
+        lift_command(False)
 
         # run_once function
         run_once()
@@ -301,6 +348,12 @@ class Pick(smach.State):
         rospy.loginfo('Executing state Pick')
         # recieving Pose() from GetObjectPose state
         recieved_pose = userdata.objectpose_input
+
+        # tune coordinate
+        recieved_pose.position.x -= 0.05
+        recieved_pose.position.y += 0.03
+        recieved_pose.position.z += 0.07
+
         rospy.loginfo('------ Position ------')
         rospy.loginfo('x = %s', recieved_pose.position.x)
         rospy.loginfo('x = %s', recieved_pose.position.x)
@@ -340,6 +393,9 @@ class Pick(smach.State):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 return 'continue_ABORTED'
+
+        # lift up
+        lift_command(True)
 
         transformed_pose = transform_pose(
             recieved_pose, "realsense_pitch", "cr3_base_link")
@@ -381,4 +437,6 @@ def main():
 
 
 if __name__ == "__main__":
+    OBJECT_NAME = "Waterbottle"
+    # OBJECT_NAME = "Softdrink"
     main()

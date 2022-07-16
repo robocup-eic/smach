@@ -76,6 +76,7 @@ catkin_install_python(PROGRAMS
                       src/place_client_python.py
                       src/furniture_marker.py
                       src/pub_joint_states.py
+                      src/remap_joint_states.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 include_directories(${catkin_INCLUDE_DIRS})
