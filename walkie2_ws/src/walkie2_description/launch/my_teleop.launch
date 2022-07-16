@@ -1,0 +1,12 @@
+<launch>
+  <arg name="model" default="WALKIE"/>
+  <arg name="topic" default="/cmd_vel"/>
+
+  <param name="model" value="$(arg model)"/>
+  <node pkg="walkie2_description" type="my_teleop.py" name="walkie2_teleop"  output="screen">
+    <param name="scale_linear" value="10.0" type="double"/>
+    <param name="scale_angular" value="1.0" type="double"/>
+    <remap from="/cmd_vel" to="$(arg topic)"/>
+  </node>
+
+</launch>

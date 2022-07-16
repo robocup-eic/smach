@@ -127,16 +127,23 @@ class go_to_Navigation():
 
 
 class Start_signal(smach.State):
-
     def __init__(self):
         rospy.loginfo('Initiating Start_signal state')
-        smach.State.__init__(self,outcomes=['continue_standby'])
+        smach.State.__init__(self,outcomes=['continue_Standby'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
-    
+        
+        self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+
+
     def execute(self,userdata):
         rospy.loginfo('Executing Start_signal state')
-        # wait for the door to open
+
+        global ed
+        
+        self.moving_msg = Twist()
+        self.moving_msg.linear.x = 0.2
+
         global rs
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
@@ -149,16 +156,30 @@ class Start_signal(smach.State):
             # filter lower distance
             if distance < 0.4:
                 continue
+
             # check if have available frame consecutively
             if frame_count >= self.FRAME_COUNT_LIMIT:
-                speak("Door open")
+                speak("door open")
+
+                # move forward
+                #Moving through entrance door
+                start_time = time.time()
+                while time.time() - start_time < 4:
+                    rospy.loginfo("Moving Forward...")
+                    self.moving_pub.publish(self.moving_msg)
+                    rospy.sleep(0.1)
+
+                rospy.loginfo("Stop Moving Forward")
+                self.moving_msg.linear.x = 0
+                self.moving_pub.publish(self.moving_msg)
                 break
+
             if distance > self.close_distance:
                 frame_count += 1
             else:
                 frame_count = 0
         
-        return 'continue_standby'
+        return 'continue_Standby'
 
 
 
@@ -199,7 +220,7 @@ class Standby(smach.State):
 
 class Direction(smach.State):
 
-    def __init(self):
+    def __init__(self):
         rospy.loginfo('Initiating Direction state')
         smach.State.__init__(self, outcomes = ['continue_FOLLOW'])
     
@@ -225,13 +246,7 @@ class Planning(smach.State):
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
     
     def execute(self, userdata):
-        rospy.loginfo('Executing state Planning')
-        global target_lost, is_stop, last_pose, robot_inside, location, path, is_arrived
-        go_to_Navigation.move_no_block(location)
-        while True:
-            
-            result = self.move_base_client.get_state()
-            rospy.loginfo("status {}".format(result))
+        
 
             if result == GoalStatus.SUCCEEDED :
                 is_arrived = True
@@ -364,7 +379,7 @@ if __name__ == '__main__':
     sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
 
     with sm:
-        smach.StateMachine.add('Start_signal',Start_signal(),transitions={'continue_standby':'Standby'})
+        smach.StateMachine.add('Start_signal',Start_signal(),transitions={'continue_Standby':'Standby'})
         smach.StateMachine.add('Standby',Standby(),transitions={'continue_direction':'Direction'}) 
         smach.StateMachine.add('Direction',Direction(), transitions={'continue_FOLLOW':'FOLLOW'})
         # Create sub smach state machine

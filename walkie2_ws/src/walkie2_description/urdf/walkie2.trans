@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<robot name="walkie2" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+<transmission name="right_wheel_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="right_wheel_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="right_wheel_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="left_wheel_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="left_wheel_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="left_wheel_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="base_cr3_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="base_cr3_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="base_cr3_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="realsense_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="realsense_joint">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="realsense_actr">
+    <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+</robot>
