@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
-"""
-roslaunch walkie2_bringup walkie2_bringup.launch
-roslaunch wakie2_bringup cr3_bringup.launch
-ssh to pi and $ ./mega.sh
-rviz
-python /home/eic/ros/smach/smach_task/manipulation/manipulation_pipeline_smach.py
-"""
 
 import roslib
 import rospy
 import smach
 import smach_ros
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped, Twist
 from tf.transformations import quaternion_from_euler
 import math
+
+# Move base navigation modules
+import actionlib
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from actionlib_msgs.msg import GoalStatus
 import time
+
+
 
 # pick service
 from cr3_moveit_control.srv import PickWithSide
@@ -33,7 +33,13 @@ from geometry_msgs.msg import TransformStamped
 
 # # computer vision
 # import socket
-from custom_socket import CustomSocket
+from util.custom_socket import CustomSocket
+from util.nlp_server import SpeechToText, speak
+import threading
+
+#Environment descriptor
+from util.environment_descriptor import EnvironmentDescriptor
+
 import numpy as np
 
 # # output
@@ -44,7 +50,7 @@ import tf2_ros
 import tf2_geometry_msgs
 
 # lift
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int16
 
 # cr3 command
 import moveit_commander
@@ -65,12 +71,108 @@ def lift_command(cmd) :
 
     rospy.Subscriber("done", Bool, lift_cb)
 
+class go_to_Navigation():
+    def __init__(self):
+        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    
+    def move(self,location):
+        global ed
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+        goal.target_pose.pose = ed.get_robot_pose(location)
+        self.move_base_client.send_goal(goal)
+        self.move_base_client.wait_for_result()
+        while True:
+            result = self.move_base_client.get_state()
+            rospy.loginfo("status {}".format(result))
+            if result == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
 
+# define state Foo
+class Standby(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['continue_navigate_bottle'])
+
+
+    def execute(self, userdata):
+
+        global navigation, stt
+    
+        rospy.loginfo('Executing state Standby') 
+        # volunteer calling for robot and then robot will navigate to volunteer
+        while True:
+            if stt.body:
+                speak("I'm coming to you")
+                result = navigation.move('bed')
+                if result:
+                    stt.clear()
+                    break
+   
+        return 'continue_navigate_bottle'
+
+# define state Bar
+class Navigate_bottle(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['continue_getObjectName'])
+        self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        self.rotate_msg = Twist()
+        self.rotate_msg.angular.z = -0.1
+
+    def execute(self, userdata):
+        global navigation, stt
+        
+        rospy.loginfo('Executing state Navigate_bottle')
+        # hey walkie bring me a water
+        # navigate to water bottle
+        speak("What can I help you with?")
+        stt.listen()
+
+        start_time = time.time()
+        WAIT_NLP = 8
+        rotate_time = time.time()
+        
+        while True:
+            if stt.body:
+                if stt.body['intent'] == "bring_desc_to_someone":
+                    if 'object' not in stt.body.keys():
+                        speak("I don't understand. Please repeat the command again after the beep")
+                        stt.clear()
+                        stt.listen()
+                        continue
+                    start_time = time.time()
+                    obj = stt.body['object']
+                    stt.clear()
+                    if obj=='water':
+                        while time.time() - rotate_time < 15:
+                            rospy.loginfo("Rotating...")
+                            self.rotate_pub.publish(self.rotate_msg)
+                            rospy.sleep(0.1)
+
+                        result = navigation.move('office_desk')
+                        if result:
+                            return 'continue_getObjectName'
+                
+                else:
+                    speak("I don't understand. Please repeat the command again after the beep")
+                    stt.clear()
+                    stt.listen()
+                    start_time = time.time()
+            
+            elif time.time()-start_time>WAIT_NLP:
+                speak("Please repeat the sentence again after the beep")
+                stt.clear()
+                stt.listen()
+                start_time = time.time()
+
+
+        
 class GetObjectName(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectName')
-        smach.State.__init__(self, outcomes=['continue_GetObjectPose'], output_keys=[
-                             'objectname_output'])
+        smach.State.__init__(self, outcomes=['continue_GetObjectPose'], output_keys=['objectname_output'])
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectName')
@@ -81,9 +183,9 @@ class GetObjectName(smach.State):
 
 class GetObjectPose(smach.State):
     def __init__(self):
+        global object_detection
         rospy.loginfo('Initiating state GetObjectPose')
-        smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=[
-                             'objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
+        smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=['objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
         # initiate variables
         self.object_name = ""
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
@@ -95,20 +197,21 @@ class GetObjectPose(smach.State):
         self.tf_stamp = None
 
         # connect to CV server
-        host = "0.0.0.0"
-        port = 10008
-        self.c = CustomSocket(host, port)
-        self.c.clientConnect()
         rospy.loginfo("connected object detection server")
+
+        # realsense down
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectPose')
+        global object_detection
 
         def run_once():
             while self.intrinsics is None:
                 time.sleep(0.1)
             rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
-            self.c.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
+            object_detection.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
 
         def reset():
             rospy.loginfo("Reseting the value")
@@ -125,11 +228,11 @@ class GetObjectPose(smach.State):
             # send frame to server and recieve the result
             result = {"n":0}
             while result['n'] == 0:
-                result = self.c.req(self.frame)
+                result = object_detection.req(self.frame)
             self.frame = check_image_size_for_ros(self.frame)
             rospy.loginfo("result {}".format(result))
             if result['n'] == 0:
-                return None 
+                return False 
             # object detection bounding box 2d
             for bbox in result['result']:
                 if bbox[2] != self.object_name:
@@ -147,10 +250,12 @@ class GetObjectPose(smach.State):
             
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
 
+            if len(self.center_pixel_list) == 0:
+                return False
             # 3d pose
             if not self.intrinsics:
                 rospy.logerr("no camera intrinsics")
-                return None
+                return False
             for center_pixel in self.center_pixel_list:
                 rospy.loginfo("found {}".format(center_pixel))
                 depth = self.depth_image[center_pixel[1], center_pixel[0]] # [y, x] for numpy array
@@ -182,6 +287,7 @@ class GetObjectPose(smach.State):
             self.depth_sub.unregister()
             rospy.loginfo("Object found!")
             self.object_pose = find_closest_object()
+            return True
 
         # function used in callback functions
         def check_image_size_for_cv(frame):
@@ -296,7 +402,6 @@ class GetObjectPose(smach.State):
             move_group.go(joint_goal, wait=True)
             move_group.stop()
 
-
         # ----------------------------------------------start-----------------------------------------------------
         # subscribe topics
         rospy.Subscriber(
@@ -314,6 +419,11 @@ class GetObjectPose(smach.State):
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
 
+        # realsense down
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        time.sleep(1)
+
         # arm sethome
         set_home_walkie()
 
@@ -328,17 +438,17 @@ class GetObjectPose(smach.State):
                 break
             rospy.loginfo("------ Running 3D detection ------")
             reset()
-            detect()
-            userdata.objectpose_output = self.object_pose
-            rospy.loginfo(self.object_pose)
-            return 'continue_Pick'
+            if detect(): 
+                userdata.objectpose_output = self.object_pose
+                rospy.loginfo(self.object_pose)
+                return 'continue_Pick'
         return 'continue_ABORTED'
 
 
 class Pick(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Pick')
-        smach.State.__init__(self, outcomes=['continue_SUCCEEDED', 'continue_ABORTED'], 
+        smach.State.__init__(self, outcomes=['continue_navigate_volunteer', 'continue_ABORTED'], 
                                    input_keys=['objectpose_input'])
         self.success = False
         self.tf_buffer =  tf2_ros.Buffer()
@@ -409,20 +519,80 @@ class Pick(smach.State):
         self.success = pick_service(transformed_pose, 'front')
 
         if self.success == True:
-            return 'continue_SUCCEEDED'
+            return 'continue_navigate_volunteer'
         else:
             return 'continue_ABORTED'
 
 
-def main():
-    rospy.init_node('smach_pick_state_machine')
-    sm = smach.StateMachine(outcomes=['SUCCEEDED', 'ABORTED'])
+
+class Navigate_volunteer(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['continue_end'])
+
+    def execute(self, userdata):
+        global navigation
+        rospy.loginfo('Executing state Navigate_volunteer')
+        # walk back to volunteer and offer waterbottle with NLP
+
+        while True:
+            result = navigation.move('bed')
+            if result:
+                break
+        
+        speak("Here's your water")
+
+        return 'continue_end'
+
+class End(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['continue_SUCCEEDED'])
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing state End')
+        # walk to judges position and say good bye
+        return 'continue_SUCCEEDED'
+
+# main
+if __name__ == "__main__":
+
+    rospy.init_node('smach_example_state_machine')
+
+    ##############################################
+    # OBJECT_NAME = "Waterbottle"
+    OBJECT_NAME = "water"
+    ############################################
+    
+    #Environment Descriptor for going to person position
+    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fur_data_onsite.yaml")
+    
+    #navigation manager
+    navigation = go_to_Navigation()
+
+
+    #Nlp and cv server
+    host = '0.0.0.0'
+    port_object = 10008
+    object_detection = CustomSocket(host=host, port=port_object)
+    object_detection.clientConnect()
+
+    # Flask nlp server
+    stt = SpeechToText("nlp")
+    t = threading.Thread(target = stt.run ,name="nlp")
+    t.start()
+
+
+    # Create a SMACH state machine
+    sm = smach.StateMachine(outcomes=['SUCCEEDED','ABORTED'])
     sm.userdata.string_name = ""
     sm.userdata.object_pose = Pose()
+    # Open the container
     with sm:
+        # Add states to the container
+        smach.StateMachine.add('Standby', Standby(), transitions={'continue_navigate_bottle':'Navigate_bottle'})
+        smach.StateMachine.add('Navigate_bottle', Navigate_bottle(), transitions={'continue_getObjectName':'GetObjectName'})
+        # ------------------------------ Pick Object --------------------------------------
         smach.StateMachine.add('GetObjectName', GetObjectName(),
-                               transitions={
-                                   'continue_GetObjectPose': 'GetObjectPose'},
+                               transitions={'continue_GetObjectPose': 'GetObjectPose'},
                                remapping={'objectname_output': 'string_name'})
         smach.StateMachine.add('GetObjectPose', GetObjectPose(),
                                transitions={'continue_Pick': 'Pick',
@@ -431,13 +601,12 @@ def main():
                                           'objectpose_output': 'object_pose',
                                           'objectpose_output': 'object_pose'})
         smach.StateMachine.add('Pick', Pick(),
-                               transitions={'continue_SUCCEEDED': 'SUCCEEDED',
+                               transitions={'continue_navigate_volunteer': 'Navigate_volunteer',
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectpose_input': 'object_pose'})
+        # ----------------------------------------------------------------------------------
+        smach.StateMachine.add('Navigate_volunteer', Navigate_volunteer(), transitions={'continue_end':'End'})
+        smach.StateMachine.add('End', End(), transitions={'continue_SUCCEEDED':'SUCCEEDED'})
+
+    # Execute SMACH plan
     outcome = sm.execute()
-
-
-if __name__ == "__main__":
-    # OBJECT_NAME = "Waterbottle"
-    OBJECT_NAME = "water"
-    main()

@@ -338,7 +338,7 @@ class GetObjectPose(smach.State):
 class Pick(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Pick')
-        smach.State.__init__(self, outcomes=['continue_Navigate_table', 'continue_ABORTED'], 
+        smach.State.__init__(self, outcomes=['continue_Navigate_table', 'continue_GetObjectPose'], 
                                    input_keys=['objectpose_input'])
         self.success = False
         self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
@@ -382,7 +382,7 @@ class Pick(smach.State):
                 return res.success_grasp
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
-                return 'continue_ABORTED'
+                return 'continue_GetObjectPose'
 
         def lift_cb(data) :
             while (not data.data) : pass
@@ -411,7 +411,7 @@ class Pick(smach.State):
         if self.success == True:
             return 'continue_Navigate_table'
         else:
-            return 'continue_ABORTED'
+            return 'continue_GetObjectPose'
 
 class Navigate_table(smach.State):
     def __init__(self):
@@ -896,7 +896,7 @@ if __name__ == '__main__':
 
         smach.StateMachine.add('Pick', Pick(),
                                transitions={'continue_Navigate_table': 'Navigate_table',
-                                            'continue_ABORTED': 'ABORTED'},
+                                            'continue_GetObjectPose': 'GetObjectPose'},
                                remapping={'objectpose_input': 'object_pose'})
 
         smach.StateMachine.add('Navigate_table', Navigate_table(),

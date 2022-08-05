@@ -534,17 +534,17 @@
     x: 5.02206897736
     y: 2.98320817947
     z: 0.0
-  # robot_pose:
-  #   position:
-  #     x: 
-  #     y: 
-  #     z: 0.0
-  #   orientation:
-  #     x: 0.0
-  #     y: 0.0
-  #     z: 1.0
-  #     w: 0.0
-  # height: 
+  robot_pose:
+    position:
+      x: 6.85680532455
+      y: 3.97162413597
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.835361766277
+      w: 0.549700572533
+  height: 0
 -
   name: small_shelf #15
   frame_id: map
@@ -905,4 +905,32 @@
       y: 0.0
       z: 1.0
       w: 0.0
+-
+  name: office_desk
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 3.436
+      y: 3.106
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.03
+      w: 1.0
+-
+  name: person_location
+  frame_id: map
+  shape: None
+  robot_pose:
+    position:
+      x: 3.536
+      y: 3.106
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.024
+      w: 1.0
 -

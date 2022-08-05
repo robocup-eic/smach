@@ -8,6 +8,7 @@
   <arg default="false" name="rviz"/>
   <arg default="/dev/ttyACM0" name="port"/>
   <arg default="false" name="carry"/>
+  <arg default="false" name="final"/>
   
 
   <!-- Set up TF for the robot -->
@@ -46,17 +47,17 @@
 </node>
 
 
-  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
-      <arg name="align_depth" value="true" />
-      <arg name="color_width" value="1280" />
-      <arg name="color_height" value="720" />
-      <arg name="color_fps" value="30" />
-      <arg name="depth_width" value="1280" />
-      <arg name="depth_height" value="720" />
-      <arg name="depth_fps" value="30" />
-      <arg name="filters" value="pointcloud"/>
-      <arg name="publish_tf" value="false"/>
-  </include>
+<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+    <arg name="align_depth" value="true" />
+    <arg name="color_width" value="1280" />
+    <arg name="color_height" value="720" />
+    <arg name="color_fps" value="30" />
+    <arg name="depth_width" value="1280" />
+    <arg name="depth_height" value="720" />
+    <arg name="depth_fps" value="30" />
+    <arg name="filters" value="pointcloud"/>
+    <arg name="publish_tf" value="false"/>
+</include>
 
 <node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
 
@@ -101,6 +102,10 @@
   <group if="$(arg carry)">
     <node name="realsense_follow" pkg="walkie2_navigation" type="person_servo.py"/>
     <node name="person_follow" pkg="walkie2_navigation" type="person_chaser.py"/>
+  </group>
+
+  <group if="$(arg final)">
+    <include file="$(find walkie2_bringup)/launch/cr3_bringup.launch"/>
   </group>
 
   
