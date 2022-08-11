@@ -13,7 +13,7 @@
 
   <!-- Set up TF for the robot -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
-      <remap from="/joint_states" to="/walkie2/joint_states" />
+      <!-- <remap from="/joint_states" to="/walkie2/joint_states" /> -->
   </node>
 
     <!-- Run LaserScan node -->
@@ -25,6 +25,9 @@
     <remap from="/scan" to="/walkie2/scan"/>
   </node>
 
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <rosparam param="source_list"> ["/walkie2/joint_states","/realsense/joint_states","/cr3/joint_states"]</rosparam>
+  </node>
 
 <!-- Lidar odometry-->
   <!-- <node pkg="rf2o_laser_odometry" type="rf2o_laser_odometry_node" name="rf2o_laser_odometry">
@@ -59,7 +62,7 @@
     <arg name="publish_tf" value="false"/>
 </include>
 
-<node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
+  <node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
 
   <group unless="$(arg use_imu)">
     <node name="bringup" pkg="walkie2_bringup" type="bringup"/>

@@ -43,7 +43,7 @@ if __name__ == '__main__' :
     global lift_state
     lift_state = 0.0
 
-    pub = rospy.Publisher("walkie2/joint_states", JointState, queue_size=10)
+    pub = rospy.Publisher("/realsense/joint_states", JointState, queue_size=10)
     rospy.Subscriber("/realsense_pitch_angle", Int16, realsense_pitch_cb, queue_size=1)
     rospy.Subscriber("/realsense_yaw_angle", Int16, realsense_yaw_cb, queue_size=1)
     rospy.Subscriber("/lift_state", Float32, lift_cb)

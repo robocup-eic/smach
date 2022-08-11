@@ -5,7 +5,7 @@
   <node name="trajectory_follower_server" pkg="cr3_lowlevel_pkg" type="trajectory_follower_server"/>
   <!-- cr3 controller-->
   <node name="cr3_controller" pkg="cr3_lowlevel_pkg" type="cr3_controller.py">
-    <remap from="/joint_states" to="/walkie2/joint_states" />
+    <remap from="/joint_states" to="/cr3/joint_states" />
   </node>
 
   <include file="$(find cr3_moveit_config)/launch/planning_context.launch"/>
@@ -23,10 +23,10 @@
 
   <!-- launch robot control node for moveit motion planning -->
   <node pkg="cr3_moveit_control" type="pick_service_select_side" name="pick_service_select_side" output="screen" >
-    <remap from="/joint_states" to="/walkie2/joint_states"/>
+    <remap from="/joint_states" to="/cr3/joint_states"/>
   </node>
 
-  <node pkg="cr3_moveit_control" type="remap_joint_states.py" name="remap_joint_states"/>
+  <!-- <node pkg="cr3_moveit_control" type="remap_joint_states.py" name="remap_joint_states"/> -->
 
 </group>
 
