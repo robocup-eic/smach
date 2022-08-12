@@ -5,7 +5,7 @@ import roslib
 import rospy
 import smach
 import smach_ros
-from geometry_msgs.msg import Pose, PoseStamped, Twist
+from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from tf.transformations import quaternion_from_euler
 import math
 
@@ -14,6 +14,10 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 import time
+
+
+from visualization_msgs.msg import Marker
+from moveit_msgs.msg import DisplayTrajectory
 
 
 
@@ -71,6 +75,69 @@ def lift_command(cmd) :
 
     rospy.Subscriber("done", Bool, lift_cb)
 
+def go_to_pose_goal(pose = Pose()):
+    # Copy class variables to local variables to make the web tutorials more clear.
+    # In practice, you should use the class variables directly unless you have a good
+    # reason not to.
+    a =rospy.Publisher("posem",Marker,queue_size=1)
+    group_name = "arm"
+    move_group = moveit_commander.MoveGroupCommander(group_name)
+    robot = moveit_commander.RobotCommander()
+    display_trajectory_publisher = rospy.Publisher(
+                                    '/move_group/display_planned_path',
+                                    DisplayTrajectory, queue_size=1)
+
+    ## BEGIN_SUB_TUTORIAL plan_to_pose
+    ##
+    ## Planning to a Pose Goal
+    ## ^^^^^^^^^^^^^^^^^^^^^^^
+    ## We can plan a motion for this group to a desired pose for the
+    ## end-effector:
+
+    pose_goal = Pose()
+    q = quaternion_from_euler(0,1.57,0)
+    pose_goal.orientation = Quaternion(*q)
+
+    pose_goal.position.x = pose.position.x
+    pose_goal.position.y = pose.position.y
+    pose_goal.position.z = pose.position.z
+
+    # pose_goal.position.x = 0.5
+    # pose_goal.position.y = -0.2
+    # pose_goal.position.z = 0.9
+
+    move_group.set_planner_id("Informed RRT*")
+    move_group.set_planning_time(5)
+    move_group.set_pose_target(pose_goal)
+    m = Marker()
+    m.header.frame_id = "base_footprint"
+    m.header.stamp = rospy.Time.now()
+    m.type = Marker.ARROW
+    m.action = Marker.ADD
+    m.pose = pose_goal
+    m.scale.x = 0.1
+    m.scale.y = 0.05
+    m.scale.z = 0.05
+    m.color.a = 1
+    m.color.r = 1
+    m.color.g = 0
+    m.color.b = 0
+
+  
+    rospy.sleep(5)
+    a.publish(m)
+
+    plan = move_group.plan()
+
+    display_trajectory = DisplayTrajectory()
+    display_trajectory.trajectory_start = robot.get_current_state()
+    display_trajectory.trajectory.append(plan)
+    display_trajectory_publisher.publish(display_trajectory)
+    rospy.sleep(5)
+
+    raw_input(move_group.get_planner_id())
+
+    move_group.execute(plan, wait=True)
         
 class GetObjectName(smach.State):
     def __init__(self):
@@ -367,16 +434,10 @@ class Pick(smach.State):
         recieved_pose.position.y += 0.03
         recieved_pose.position.z += 0.07
 
-        rospy.loginfo('------ Position ------')
-        rospy.loginfo('x = %s', recieved_pose.position.x)
-        rospy.loginfo('x = %s', recieved_pose.position.x)
-        rospy.loginfo('y = %s', recieved_pose.position.y)
-        rospy.loginfo('z = %s', recieved_pose.position.z)
-        rospy.loginfo('------ Orientation ------')
-        rospy.loginfo('x = %s', recieved_pose.orientation.x)
-        rospy.loginfo('y = %s', recieved_pose.orientation.y)
-        rospy.loginfo('z = %s', recieved_pose.orientation.z)
-        rospy.loginfo('w = %s', recieved_pose.orientation.w)
+        rospy.loginfo('\n-----------------------')
+        rospy.loginfo(recieved_pose)
+        rospy.loginfo('-----------------------\n')
+        
 
         def transform_pose(input_pose, from_frame, to_frame):
             # **Assuming /tf2 topic is being broadcasted
@@ -396,31 +457,23 @@ class Pick(smach.State):
 
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
-        def pick_service(goal_pose, side="front"):
-            rospy.wait_for_service('pick_service_select_side')
-            try:
-                pick = rospy.ServiceProxy(
-                    'pick_service_select_side', PickWithSide)
-                res = pick(goal_pose, side)
-		print("fjkshfjksahjfa")
-                return res.success_grasp
-            except rospy.ServiceException as e:
-                print("Service call failed: %s" % e)
-                return 'continue_ABORTED'
+        def pick(goal_pose):
+            go_to_pose_goal(goal_pose)
+            
 
         # lift up
         lift_command(True)
         rospy.sleep(5)
 
         transformed_pose = transform_pose(
-            recieved_pose, "realsense_pitch", "cr3_base_link")
+            recieved_pose, "realsense_pitch", "base_footprint")
         rospy.loginfo(transformed_pose.position.x)
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
         transformed_pose.orientation.z = 0
         transformed_pose.orientation.w = 1
 
-        self.success = pick_service(transformed_pose, 'front')
+        pick(transformed_pose)
 
         if self.success == True:
             return 'continue_navigate_volunteer'
