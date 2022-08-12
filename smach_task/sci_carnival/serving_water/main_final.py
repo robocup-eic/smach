@@ -402,6 +402,7 @@ class Pick(smach.State):
                 pick = rospy.ServiceProxy(
                     'pick_service_select_side', PickWithSide)
                 res = pick(goal_pose, side)
+		print("fjkshfjksahjfa")
                 return res.success_grasp
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)

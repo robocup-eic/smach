@@ -102,6 +102,10 @@ target_link_libraries(pick_service_select_side ${catkin_LIBRARIES})
 add_executable(pick_service_adjust_yaw src/pick_service_adjust_yaw.cpp)
 target_link_libraries(pick_service_adjust_yaw ${catkin_LIBRARIES})
 
+add_executable(test_moveit src/test_moveit.cpp)
+add_dependencies(test_moveit ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(test_moveit ${catkin_LIBRARIES})
+
 add_executable(pick_service_visual_servo src/pick_service_visual_servo.cpp)
 target_link_libraries(pick_service_visual_servo ${catkin_LIBRARIES})
 add_dependencies(pick_service_visual_servo cr3_moveit_control cr3_lowlevel_pkg)
@@ -120,3 +124,5 @@ target_link_libraries(constraint_publisher ${catkin_LIBRARIES} boost_filesystem 
 
 add_executable(tf_test src/tf_test.cpp)
 target_link_libraries(tf_test ${catkin_LIBRARIES})
+
+install(TARGETS test_moveit RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

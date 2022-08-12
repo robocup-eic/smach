@@ -292,13 +292,6 @@
     <limit effort="1000" lower="0.0" upper="0.785" velocity="0.2"/>
   </joint>
 
-    <!-- for Depth Camera -->
-  <xacro:property name="deg_to_rad" value="0.01745329251994329577"/>
-  <xacro:include filename="$(find cr3_lowlevel_pkg)/urdf/_d435.xacro"/>
-  <xacro:sensor_d435 name="sensor_d435" topics_ns="sensor_d435" parent="Link6">
-    <origin xyz="0.031 -0.031 0.0" rpy="1.57 -1.57 0.77"/>
-    <!-- <origin xyz="0 0 0" rpy="${-90.0 * deg_to_rad} 0 ${-90.0 * deg_to_rad}"/> -->
-  </xacro:sensor_d435>
   <!-- xacro implement-->
   
   <xacro:arm_control transmission="tran_1" joint="joint1" motor="motor_1" />
