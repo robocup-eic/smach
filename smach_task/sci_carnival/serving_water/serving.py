@@ -108,7 +108,7 @@ def go_to_pose_goal(pose = Pose(),move_group = moveit_commander.MoveGroupCommand
     # pose_goal.position.y = -0.2
     # pose_goal.position.z = 0.9
 
-    move_group.set_planner_id("Informed RRT*")
+    move_group.set_planner_id("RRT*")
     move_group.set_planning_time(5)
     move_group.set_pose_target(pose)
     m = Marker()
@@ -152,7 +152,7 @@ def catesian_go(goal_pose = Pose(),move_group = moveit_commander.MoveGroupComman
     display_trajectory.trajectory.append(plan)
     display_trajectory_publisher.publish(display_trajectory)
 
-    raw_input("using catesian path ,press enter:")
+    raw_input("using catesian path with fraction %f ,press enter:" % fraction)
     move_group.execute(plan, wait=True)
 
 # state
@@ -483,7 +483,7 @@ class Pick(smach.State):
             robot = moveit_commander.RobotCommander()
 
             pose_goal = Pose()
-            q = quaternion_from_euler(0,1.57,0)
+            q = quaternion_from_euler(3.14,-1.57,0)
             pose_goal.orientation = Quaternion(*q)
 
             pose_goal.position.x = pose.position.x
@@ -496,7 +496,7 @@ class Pick(smach.State):
 
             grasp_pose                  = pose_goal
             pregrasp_pose               = pose_goal
-            pregrasp_pose.position.x    = pose_goal.position.x - 0.1
+            pregrasp_pose.position.x    = pose_goal.position.x - 0.2
             lift_pose                   = pose_goal
             lift_pose.position.z        = pose_goal.position.z + 0.1
             lift_pose.position.x        = pose_goal.position.x - 0.1
@@ -504,10 +504,11 @@ class Pick(smach.State):
             
             go_to_pose_goal(pregrasp_pose, move_group, robot)
             rospy.sleep(3)
+            raw_input("enter to open gripper")
             gripper_publisher.publish(False)
             rospy.sleep(3)
             catesian_go(grasp_pose, move_group, robot)
-            rospy.sleep(3)
+            raw_input("enter to close gripper")
             gripper_publisher.publish(True)
             rospy.sleep(3)
             catesian_go(lift_pose, move_group, robot)
