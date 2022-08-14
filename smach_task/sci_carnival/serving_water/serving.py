@@ -86,6 +86,8 @@ def set_home_walkie(move_group = moveit_commander.MoveGroupCommander("arm")):
             # joint_goal[3] = 0.0
             # joint_goal[4] = 0.0
             # joint_goal[5] = 0.0
+
+            raw_input("press enter to move to home position:")
             move_group.go(joint_goal, wait=True)
             print(joint_goal)
             move_group.stop()
@@ -102,27 +104,19 @@ def go_to_pose_goal(pose = Pose(),move_group = moveit_commander.MoveGroupCommand
     ## We can plan a motion for this group to a desired pose for the
     ## end-effector:
 
-    pose_goal = Pose()
-    q = quaternion_from_euler(0,1.57,0)
-    pose_goal.orientation = Quaternion(*q)
-
-    pose_goal.position.x = pose.position.x
-    pose_goal.position.y = pose.position.y
-    pose_goal.position.z = pose.position.z
-
     # pose_goal.position.x = 0.5
     # pose_goal.position.y = -0.2
     # pose_goal.position.z = 0.9
 
     move_group.set_planner_id("Informed RRT*")
     move_group.set_planning_time(5)
-    move_group.set_pose_target(pose_goal)
+    move_group.set_pose_target(pose)
     m = Marker()
     m.header.frame_id = "base_footprint"
     m.header.stamp = rospy.Time.now()
     m.type = Marker.ARROW
     m.action = Marker.ADD
-    m.pose = pose_goal
+    m.pose = pose
     m.scale.x = 0.1
     m.scale.y = 0.05
     m.scale.z = 0.05
@@ -483,28 +477,41 @@ class Pick(smach.State):
 
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
-        def pick(goal_pose = Pose()):
+        def pick(pose = Pose()):
             group_name = "arm"
             move_group = moveit_commander.MoveGroupCommander(group_name)
             robot = moveit_commander.RobotCommander()
+
+            pose_goal = Pose()
+            q = quaternion_from_euler(0,1.57,0)
+            pose_goal.orientation = Quaternion(*q)
+
+            pose_goal.position.x = pose.position.x
+            pose_goal.position.y = pose.position.y
+            pose_goal.position.z = pose.position.z
 
             grasp_pose      = Pose()
             pregrasp_pose   = Pose()
             lift_pose       = Pose()
 
-            grasp_pose                  = goal_pose
-            pregrasp_pose               = goal_pose
-            pregrasp_pose.position.x    = goal_pose.position.x - 0.05
-            lift_pose                   = goal_pose
-            lift_pose.position.z        = goal_pose.position.z + 0.05
-            lift_pose.position.x        = goal_pose.position.x - 0.05
+            grasp_pose                  = pose_goal
+            pregrasp_pose               = pose_goal
+            pregrasp_pose.position.x    = pose_goal.position.x - 0.1
+            lift_pose                   = pose_goal
+            lift_pose.position.z        = pose_goal.position.z + 0.1
+            lift_pose.position.x        = pose_goal.position.x - 0.1
 
             
             go_to_pose_goal(pregrasp_pose, move_group, robot)
+            rospy.sleep(3)
             gripper_publisher.publish(False)
+            rospy.sleep(3)
             catesian_go(grasp_pose, move_group, robot)
+            rospy.sleep(3)
             gripper_publisher.publish(True)
-            catesian_go(lift_pose)
+            rospy.sleep(3)
+            catesian_go(lift_pose, move_group, robot)
+            rospy.sleep(3)
             set_home_walkie(move_group)
 
             return True
