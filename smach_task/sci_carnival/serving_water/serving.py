@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 import roslib
 import rospy
 import smach
@@ -18,11 +17,6 @@ import time
 
 from visualization_msgs.msg import Marker
 from moveit_msgs.msg import DisplayTrajectory
-
-
-
-# pick service
-from cr3_moveit_control.srv import PickWithSide
 
 # realsense
 import pyrealsense2 as rs2
@@ -69,24 +63,38 @@ def lift_command(cmd) :
     up is True
     down is False
     """
-    lift_pub = rospy.Publisher('lift_command', Bool, queue_size=1)
+    
     time.sleep(1)
     lift_pub.publish(cmd)
 
     rospy.Subscriber("done", Bool, lift_cb)
 
-def go_to_pose_goal(pose = Pose()):
+def set_home_walkie(move_group = moveit_commander.MoveGroupCommander("arm")):
+            joint_goal = move_group.get_current_joint_values()
+            print(joint_goal)
+            joint_goal[0] = 0.0
+            joint_goal[1] = 0.0
+            joint_goal[2] = 2.267
+            joint_goal[3] = 0.875
+            joint_goal[4] = 3.14
+            joint_goal[5] = 2.355
+            
+            
+            # joint_goal[0] = 0.0
+            # joint_goal[1] = 0.0
+            # joint_goal[2] = 0.0
+            # joint_goal[3] = 0.0
+            # joint_goal[4] = 0.0
+            # joint_goal[5] = 0.0
+            move_group.go(joint_goal, wait=True)
+            print(joint_goal)
+            move_group.stop()
+
+def go_to_pose_goal(pose = Pose(),move_group = moveit_commander.MoveGroupCommander("arm"),robot = moveit_commander.RobotCommander()):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
-    a =rospy.Publisher("posem",Marker,queue_size=1)
-    group_name = "arm"
-    move_group = moveit_commander.MoveGroupCommander(group_name)
-    robot = moveit_commander.RobotCommander()
-    display_trajectory_publisher = rospy.Publisher(
-                                    '/move_group/display_planned_path',
-                                    DisplayTrajectory, queue_size=1)
-
+    
     ## BEGIN_SUB_TUTORIAL plan_to_pose
     ##
     ## Planning to a Pose Goal
@@ -133,19 +141,27 @@ def go_to_pose_goal(pose = Pose()):
     display_trajectory.trajectory_start = robot.get_current_state()
     display_trajectory.trajectory.append(plan)
     display_trajectory_publisher.publish(display_trajectory)
-    rospy.sleep(5)
+    
 
     raw_input("using %s ,press enter:" %move_group.get_planner_id())
 
     move_group.execute(plan, wait=True)
 
-def catesian_goal(goal_pose = Pose(),move_group = moveit_commander.MoveGroupCommander("arm")):
+def catesian_go(goal_pose = Pose(),move_group = moveit_commander.MoveGroupCommander("arm"),robot = moveit_commander.RobotCommander()):
     waypoints = []
     waypoints.append(goal_pose)
 
-    (plan, fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
-    pass
+    plan, fraction = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
 
+    display_trajectory = DisplayTrajectory()
+    display_trajectory.trajectory_start = robot.get_current_state()
+    display_trajectory.trajectory.append(plan)
+    display_trajectory_publisher.publish(display_trajectory)
+
+    raw_input("using catesian path ,press enter:")
+    move_group.execute(plan, wait=True)
+
+# state
 class GetObjectName(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectName')
@@ -432,6 +448,9 @@ class Pick(smach.State):
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
     def execute(self, userdata):
+
+        global gripper_publisher
+
         rospy.loginfo('Executing state Pick')
         # recieving Pose() from GetObjectPose state
         recieved_pose = userdata.objectpose_input
@@ -465,6 +484,10 @@ class Pick(smach.State):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
         def pick(goal_pose = Pose()):
+            group_name = "arm"
+            move_group = moveit_commander.MoveGroupCommander(group_name)
+            robot = moveit_commander.RobotCommander()
+
             grasp_pose      = Pose()
             pregrasp_pose   = Pose()
             lift_pose       = Pose()
@@ -476,7 +499,16 @@ class Pick(smach.State):
             lift_pose.position.z        = goal_pose.position.z + 0.05
             lift_pose.position.x        = goal_pose.position.x - 0.05
 
-            go_to_pose_goal(goal_pose)
+            
+            go_to_pose_goal(pregrasp_pose, move_group, robot)
+            gripper_publisher.publish(False)
+            catesian_go(grasp_pose, move_group, robot)
+            gripper_publisher.publish(True)
+            catesian_go(lift_pose)
+            set_home_walkie(move_group)
+
+            return True
+
             
 
         # lift up
@@ -491,9 +523,10 @@ class Pick(smach.State):
         transformed_pose.orientation.z = 0
         transformed_pose.orientation.w = 1
 
-        pick(transformed_pose)
+        picksucess = False
+        picksucess = pick(transformed_pose)
 
-        if self.success == True:
+        if picksucess == True:
             return 'continue_navigate_volunteer'
         else:
             return 'continue_ABORTED'
@@ -527,6 +560,11 @@ if __name__ == "__main__":
     t = threading.Thread(target = stt.run ,name="nlp")
     t.start()
 
+    # publisher and subscriber
+    lift_pub                     = rospy.Publisher('lift_command', Bool, queue_size=1)
+    a                            = rospy.Publisher("posem",Marker,queue_size=1)
+    display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',DisplayTrajectory, queue_size=1)
+    gripper_publisher            = rospy.Publisher('/cr3_gripper_command',Bool,queue_size=1)
 
     # Create a SMACH state machine
     sm = smach.StateMachine(outcomes=['SUCCEEDED','ABORTED'])
