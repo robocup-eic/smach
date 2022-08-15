@@ -483,11 +483,11 @@ class Pick(smach.State):
             robot = moveit_commander.RobotCommander()
 
             pose_goal = Pose()
-            q = quaternion_from_euler(3.14,-1.57,0)
+            q = quaternion_from_euler(2.356,-1.57,0)
             pose_goal.orientation = Quaternion(*q)
 
             pose_goal.position.x = pose.position.x
-            pose_goal.position.y = pose.position.y
+            pose_goal.position.y = pose.position.y-0.05
             pose_goal.position.z = pose.position.z
 
             grasp_pose      = Pose()
@@ -517,9 +517,9 @@ class Pick(smach.State):
             pregrasp_pose.orientation.z = pose_goal.orientation.z
             pregrasp_pose.orientation.w = pose_goal.orientation.w
 
-            lift_pose.position.x    = pose_goal.position.x - 0.1
+            lift_pose.position.x    = pose_goal.position.x - 0.15
             lift_pose.position.y    = pose_goal.position.y
-            lift_pose.position.z    = pose_goal.position.z + 0.1
+            lift_pose.position.z    = pose_goal.position.z + 0.15
             lift_pose.orientation.x = pose_goal.orientation.x
             lift_pose.orientation.y = pose_goal.orientation.y
             lift_pose.orientation.z = pose_goal.orientation.z
