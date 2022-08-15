@@ -494,13 +494,40 @@ class Pick(smach.State):
             pregrasp_pose   = Pose()
             lift_pose       = Pose()
 
-            grasp_pose                  = pose_goal
-            pregrasp_pose               = pose_goal
-            pregrasp_pose.position.x    = pose_goal.position.x - 0.2
-            lift_pose                   = pose_goal
-            lift_pose.position.z        = pose_goal.position.z + 0.1
-            lift_pose.position.x        = pose_goal.position.x - 0.1
+            # grasp_pose                  = pose_goal
+            # pregrasp_pose               = pose_goal
+            # pregrasp_pose.position.x    -=  0.2
+            # lift_pose                   = pose_goal
+            # lift_pose.position.z        += 0.1
+            # lift_pose.position.x        -= 0.1
 
+            grasp_pose .position.x    = pose_goal.position.x
+            grasp_pose .position.y    = pose_goal.position.y
+            grasp_pose .position.z    = pose_goal.position.z
+            grasp_pose .orientation.x = pose_goal.orientation.x
+            grasp_pose .orientation.y = pose_goal.orientation.y
+            grasp_pose .orientation.z = pose_goal.orientation.z
+            grasp_pose .orientation.w = pose_goal.orientation.w
+
+            pregrasp_pose.position.x    = pose_goal.position.x - 0.2
+            pregrasp_pose.position.y    = pose_goal.position.y
+            pregrasp_pose.position.z    = pose_goal.position.z
+            pregrasp_pose.orientation.x = pose_goal.orientation.x
+            pregrasp_pose.orientation.y = pose_goal.orientation.y
+            pregrasp_pose.orientation.z = pose_goal.orientation.z
+            pregrasp_pose.orientation.w = pose_goal.orientation.w
+
+            lift_pose.position.x    = pose_goal.position.x - 0.1
+            lift_pose.position.y    = pose_goal.position.y
+            lift_pose.position.z    = pose_goal.position.z + 0.1
+            lift_pose.orientation.x = pose_goal.orientation.x
+            lift_pose.orientation.y = pose_goal.orientation.y
+            lift_pose.orientation.z = pose_goal.orientation.z
+            lift_pose.orientation.w = pose_goal.orientation.w
+
+            print(grasp_pose)
+            print(pregrasp_pose)
+            print(lift_pose)
             
             go_to_pose_goal(pregrasp_pose, move_group, robot)
             rospy.sleep(3)
@@ -546,8 +573,8 @@ if __name__ == "__main__":
     rospy.init_node('smach_example_state_machine')
 
     ##############################################
-    # OBJECT_NAME = "Waterbottle"
-    OBJECT_NAME = "bubble_tea"
+    OBJECT_NAME = "waterbottle"
+    # OBJECT_NAME = "bubble_tea"
     ############################################
     
     #Environment Descriptor for going to person position

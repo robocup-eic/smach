@@ -121,7 +121,7 @@ if __name__ == "__main__":
         c3.position.x = -0.45
         c3.position.y = 0.00
         
-        collision_object_pos = [c1, c2, c3]
+        collision_object_pos = [c1]
 
         ########################################
         #
