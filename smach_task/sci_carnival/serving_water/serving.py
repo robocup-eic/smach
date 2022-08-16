@@ -38,10 +38,12 @@ import threading
 #Environment descriptor
 from util.environment_descriptor import EnvironmentDescriptor
 
+import moveit_planning_scene_interface
+
 import numpy as np
 
 # # output
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped
 
 # transform to from cameralink to base link
 import tf2_ros
@@ -69,6 +71,36 @@ def lift_command(cmd) :
 
     rospy.Subscriber("done", Bool, lift_cb)
 
+def add_table(table_name, scene):
+    global ed
+    cxl = []
+    cyl = []
+
+    table_pose = PoseStamped()
+    table_pose.header.frame_id = "map"
+    ed_point = ed.get_center_point(table_name)
+    table_pose.pose.position.x = ed_point.x
+    table_pose.pose.position.y = ed_point.y
+    table_pose.pose.position.z = ed_point.z
+
+    height = ed.get_height()
+    corner_list = ed.get_corner_list()
+    for corner in corner_list:
+        cxl.append(corner.x)
+        cyl.append(corner.y)
+    
+    length_x = max(cxl) - min(cxl)
+    length_y = max(cyl) - min(cyl)
+
+
+
+    table_pose.pose.orientation.w = 1.0
+    scene.add_box(table_name, table_pose, size=(length_x, length_y, height))
+    rospy.sleep(3)
+    return True
+
+
+    
 def set_home_walkie(move_group = moveit_commander.MoveGroupCommander("arm")):
             joint_goal = move_group.get_current_joint_values()
             print(joint_goal)
@@ -480,7 +512,10 @@ class Pick(smach.State):
         def pick(pose = Pose()):
             group_name = "arm"
             move_group = moveit_commander.MoveGroupCommander(group_name)
+            scene = moveit_commander.PlanningSceneInterface()
             robot = moveit_commander.RobotCommander()
+
+            add_table("dinner_table",scene)
 
             pose_goal = Pose()
             # q = quaternion_from_euler(3.14,-1.57,0)
@@ -492,10 +527,6 @@ class Pick(smach.State):
             pose_goal.orientation.y = 0.24437
             pose_goal.orientation.z = -0.6384
             pose_goal.orientation.w = 0.29675
-
-            # pose_goal.position.x = pose.position.x
-            # pose_goal.position.y = pose.position.y-0.05
-            # pose_goal.position.z = pose.position.z
 
             grasp_pose      = Pose()
             pregrasp_pose   = Pose()
