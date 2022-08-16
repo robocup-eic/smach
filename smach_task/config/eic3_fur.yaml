@@ -1,0 +1,32 @@
+-
+  name: table #or table/bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 2.45509505272
+    y: 0.771411418915
+    z: 0.0
+  corner2:
+    x: 1.34948766232
+    y: 1.5805362463
+    z: 0.0
+  corner3:
+    x: 0.817218899727
+    y: 0.509726047516
+    z: 0.0
+  corner4:
+    x: 1.87434339523
+    y: 0.0387539863586
+    z: 0.0
+  robot_pose:
+    position:
+      x: 1.00784695148
+      y: -0.261002600193
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.501225259396
+      w: 0.865316843326
+  height: 0.80
+-

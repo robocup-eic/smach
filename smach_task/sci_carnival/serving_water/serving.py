@@ -55,6 +55,26 @@ from std_msgs.msg import Bool, Int16
 import moveit_commander
 
 # useful function
+class go_to_Navigation():
+    def __init__(self):
+        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    
+    def move(self,location):
+        global ed
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+        goal.target_pose.pose = ed.get_robot_pose(location)
+        self.move_base_client.send_goal(goal)
+        self.move_base_client.wait_for_result()
+        while True:
+            result = self.move_base_client.get_state()
+            rospy.loginfo("status {}".format(result))
+            if result == GoalStatus.SUCCEEDED :
+                return True
+            else:
+                return False
+
 def lift_cb(data) :
     while (not data.data) : pass
 
@@ -239,7 +259,7 @@ class GetObjectName(smach.State):
 
 class GetObjectPose(smach.State):
     def __init__(self):
-        global object_detection
+        global object_detection, navigation
         rospy.loginfo('Initiating state GetObjectPose')
         smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=['objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
         # initiate variables
@@ -475,6 +495,13 @@ class GetObjectPose(smach.State):
         self.object_name = userdata.objectname_input
         rospy.loginfo(self.object_name)
 
+        # navigation
+        while True:
+            result = navigation.move('table')
+            if result:
+                break
+        
+
         # realsense down
         self.pub_realsense_pitch_absolute_command.publish(-35)
         self.pub_realsense_yaw_absolute_command.publish(0)
@@ -653,10 +680,10 @@ if __name__ == "__main__":
     ############################################
     
     #Environment Descriptor for going to person position
-    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fur_data_onsite.yaml")
+    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/eic3_fur.yaml")
     
     #navigation manager
-    # navigation = go_to_Navigation()
+    navigation = go_to_Navigation()
 
 
     #Nlp and cv server
