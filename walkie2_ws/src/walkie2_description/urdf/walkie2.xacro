@@ -205,13 +205,17 @@
   <limit effort="1000" lower="-1.57" upper="1.57" velocity="0.2"/>
 </joint>
 
+<link name="imu_link">
+  <origin xyz="0 0 0" rpy="0 0 180"/>
+</link>
+
 <joint name="imu_joint" type="fixed">
     <parent link="base_link"/>
     <child link="imu_link"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="0 0 0" rpy="0 0 180"/>
 </joint>
 
-<link name="imu_link"/>
+
 
 <xacro:cr3_robot parent_link="base_cr3"/>
 

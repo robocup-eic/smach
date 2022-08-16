@@ -6,7 +6,10 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
-#include <ros/ros.h>
+// #include <ros/time.h>
+ #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
+#include <visualization_msgs/Marker.h>
 
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
@@ -20,7 +23,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <vector>
 
-// #include <stdio.h>
+#include <stdio.h>
 // #include <algorithm>
 // #include <unistd.h>
 // #include <cmath>
@@ -30,6 +33,7 @@ static const std::string PLANNING_GROUP_ARM = "arm";
 bool success = false;
 
 ros::Publisher gripper_command_publisher;
+ros::Publisher marker_pub;
 //===============================================================
 
 float to_rad(float deg)
@@ -37,32 +41,11 @@ float to_rad(float deg)
   return deg * M_PI / 180.0;
 }
 
-double distance(geometry_msgs::Pose target_pose1, geometry_msgs::Pose current_collision_object_pos)
-{
-  double x = abs(target_pose1.position.x - current_collision_object_pos.position.x);
-  double y = abs(target_pose1.position.y - current_collision_object_pos.position.y);
-  return sqrt(pow(x, 2) + pow(y, 2));
-}
-
-double smallest_distance(geometry_msgs::Pose target_pose1, std::vector<geometry_msgs::Pose> current_collision_object_pos)
-{
-  int number_of_collision_object = current_collision_object_pos.size();
-  double all_distance[number_of_collision_object];
-  ROS_INFO_STREAM(number_of_collision_object);
-
-  for (int i=0;i<number_of_collision_object;i++)
-  { all_distance[i] = distance(target_pose1, current_collision_object_pos[i]); }
-
-  std::sort(all_distance, all_distance + number_of_collision_object);
-  ROS_INFO_STREAM(all_distance[0]);
-  return all_distance[0];
-}
-
-void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> current_collision_object_pos, geometry_msgs::Pose &MID_TABLE) {
+void move(geometry_msgs::Pose &POSITION) {
   moveit::planning_interface::MoveGroupInterface move_group_interface(PLANNING_GROUP_ARM);
   const moveit::core::JointModelGroup *joint_model_group = move_group_interface.getCurrentState()->getJointModelGroup(PLANNING_GROUP_ARM);
 
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_cr3_joint");
+  moveit_visual_tools::MoveItVisualTools visual_tools("base_footprint");
   visual_tools.deleteAllMarkers();
   geometry_msgs::Pose target_pose1;
   //Step1 Execute along X-Y coordinate
@@ -76,31 +59,13 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
   target_pose1.orientation.y = quat.getY();
   target_pose1.orientation.z = quat.getZ();
   target_pose1.position.x = POSITION.position.x;
-  target_pose1.position.y = POSITION.position.y;
+  target_pose1.position.y = POSITION.position.y + 0.05;
   target_pose1.position.z = POSITION.position.z;
 
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-
-  geometry_msgs::Pose base_link_pose;
-
-  float max_table_y = target_pose1.position.y;
-  while(!success)
-  {
-    target_pose1.position.y += 0.05;
-    double distance_between_obj = smallest_distance(target_pose1, current_collision_object_pos);
-    if((0.1 < distance_between_obj) && (distance(base_link_pose, target_pose1) < 0.63))
-    {
-      move_group_interface.setPoseTarget(target_pose1);
-      success= (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-    }
-
-    if(target_pose1.position.y > max_table_y)
-    {
-      target_pose1 = MID_TABLE;
-      move_group_interface.setPoseTarget(target_pose1);
-      success= (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-    }
-  }
+  
+  move_group_interface.setPoseTarget(target_pose1);
+  success = (move_group_interface.plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
 
   visual_tools.publishAxisLabeled(target_pose1, "pose 1");
   visual_tools.publishTrajectoryLine(my_plan.trajectory_, joint_model_group);
@@ -116,7 +81,7 @@ void move(geometry_msgs::Pose &POSITION, std::vector<geometry_msgs::Pose> curren
 void move_cartesian(geometry_msgs::Pose &current_pose, float x, float y, float z) {
   namespace rvt = rviz_visual_tools;
   moveit::planning_interface::MoveGroupInterface move_group_interface(PLANNING_GROUP_ARM);
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  moveit_visual_tools::MoveItVisualTools visual_tools("base_footprint");
   visual_tools.deleteAllMarkers();
 
   std::vector<geometry_msgs::Pose> waypoints;
@@ -158,7 +123,7 @@ void set_home_walkie2(void)
   std::vector<double> joint_group_positions;
   current_state->copyJointGroupPositions(joint_model_group, joint_group_positions);
 
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  moveit_visual_tools::MoveItVisualTools visual_tools("base_footprint");
   visual_tools.deleteAllMarkers();
 
   // Now, let's modify one of the joints, plan to the new joint space goal and visualize the plan.
@@ -166,8 +131,8 @@ void set_home_walkie2(void)
   joint_group_positions[1] = 0.0;  // radians
   joint_group_positions[2] = 2.267;  // radians
   joint_group_positions[3] = 0.875;  // radians
-  joint_group_positions[4] = 1.507;  // radians
-  // joint_group_positions[4] = 3.14;  // radians
+  joint_group_positions[4] = 3.142;  // radians
+  // joint_group_positions[4] = 0.0;  // radians
   joint_group_positions[5] = 2.355;  // radians
 
   move_group_interface.setJointValueTarget(joint_group_positions);
@@ -196,7 +161,7 @@ void addCollisionObject( float dimension_radius, float dimension_high,
 
   // collision_table
   collision_objects[0].id = object;
-  collision_objects[0].header.frame_id = "base_cr3_joint";
+  collision_objects[0].header.frame_id = "cr3_base_link";
 
   // collsion_table dimension
   collision_objects[0].primitives.resize(1);
@@ -227,7 +192,7 @@ void addCollisionTable( float dimension_x, float dimension_y, float dimension_z,
 
   // collision_table
   collision_objects[0].id = object;
-  collision_objects[0].header.frame_id = "base_cr3_joint";
+  collision_objects[0].header.frame_id = "cr3_base_link";
 
   // collsion_table dimension
   collision_objects[0].primitives.resize(1);
@@ -244,20 +209,6 @@ void addCollisionTable( float dimension_x, float dimension_y, float dimension_z,
   collision_objects[0].primitive_poses[0].position.z = position_z;
   
   collision_objects[0].operation = collision_objects[0].ADD;
-
-  planning_scene_interface.applyCollisionObjects(collision_objects);
-}
-
-void removeCollisionObject(std::string object)
-{
-  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-  // create vector to hold 1 object
-  std::vector<moveit_msgs::CollisionObject> collision_objects;
-  collision_objects.resize(1);
-
-  // collision_table
-  collision_objects[0].id = object;
-  collision_objects[0].operation = collision_objects[0].REMOVE;
 
   planning_scene_interface.applyCollisionObjects(collision_objects);
 }
@@ -286,7 +237,6 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   //                     v
   //                     x
     // x axis
-  // move cartesian along z axis
     // condition --> corner.x are in -x axis
   double creat_collision_table11_x, creat_collision_table12_x, creat_collision_table21_x, creat_collision_table22_x;
   double place_within11_x, place_within12_x, place_within21_x, place_within22_x;
@@ -344,10 +294,10 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   for (int i=0;i<req.collision_object_pos.size();i++)
   {
     addCollisionObject(0.05, 0.2,
-                      req.collision_object_pos[i].position.x,                //position x of collision object
-                      req.collision_object_pos[i].position.y,                //position y of collision object 
-                      dimension_z + 0.1,                                     //position z of collision object
-                      "collision object" + boost::to_string(i));             //collision object name
+                       req.collision_object_pos[i].position.x,                //position x of collision object
+                       req.collision_object_pos[i].position.y,                //position y of collision object 
+                       dimension_z + 0.1,                                     //position z of collision object
+                       "collision object" + boost::to_string(i));             //collision object name
   }
 
   // find pose to preplace
@@ -355,7 +305,7 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   tf2::Quaternion myQuaternion;
 
   pose.position.x = place_within21_x - 0.1;
-  pose.position.y = place_within21_y;
+  pose.position.y = 0.0;
   pose.position.z = high + 0.15;
 
   myQuaternion.setRPY( -1 * M_PI / 2, -1 * M_PI / 4, M_PI / 2 );
@@ -364,60 +314,89 @@ bool place_server(cr3_moveit_control::cr3_place::Request &req,
   pose.orientation.z = myQuaternion.getZ();
   pose.orientation.w = myQuaternion.getW();
 
-  geometry_msgs::Pose mid_table;
+  // transform base_footprint to base_footprint
+  ROS_INFO_STREAM(pose);
+  tf2_ros::Buffer tf_buffer;
+  tf2_ros::TransformListener tf2_listener(tf_buffer);
+  geometry_msgs::TransformStamped base_footprint_to_base_footprint;
 
-  mid_table.position.x = place_within21_x - 0.1;
-  mid_table.position.y = (place_within21_y + place_within22_y) / 2.0;
-  mid_table.position.z = high + 0.25;
-  mid_table.orientation.x = myQuaternion.getX();
-  mid_table.orientation.y = myQuaternion.getY();
-  mid_table.orientation.z = myQuaternion.getZ();
-  mid_table.orientation.w = myQuaternion.getW();
+  base_footprint_to_base_footprint = tf_buffer.lookupTransform("base_footprint", "cr3_base_link", ros::Time(0), ros::Duration(1.0) );
+
+  tf2::doTransform(pose, pose, base_footprint_to_base_footprint); // robot_pose is the PoseStamped I want to transform
+  ROS_INFO_STREAM(pose);
+
+  // pub marker
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = "/base_footprint";
+  marker.header.stamp = ros::Time::now();
+  marker.type = visualization_msgs::Marker::ARROW;;
+  marker.action = visualization_msgs::Marker::ADD;
   
+  // marker.pose.position.x = pose.position.x;
+  // marker.pose.position.y = pose.position.y;
+  // marker.pose.position.z = pose.position.z;
+  // marker.pose.orientation.x = pose.orientation.x;
+  // marker.pose.orientation.y = pose.orientation.y;
+  // marker.pose.orientation.z = pose.orientation.z;
+  // marker.pose.orientation.w = pose.orientation.w;
+  marker.pose = pose;
+  // Set the scale of the marker -- 1x1x1 here means 1m on a side
+  // marker.scale.x = 0.1;
+  // marker.scale.y = 0.1;
+  // marker.scale.z = 0.1;
+  marker.scale.x = 1.0;
+  marker.scale.y = 1.0;
+  marker.scale.z = 1.0;
+
+  marker.lifetime = ros::Duration();
+  // Publish the marker
+  marker_pub.publish(marker);
+
+  ROS_INFO_STREAM("move to preplace pose");
   // move to preplace pose
-  move(pose, req.collision_object_pos, mid_table);
+  move(pose);
   if (!success){
     return false;
   }
-  
-  if(pose != mid_table)
-  {
-    // move cartesian along z axis
-    move_cartesian(pose, 0, 0, -0.1);
-    if (!success){
-      return false;
-    }
 
-    // open gripper
-    std_msgs::Bool gripper_command_msg;
-    gripper_command_msg.data = false;
-    gripper_command_publisher.publish(gripper_command_msg);
+  // ROS_INFO_STREAM("move cartesian along z axis");
+  // // scanf("%d", &a);
+  // // move cartesian along z axis
+  // move_cartesian(pose, 0, 0, -0.1);
+  // if (!success){
+  //   return false;
+  // }
 
-    // move cartesian out of object
-    move_cartesian(pose, 0.1, 0, 0.1);
-    if (!success){
-      return false;
-  }
-  else
-  {
-    // open gripper
-    std_msgs::Bool gripper_command_msg;
-    gripper_command_msg.data = false;
-    gripper_command_publisher.publish(gripper_command_msg);
-  }
+  // ROS_INFO_STREAM("open gripper");
+  // // scanf("%d", &a);szxdcf vgbhn j
+  // // open gripper
+  // std_msgs::Bool gripper_command_msg;
+  // gripper_command_msg.data = false;
+  // gripper_command_publisher.publish(gripper_command_msg);
 
-    // close gripper
-  gripper_command_msg.data = true;
-  gripper_command_publisher.publish(gripper_command_msg);
-  
-  // set home walkie2
-  set_home_walkie2();
+  // ROS_INFO_STREAM("move cartesian out of object");
+  // // scanf("%d", &a);
+  // // move cartesian out of object
+  // move_cartesian(pose, 0.1, 0, 0.1);
+  // if (!success){
+  //   return false;
+  // }
+
+  // ROS_INFO_STREAM("close gripper");
+  // // scanf("%d", &a);
+  // // close gripper
+  // gripper_command_msg.data = true;
+  // gripper_command_publisher.publish(gripper_command_msg);
+
+  // ROS_INFO_STREAM("set home walkie2");
+  // // scanf("%d", &a);
+  // // set home walkie2
+  // set_home_walkie2();
 
   // check whether it is true then return "success value"
   res.success_place = success;
   ROS_INFO(res.success_place ? "true" : "false");
   return true;
-  }
 }
 
 int main(int argc, char** argv){
@@ -427,6 +406,7 @@ int main(int argc, char** argv){
   spinner.start();
   ros::NodeHandle nh;
   gripper_command_publisher = nh.advertise<std_msgs::Bool>("/cr3_gripper_command", 10);
+  marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1);
   ros::ServiceServer service = nh.advertiseService("cr3_place", place_server);
   ros::waitForShutdown();
   return 0;

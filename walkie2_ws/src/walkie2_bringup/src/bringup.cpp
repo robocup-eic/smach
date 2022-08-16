@@ -120,9 +120,9 @@ public:
     raw_imu.linear_acceleration.y = linear_acc[1];
     raw_imu.linear_acceleration.z = linear_acc[2];
 
-    raw_imu.angular_velocity.x = angular_vel[0];
-    raw_imu.angular_velocity.y = angular_vel[1];
-    raw_imu.angular_velocity.z = angular_vel[2];
+    raw_imu.angular_velocity.x = -angular_vel[0];
+    raw_imu.angular_velocity.y = -angular_vel[1];
+    raw_imu.angular_velocity.z = -angular_vel[2];
     
     imu_pub.publish(raw_imu);
   }
