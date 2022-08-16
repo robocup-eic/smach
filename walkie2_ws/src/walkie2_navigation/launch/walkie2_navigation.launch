@@ -1,6 +1,6 @@
 <launch>
     <!-- Arguments -->
-    <arg name="map_file" default="$(find walkie2_navigation)/maps/athome_arena.yaml"/>
+    <arg name="map_file" default="$(find walkie2_navigation)/maps/eic3.yaml"/>
 
 
     <!-- Launch Map Server -->
@@ -8,6 +8,7 @@
 
     <!-- Launch AMCL -->
     <include file="$(find walkie2_navigation)/launch/amcl.launch"/>
+
 
     <!-- Launch move_base -->
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
