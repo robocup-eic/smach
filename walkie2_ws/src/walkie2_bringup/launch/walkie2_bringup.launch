@@ -6,7 +6,7 @@
   <param name="use_gui" value="$(arg gui)"/>
   <arg default="true" name="use_imu"/>
   <!-- <arg default="false" name="rviz"/> -->
-  <arg default="true" name="rviz"/>
+  <arg default="false" name="rviz"/>
   <arg default="/dev/ttyACM0" name="port"/>
   <arg default="false" name="carry"/>
   <!-- <arg default="false" name="final"/> -->

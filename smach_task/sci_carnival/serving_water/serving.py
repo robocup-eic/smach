@@ -38,7 +38,6 @@ import threading
 #Environment descriptor
 from util.environment_descriptor import EnvironmentDescriptor
 
-import moveit_planning_scene_interface
 
 import numpy as np
 
@@ -59,6 +58,43 @@ import moveit_commander
 def lift_cb(data) :
     while (not data.data) : pass
 
+def wait_for_state_update(box_name,scene,box_is_known=False, box_is_attached=False, timeout=4):
+    # Copy class variables to local variables to make the web tutorials more clear.
+    # In practice, you should use the class variables directly unless you have a good
+    # reason not to.
+    ## BEGIN_SUB_TUTORIAL wait_for_scene_update
+    ##
+    ## Ensuring Collision Updates Are Receieved
+    ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ## If the Python node dies before publishing a collision object update message, the message
+    ## could get lost and the box will not appear. To ensure that the updates are
+    ## made, we wait until we see the changes reflected in the
+    ## ``get_known_object_names()`` and ``get_known_object_names()`` lists.
+    ## For the purpose of this tutorial, we call this function after adding,
+    ## removing, attaching or detaching an object in the planning scene. We then wait
+    ## until the updates have been made or ``timeout`` seconds have passed
+    start = rospy.get_time()
+    seconds = rospy.get_time()
+    while (seconds - start < timeout) and not rospy.is_shutdown():
+      # Test if the box is in attached objects
+      attached_objects = scene.get_attached_objects([box_name])
+      is_attached = len(attached_objects.keys()) > 0
+
+      # Test if the box is in the scene.
+      # Note that attaching the box will remove it from known_objects
+      is_known = box_name in scene.get_known_object_names()
+
+      # Test if we are in the expected state
+      if (box_is_attached == is_attached) and (box_is_known == is_known):
+        return True
+
+      # Sleep so that we give other threads time on the processor
+      rospy.sleep(0.1)
+      seconds = rospy.get_time()
+
+    # If we exited the while loop without returning then we timed out
+    return False
+
 def lift_command(cmd) :
     """
     lift command
@@ -72,22 +108,23 @@ def lift_command(cmd) :
     rospy.Subscriber("done", Bool, lift_cb)
 
 def add_table(table_name, scene):
+    print(table_name)
     global ed
     cxl = []
     cyl = []
 
+    height = ed.get_height(table_name)
+    cxl,cyl = ed.cornervar(table_name)
+
     table_pose = PoseStamped()
+    table_pose.header.stamp = rospy.Time.now()
     table_pose.header.frame_id = "map"
     ed_point = ed.get_center_point(table_name)
+    print(ed_point)
     table_pose.pose.position.x = ed_point.x
     table_pose.pose.position.y = ed_point.y
-    table_pose.pose.position.z = ed_point.z
+    table_pose.pose.position.z = ed_point.z + height/2
 
-    height = ed.get_height()
-    corner_list = ed.get_corner_list()
-    for corner in corner_list:
-        cxl.append(corner.x)
-        cyl.append(corner.y)
     
     length_x = max(cxl) - min(cxl)
     length_y = max(cyl) - min(cyl)
@@ -95,9 +132,9 @@ def add_table(table_name, scene):
 
 
     table_pose.pose.orientation.w = 1.0
+    print(table_pose)
     scene.add_box(table_name, table_pose, size=(length_x, length_y, height))
-    rospy.sleep(3)
-    return True
+    return wait_for_state_update(table_name,scene,True)
 
 
     
@@ -512,10 +549,10 @@ class Pick(smach.State):
         def pick(pose = Pose()):
             group_name = "arm"
             move_group = moveit_commander.MoveGroupCommander(group_name)
-            scene = moveit_commander.PlanningSceneInterface()
+            
             robot = moveit_commander.RobotCommander()
 
-            add_table("dinner_table",scene)
+            
 
             pose_goal = Pose()
             # q = quaternion_from_euler(3.14,-1.57,0)
@@ -632,6 +669,10 @@ if __name__ == "__main__":
     stt = SpeechToText("nlp")
     t = threading.Thread(target = stt.run ,name="nlp")
     t.start()
+
+    scene = moveit_commander.PlanningSceneInterface()
+    rospy.sleep(2)
+    add_table("dinner_table",scene)
 
     # publisher and subscriber
     lift_pub                     = rospy.Publisher('lift_command', Bool, queue_size=1)

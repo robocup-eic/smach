@@ -126,6 +126,17 @@ class EnvironmentDescriptor:
                 else:
                     return True
 
+    def cornervar(self,name):
+        corner_list = ["corner1","corner2","corner3","corner4"]
+        xl = []
+        yl = []
+        for data in self.data_yaml:
+            if data["name"] == name:
+                if data["shape"]== "rectangle":
+                    for corner in corner_list:
+                        xl.append(data[corner]["x"])
+                        yl.append(data[corner]["y"])
+        return xl,yl
 
     def visual_robotpoint(self):
         point_list = []
