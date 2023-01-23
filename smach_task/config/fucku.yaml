@@ -1,0 +1,116 @@
+-
+  name: back #or table/bed
+  frame_id: map
+  robot_pose:
+    position:
+      x: -0.77199
+      y: 0.3650
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.01309
+      w: 0.9999
+  height: 0.80
+-
+  name: table #or table/bed
+  frame_id: map
+  shape: rectangle
+  corner1:
+    x: 2.45509505272
+    y: 0.771411418915
+    z: 0.0
+  corner2:
+    x: 1.34948766232
+    y: 1.5805362463
+    z: 0.0
+  corner3:
+    x: 0.817218899727
+    y: 0.509726047516
+    z: 0.0
+  corner4:
+    x: 1.87434339523
+    y: 0.0387539863586
+    z: 0.0
+  robot_pose:
+    position:
+      x: 0.779897451401
+      y: -0.479636400938
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.379704263178
+      w: 0.925107924798
+  height: 0.80
+-
+  name: standby1 #or table/bed
+  frame_id: map
+  robot_pose:
+    position:
+      x: 1.151
+      y: 0.42
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.124
+      w: 0.992
+  height: 0.80
+-
+  name: standby2 #or table/bed
+  frame_id: map
+  robot_pose:
+    position:
+      x: 2.969
+      y: -1.537
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.071
+      w: 0.997
+  height: 0.80
+-
+  name: pickwater #or table/bed
+  frame_id: map
+  robot_pose:
+    position:
+      x: 4.288
+      y: 0.700
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.999
+      w: -0.040
+  height: 0.80
+-
+  name: comtable #or table/bed
+  frame_id: map
+  robot_pose:
+    position:
+      x: 5.148
+      y: 0.634
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.566
+      w: 0.824
+  height: 0.80
+-
+  name: shelf #or table/bed
+  frame_id: map
+  robot_pose:
+    position:
+      x: 5.529
+      y: 0.313
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.4191
+      w: 0.9079
+  height: 0.80
+-

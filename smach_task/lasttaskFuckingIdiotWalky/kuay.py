@@ -49,7 +49,7 @@ import tf2_ros
 import tf2_geometry_msgs
 
 # lift
-from std_msgs.msg import Bool, Int16
+from std_msgs.msg import Bool, Int16, Float32
 
 # cr3 command
 import moveit_commander
@@ -296,8 +296,10 @@ class GetObjectName(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectName')
+        global GROUP
         # sending object name to GetobjectName state (change string right here)
         userdata.objectname_output = OBJECT_NAME
+        # GROUP += 1
         # speak("hi my name is walkie")
         # stt.listen()
         # /////delete/////////////////
@@ -407,7 +409,7 @@ class GetObjectPose(smach.State):
                     self.object_pose_list.append((x_coord, y_coord, z_coord, center_pixel[2]))
 
                     self.tf_stamp = TransformStamped()
-                    self.tf_stamp.header.frame_id = "/camera_link"
+                    self.tf_stamp.header.frame_id = "/realsense_pitch"
                     self.tf_stamp.header.stamp = rospy.Time.now()
                     self.tf_stamp.child_frame_id = "/object_frame_{}".format(center_pixel[2]) # object_id
                     self.tf_stamp.transform.translation.x = z_coord
@@ -581,6 +583,9 @@ class GetObjectPose(smach.State):
 
         # lift down
         lift_command(False)
+        for i in range(10) :
+            lift_state.publish(0.0)
+            realsense_pitch_angle.publish(-35)
 
         # run_once function
         run_once()
@@ -595,9 +600,16 @@ class GetObjectPose(smach.State):
         #                 break
         #             else:
         #                 stt.clear()
-            command = raw_input("Press Enter :")
-            # if command == 'q':
+            command = raw_input("Press Enter 123 :")
+            # if command == '1':
+            #     GROUP = 1
+            # elif command == '2':
+            #     GROUP = 2
+            # elif command == '3':
+            #     GROUP = 3
+            # else:
             #     break
+            
             rospy.loginfo("------ Running 3D detection ------")
             reset()
             if detect(): 
@@ -744,9 +756,39 @@ class Pick(smach.State):
             return True
 
             
-
+        global GROUP
+        rospy.logwarn(GROUP)
         # lift up
-        lift_command(True)
+        command = raw_input("Press Enter 123 :")
+        if command == '1':
+            GROUP = 1
+        elif command == '2':
+            GROUP = 2
+        elif command == '3':
+            GROUP = 3
+        else:
+            pass
+
+        if GROUP == 1:
+            lift_command(True)
+            for i in range(10) :
+                lift_state.publish(0.24)
+                realsense_pitch_angle.publish(-35)
+        elif GROUP == 2:
+            lift_command(True)
+            for i in range(10) :
+                lift_state.publish(0.0)
+                realsense_pitch_angle.publish(-35)
+        elif GROUP == 3:
+            for i in range(10) :
+                lift_state.publish(0.24)
+                realsense_pitch_angle.publish(0)
+        else:
+            lift_command(True)
+            for i in range(10) :
+                lift_state.publish(0.24)
+                realsense_pitch_angle.publish(-35)
+        
         rospy.sleep(5)
 
         transformed_pose = transform_pose(
@@ -804,12 +846,17 @@ if __name__ == "__main__":
 
     # publisher and subscriber
     lift_pub                     = rospy.Publisher('lift_command', Bool, queue_size=1)
+    lift_state                   = rospy.Publisher('lift_state', Float32, queue_size=1)
+    realsense_pitch_angle            = rospy.Publisher('realsense_pitch_angle', Int16, queue_size=1)
     a                            = rospy.Publisher("posem",Marker,queue_size=1)
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',DisplayTrajectory, queue_size=1)
     gripper_publisher            = rospy.Publisher('/cr3_gripper_command',Bool,queue_size=1)
+    # fucklift                     = rospy.Publisher('/lift_')
 
+    
+    GROUP = 0
     # Create a SMACH state machine
-    sm = smach.StateMachine(outcomes=['ABORTED','a'])
+    sm = smach.StateMachine(outcomes=['ABORTED'])
     sm.userdata.string_name = ""
     sm.userdata.object_pose = Pose()
     # Open the container
@@ -822,10 +869,11 @@ if __name__ == "__main__":
                                transitions={'continue_Pick': 'Pick',
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectname_input': 'string_name',
+
                                           'objectpose_output': 'object_pose',
                                           'objectpose_output': 'object_pose'})
         smach.StateMachine.add('Pick', Pick(),
-                               transitions={'continue_navigate_volunteer': 'a',
+                               transitions={'continue_navigate_volunteer': 'GetObjectName',
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectpose_input': 'object_pose'})
         # ----------------------------------------------------------------------------------

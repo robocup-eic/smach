@@ -1,6 +1,6 @@
 obstacle_range: 5.0
 raytrace_range: 5.0
 footprint: [[-0.36, -0.29],[-0.36, 0.29],[0.24, 0.29],[0.24, -0.34]]
-transform_tolerance: 0.5
+transform_tolerance: 0.53
 # laser_scan_sensor_2: {sensor_frame: sensor_d435_depth_frame, data_type:3 LaserScan, topic: realsense_scan, marking: true, clearing: true}
 # point_cloud_sensor: {sensor_frame: sensor_d435_depth_frame, data_type: PointCloud2, topic: /camera/depth/points, marking: true, clearing: true}

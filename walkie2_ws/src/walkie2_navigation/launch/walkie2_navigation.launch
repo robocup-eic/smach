@@ -1,6 +1,6 @@
 <launch>
     <!-- Arguments -->
-    <arg name="map_file" default="$(find walkie2_navigation)/maps/eic3.yaml"/>
+    <arg name="map_file" default="$(find walkie2_navigation)/maps/eic2023_edited2.yaml"/>
 
 
     <!-- Launch Map Server -->
@@ -9,7 +9,12 @@
     <!-- Launch AMCL -->
     <include file="$(find walkie2_navigation)/launch/amcl.launch"/>
 
+    <!-- rostopic pub /lift_state std_msgs/Float32 "data: 0.24" -->
+    <node pkg="rostopic" type="rostopic" name="lift_states" args="pub -r 10 /lift_state std_msgs/Float32 'data: 0.24'" />
 
+    <!-- rostopic pub /realsense_pitch_angle std_msgs/Int16 "data: -35" -->
+    <!-- <node pkg="rostopic" type="rostopic" name="realsense_pitch_angle" args="pub -r 10 /realsense_pitch_angle std_msgs/Int16 'data: -35'" /> -->
+0
     <!-- Launch move_base -->
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
         <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>

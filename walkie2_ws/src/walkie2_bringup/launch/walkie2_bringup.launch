@@ -10,7 +10,7 @@
   <arg default="/dev/ttyACM0" name="port"/>
   <arg default="false" name="carry"/>
   <!-- <arg default="false" name="final"/> -->
-  <arg default="true" name="final"/>
+  <arg default="false" name="final"/>
   
 
   <!-- Set up TF for the robot -->
@@ -77,11 +77,11 @@
     </node>
 
     <!-- Run serial_node for IMU data -->
-    <node name="imu_node" pkg="rosserial_python" type="serial_node.py">
+    <!-- <node name="imu_node" pkg="rosserial_python" type="serial_node.py">
       <param name="port" value="$(arg port)"/>
-    </node>
+    </node> -->
 
-    <!-- Filter and fuse raw imu data -->
+    <!-- Filter and fuse raw imu data  -->
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen" respawn="false" >
           <param name="fixed_frame" value="base_link" />
           <param name="use_mag" value="false" />

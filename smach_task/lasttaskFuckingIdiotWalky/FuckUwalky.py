@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 
-from codecs import raw_unicode_escape_decode
 import rospy
 import smach
-import smach_ros
-from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
-from tf.transformations import quaternion_from_euler
 import math
+import smach_ros
+from geometry_msgs.msg import Pose, PoseStamped, Twist
 
 # Move base navigation modules
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 import time
-
 
 from visualization_msgs.msg import Marker
 from moveit_msgs.msg import DisplayTrajectory
@@ -37,7 +34,8 @@ import threading
 
 #Environment descriptor
 from util.environment_descriptor import EnvironmentDescriptor
-
+from util.custom_socket import CustomSocket
+from util.realsense import Realsense
 
 import numpy as np
 
@@ -54,7 +52,8 @@ from std_msgs.msg import Bool, Int16
 # cr3 command
 import moveit_commander
 
-# useful function
+import copy
+
 class go_to_Navigation():
     def __init__(self):
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
@@ -64,7 +63,9 @@ class go_to_Navigation():
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
+        print(location)
         goal.target_pose.pose = ed.get_robot_pose(location)
+        print(ed.get_robot_pose(location))
         print(goal.target_pose.pose)
         self.move_base_client.send_goal(goal)
         self.move_base_client.wait_for_result()
@@ -125,15 +126,12 @@ def lift_command(cmd) :
     
     time.sleep(1)
     lift_pub.publish(cmd)
-    rospy.sleep(0.5)
-    lift_pub.publish(cmd)
-
 
     rospy.Subscriber("done", Bool, lift_cb)
 
-def add_table(table_name, scene):
+def add_table(table_name, scene,ed):
     print(table_name)
-    global ed
+    
     cxl = []
     cyl = []
 
@@ -193,7 +191,7 @@ def serving(move_group = moveit_commander.MoveGroupCommander("arm")):
             joint_goal[2] = -0.542
             joint_goal[3] = -0.604
             joint_goal[4] = -0.2322
-            joint_goal[5] = -0.14
+            joint_goal[5] = 3.00
             
             
             # joint_goal[0] = 0.0
@@ -288,11 +286,456 @@ def catesian_go(goal_pose = Pose(),move_group = moveit_commander.MoveGroupComman
     # raw_input("using catesian path with fraction %f ,press enter:" % fraction)
     move_group.execute(plan, wait=True)
 
-# state
+#***********************************************************************************************
+
+class Start_signal(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating Start_signal state')
+        smach.State.__init__(self,outcomes=['A'])
+        self.FRAME_COUNT_LIMIT = 5
+        self.close_distance = 1 # meter
+        self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+
+
+    def execute(self,userdata):
+        rospy.loginfo('Executing Start_signal state')
+
+        global rs
+        self.moving_msg = Twist()
+        self.moving_msg.linear.x = 0.2
+
+        # Detect door opening
+        x_pixel, y_pixel = 1280/2, 720/2
+        frame_count = 0
+
+        # set realsense
+        # self.pub_realsense_pitch_absolute_command.publish(0)
+
+        while True:
+            rospy.sleep(0.5)
+            print('ddddd')
+            distance = rs.get_coordinate(x_pixel, y_pixel)[2]
+            rospy.loginfo(distance)
+            # filter lower distance
+            if distance < 0.4:
+                continue
+            # check if have available frame consecutively
+            if frame_count >= self.FRAME_COUNT_LIMIT:
+                speak("door open")
+                # move forward
+                #Moving through entrance door
+                start_time = time.time()
+                while time.time() - start_time < 5:
+                    rospy.loginfo("Moving Forward...")
+                    self.moving_pub.publish(self.moving_msg)
+                    rospy.sleep(0.1)
+                # navigation.move("standby1")
+
+                rospy.loginfo("Stop Moving Forward")
+                self.moving_msg.linear.x = 0
+                self.moving_pub.publish(self.moving_msg)
+                break
+
+            if distance > self.close_distance:
+                frame_count += 1
+            else:
+                frame_count = 0
+        
+        navigation.move("standby1")
+        rospy.loginfo("*****************READY****************")
+        
+        speak("Hello, I am walkie, the house service robot")
+        rospy.logwarn("Hello, I am walkie, the house service robot")
+        
+        return 'A'
+
+class Walkie_Rotate(smach.State) :
+    def __init__(self):
+        rospy.loginfo('Initiating Walkie_Rotate state')
+        smach.State.__init__(self,outcomes=['B'])
+        self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        self.bridge = CvBridge()
+    
+    def execute(self,userdata):
+        rospy.loginfo('Executing Walkie_Rotate state')
+        global image_pub, personDescription
+
+        def draw_bbox(frame, res):
+            for id in res.keys():
+                x, y, w, h, hand_raised = (res[id][k] for k in ("x", "y", "w", "h", "hand_raised"))
+                # max_x, min_x, max_y, min_y, hand_raised = res[id]
+                color = (0, 255, 0) if hand_raised else (0, 0, 255)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 3)
+
+        # find people raising hand
+        rotate_msg = Twist()
+        # rotate_msg.angular.z = 0.15
+        rotate_msg.angular.z = 0.0
+
+        # speak to start
+        speak("Now I am looking for operator who need help")
+        rospy.logwarn("Now I am looking for operator who need help")
+        rospy.logfatal("Walkie is scan people rasing their hand")
+
+        start_time = time.time()
+
+        is_found = 0
+        FRAME_THRES = 20
+        frame_ori = None
+        while is_found < FRAME_THRES:
+            self.rotate_pub.publish(rotate_msg)
+            frame = rs.get_image()
+            frame_ori = copy.copy(frame)
+            detections = HandRaising.req(frame)
+            draw_bbox(frame, detections)
+            for key in detections.keys():
+                rospy.loginfo("found {} person, raised {}".format(len(detections), detections[key]["hand_raised"]))
+                x_relative = detections[key]["x"] + (detections[key]["w"] / 2)
+
+                # if (detections[key]["hand_raised"] == True) and (400 < x_relative < 800) :
+                if (detections[key]["hand_raised"] == True):
+                    cancel = Twist()
+                    cancel.linear.x = 0
+                    cancel.linear.y = 0
+                    cancel.angular.z = 0
+                    is_found += 1
+            
+            image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+
+            # tell the person to show hand higher
+            if time.time() - start_time > 10:
+                # speak("Please raise your hand higher")
+                start_time = time.time()
+
+
+        self.rotate_pub.publish(cancel)
+        rospy.sleep(1)
+
+        # desc = personDescription.req(frame_ori)
+        speak("I found someone raising their hand")
+        rospy.logwarn("I found someone raising their hand")
+        time.sleep(0.5)
+        # speak(desc)
+        # rospy.logwarn(desc)
+        time.sleep(1.0)
+        speak("I will come to you")
+        rospy.logwarn("I will come to you")
+        navigation.move("standby2")
+
+        return 'B'
+
+class to_bottle(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating state Tobottle')
+        smach.State.__init__(self, outcomes=['C'])
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing state GetObjectName')
+        # sending object name to GetobjectName state (change string right here)
+
+        global count_group
+        nav = ('shelf','comtable','comtable','pickwater','pickwater')
+
+
+        navigation.move(nav[count_group])
+        rospy.logfatal("Walkie is coming to u")
+        
+        if count_group == 0:
+            speak("May I help you sir")
+            rospy.logwarn("May I help you sir")
+            stt.listen()
+            rospy.logfatal("Walkie is listening")
+            rospy.sleep(5)
+            speak("ok")
+            rospy.logwarn("ok")
+        
+        return 'C'
+
+
+class Get_pose(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['D'])
+        rospy.loginfo('Initiating state Pose')
+        self.bridge = CvBridge()
+
+        # initiate list_object and countFrame
+        self.object_list_all=[]
+        self.countFrame=0
+
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+    
+    def callback(self, data):
+        # change subscribed data to numpy.array and save it as "frame"
+        self.frame = self.bridge.imgmsg_to_cv2(data,'bgr8')
+        self.frame = cv2.resize(self.frame,(1280,720))
+        # send frame to server and recieve the result      
+        result = what_is_that.req(self.frame)
+        
+        # add countFrame counter and append the object to the list
+        self.countFrame += 1
+        if len(result['what_is_that']) > 0:
+            self.object_list_all.append(str(result['what_is_that'][0]))
+        
+        # Print list of detected objects
+        # print("list_object = ",self.list_object)
+        
+        # check number of frame
+        # print("counter frame = " + str(self.countFrame))
+            
+    def execute(self, userdata):
+        rospy.loginfo('Executing state Pose')
+        global object_list
+        self.object_list_all = []
+        self.countFrame = 0
+        
+        rospy.sleep(2)
+        speak("Please show your hand to the camera and point at the object")
+        rospy.logwarn("Please show your hand to the camera and point at the object")
+        rospy.logfatal("Walkie is scaning skeleton 2 obj")
+
+        self.sub = rospy.Subscriber("/camera/color/image_raw", Image, self.callback)
+        
+        # realsense 0
+        self.pub_realsense_pitch_absolute_command.publish(0)
+        time.sleep(1)
+        # wait to capture 5 frame
+        speak("I am looking")
+        rospy.logwarn("looking")
+        while self.countFrame < 50:
+            rospy.sleep(0.01)
+        
+        # realsense -35
+        # speak("looking down")
+        # rospy.logwarn("looking down")
+        # self.pub_realsense_pitch_absolute_command.publish(-20)
+        # time.sleep(1)
+        # # wait to capture 5 frame
+        # while self.countFrame < 40:
+        #     rospy.sleep(0.01)
+            
+        # stop subscribing /camera/color/image_raw
+        self.sub.unregister()
+        
+        # if there is no object
+        if len(self.object_list_all) == 0:
+            object_list = []
+            return 'D'
+        # if there is an object, find most common object
+        else:
+            rospy.loginfo(self.object_list_all)
+            obj = list(set(self.object_list_all))
+            obj.sort(reverse=True, key=self.object_list_all.count)
+            print("found object", obj)
+            object_list = obj
+            return 'D'
+
+class Find_operator(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['Q'])
+        rospy.loginfo('Initiating state Find_operator')
+
+        self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        self.rotate_msg = Twist()
+        if count_group ==4:
+            self.rotate_msg.angular.z = -0.2
+        else:
+            self.rotate_msg.angular.z = 0.2
+
+        self.cancel = Twist()
+        self.cancel.linear.x = 0
+        self.cancel.linear.y = 0
+        self.cancel.angular.z = 0
+
+        self.bridge = CvBridge()
+
+        #Transforming Pose
+        self.tf_buffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing state Find_operator')
+        global personTrack, ed, count_group
+
+        count_group += 1
+
+        def transform_pose(input_pose, from_frame, to_frame):
+            # **Assuming /tf2 topic is being broadcasted
+            pose_stamped = PoseStamped()
+            pose_stamped.pose = input_pose
+            pose_stamped.header.frame_id = from_frame
+            # pose_stamped.header.stamp = rospy.Time.now()
+            output_pose_stamped = None
+            try:
+                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+                while not self.tf_buffer.can_transform:
+                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
+                output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+
+                return output_pose_stamped.pose
+
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                raise
+        def reset():
+            rospy.loginfo("Reseting the value")
+            self.frame = None
+            rospy.sleep(0.1)
+            rospy.loginfo("Finished reseting")
+            self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, yolo_callback, queue_size=1, buff_size=52428800)
+            self.depth_sub = rospy.Subscriber("/camera/aligned_depth_to_color/image_raw", Image, depth_callback, queue_size=1, buff_size=52428800)
+
+        def detect(frame):
+            # scale image incase image size donot match cv server
+            frame = rs.check_image_size_for_cv(frame)
+            # send frame to server and recieve the result
+            result = personTrack.req(frame)
+            # rescale pixel incase pixel donot match
+            frame = rs.check_image_size_for_ros(frame)
+
+            # if there is no person just skip
+            if len(result["result"]) == 0:
+                # rospy.loginfo("guest not found yet")
+                image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+                return
+
+            # not found person yet
+            center_pixel_list = []
+            for track in result["result"]:
+                self.x_pixel = int((track[2][0]+track[2][2])/2)
+                self.y_pixel = int((track[2][1]+track[2][3])/2)
+                # filter w h small
+                w = abs(track[2][0]-track[2][2])
+                h = abs(track[2][1]-track[2][3])
+                if (w*h < 200*100) or (self.x_pixel==1280) or (self.y_pixel == 720):
+                    continue
+                depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
+                center_pixel_list.append((self.x_pixel, self.y_pixel, depth, track[0])) # (x, y, depth, perons_id)
+
+            if len(center_pixel_list)==0:
+                return False
+            
+            self.x_pixel = min(center_pixel_list, key=lambda x: x[2])[0]
+            self.y_pixel = min(center_pixel_list, key=lambda x: x[2])[1]
+
+            # filter x, y pixel at the edge
+            if not (300 < self.x_pixel < 900):
+                rospy.loginfo("Target not in the middle")
+                return False
+
+            self.x_pixel, self.y_pixel = rs.rescale_pixel(self.x_pixel, self.y_pixel)
+            # visualize purpose
+            frame = cv2.circle(frame, (self.x_pixel, self.y_pixel), 5, (0, 255, 0), 2)
+            frame = cv2.rectangle(frame, rs.rescale_pixel(track[2][0], track[2][1]), rs.rescale_pixel(track[2][2], track[2][3]), (0, 255, 0), 2)
+        
+            image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+            # 3d pose
+
+            rospy.loginfo("X_pixel: {}, Y_pixel: {}".format(self.x_pixel, self.y_pixel))
+            # rescale pixel incase pixel donot match
+
+            x_coord, y_coord, z_coord = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(frame.shape[1], frame.shape[0]))
+            rospy.loginfo("Target person is at coordinate: {}".format((x_coord, y_coord, z_coord)))
+            # data from comuter vision realsense x is to the right, y is to the bottom, z is toward.
+                        
+            if 1.0 < z_coord < 4:
+                posi = Pose()
+                posi.position.x, posi.position.y, posi.position.z = z_coord-0.5 , -x_coord, 0
+
+                human_posi = transform_pose(posi, "realsense_pitch", "base_footprint")
+
+                delta_x = human_posi.position.x
+                delta_y = human_posi.position.y
+                yaw = math.atan(delta_y/delta_x) # yaw
+
+                posi.position.x, posi.position.y, posi.position.z = human_posi.position.x, human_posi.position.y, human_posi.position.z
+                posi.orientation.x, posi.orientation.y, posi.orientation.z, posi.orientation.w = tf.transformations.quaternion_from_euler(0, 0, yaw)
+                posi = transform_pose(posi, "base_footprint", "map")
+                if ed.out_of_areana(posi):
+                    rospy.loginfo("Human out of arena")
+                    return False
+                return True
+
+            rospy.loginfo("Human out of range")
+            return False
+        # -------------------------------------------------------------------------------------
+        
+        # rotating until find person
+        # reset()
+        start_time = time.time()
+        while time.time()-start_time < 2:
+            self.rotate_pub.publish(self.rotate_msg)
+        
+        while True:
+            self.rotate_pub.publish(self.rotate_msg)
+            
+            if detect(rs.get_image()) :
+                speak("I found operator") 
+                self.rotate_pub.publish(self.cancel)
+                break
+            time.sleep(0.01)
+        return 'Q'
+
+class Text_to_speech(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['E','continue_get_pose','B'])
+    def execute(self, userdata):
+        rospy.loginfo('Executing state Text_to_speech')
+        global object_list, count_group, point_time
+        point_time += 1
+
+        rospy.loginfo(object_list)
+        if len(object_list) == 0:
+            if point_time < 3:
+                speak("I cannot see the object,I will looking again")
+                rospy.logwarn("You are not pointing at any object")
+                return 'continue_get_pose'
+                
+            else:
+                speak("Let's move to the next group")
+                rospy.logwarn("Let's move to the next group")
+                point_time = 0
+                return 'B'
+        else:
+            point_time = 0
+            is_correct = False
+            for i in range(len(object_list[:4])):
+                if is_correct == True:
+                    break
+                rospy.logfatal("Walkie get pointing obj")
+                speak("You are pointing at " + object_list[i])
+                rospy.logwarn("You are pointing at " + object_list[i])
+                time.sleep(1)
+                # speak("what should I do next?")
+                # rospy.logwarn("what should I do next?")
+                # stt.listen()
+                # stt.clear()
+            
+            if count_group < 4:
+                speak("Let's move to the next group")
+                rospy.sleep(10)
+                is_correct = False
+                return 'B'
+            else:
+                speak("What should I do next")
+                rospy.logwarn("What should I do next")
+                stt.listen()
+                stt.clear()
+                rospy.sleep(3)
+                speak("ok")
+                rospy.logwarn("ok sir")
+                return 'E'
+
+            time.sleep(5)
+            speak("ok sir")
+            rospy.logwarn("ok sir")
+            rospy.logfatal("Walkie is going to pick an obj")
+            navigation('stage5')
+            return 'E'
+
 class GetObjectName(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectName')
-        smach.State.__init__(self, outcomes=['continue_GetObjectPose'], output_keys=['objectname_output'])
+        smach.State.__init__(self, outcomes=['F'], output_keys=['objectname_output'])
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectName')
@@ -300,31 +743,14 @@ class GetObjectName(smach.State):
         userdata.objectname_output = OBJECT_NAME
         # speak("hi my name is walkie")
         # stt.listen()
-        # /////delete/////////////////
-        # a = 0
-        # while True:
-        #     if stt.body is not None:
-        #         rospy.loginfo(stt.body)
-        #         if (stt.body["object"] == "Water") or (stt.body["object"]=="water") :
-        #             speak("ok")
-        #             stt.clear()
-        #             break
-        #     elif a == 1:
-        #         break
-        #     b = raw_input("a")
-        #     if b == "a":
-        #         a = 1
-        
-        # ////////////////////////////////
-                
-        return 'continue_GetObjectPose'
+        return 'F'
 
 
 class GetObjectPose(smach.State):
     def __init__(self):
         global object_detection, navigation
         rospy.loginfo('Initiating state GetObjectPose')
-        smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=['objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
+        smach.State.__init__(self, outcomes=['continue_Pick','G'], input_keys=['objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
         # initiate variables
         self.object_name = ""
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
@@ -407,7 +833,7 @@ class GetObjectPose(smach.State):
                     self.object_pose_list.append((x_coord, y_coord, z_coord, center_pixel[2]))
 
                     self.tf_stamp = TransformStamped()
-                    self.tf_stamp.header.frame_id = "/camera_link"
+                    self.tf_stamp.header.frame_id = "/realsense_pitch"
                     self.tf_stamp.header.stamp = rospy.Time.now()
                     self.tf_stamp.child_frame_id = "/object_frame_{}".format(center_pixel[2]) # object_id
                     self.tf_stamp.transform.translation.x = z_coord
@@ -425,7 +851,9 @@ class GetObjectPose(smach.State):
             self.image_sub.unregister()
             self.depth_sub.unregister()
             rospy.loginfo("Object found!")
-            speak(" I found water bottle")
+            speak(" I will pick a water bottle")
+            rospy.logwarn(" I will pick a water bottle")
+            rospy.logfatal("Walkie found obj to grasp")
             self.object_pose = find_closest_object()
             return True
 
@@ -571,10 +999,9 @@ class GetObjectPose(smach.State):
         
 
         # realsense down
-        for i in range(10) :
-            self.pub_realsense_pitch_absolute_command.publish(-35)
-            self.pub_realsense_yaw_absolute_command.publish(0)
-            time.sleep(0.1)
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        time.sleep(1)
 
         # arm sethome
         set_home_walkie()
@@ -585,17 +1012,7 @@ class GetObjectPose(smach.State):
         # run_once function
         run_once()
         while not rospy.is_shutdown():
-        #     print("FUCK U")
-        #     while True:
-        #         if stt.body is not None:
-        #             # if (stt.body["object"] == "water"):
-        #             if (True):
-        #                 speak("ok")
-        #                 stt.clear()
-        #                 break
-        #             else:
-        #                 stt.clear()
-            command = raw_input("Press Enter :")
+            # command = raw_input("Press Enter :")
             # if command == 'q':
             #     break
             rospy.loginfo("------ Running 3D detection ------")
@@ -604,13 +1021,13 @@ class GetObjectPose(smach.State):
                 userdata.objectpose_output = self.object_pose
                 rospy.loginfo(self.object_pose)
                 return 'continue_Pick'
-        return 'continue_ABORTED'
+        return 'G'
 
 
 class Pick(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Pick')
-        smach.State.__init__(self, outcomes=['continue_navigate_volunteer', 'continue_ABORTED'], 
+        smach.State.__init__(self, outcomes=['G'], 
                                    input_keys=['objectpose_input'])
         self.success = False
         self.tf_buffer =  tf2_ros.Buffer()
@@ -653,6 +1070,7 @@ class Pick(smach.State):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
         def pick(pose = Pose()):
+            global move_group,robot
             group_name = "arm"
             move_group = moveit_commander.MoveGroupCommander(group_name)
             # scene = moveit_commander.PlanningSceneInterface()
@@ -686,8 +1104,8 @@ class Pick(smach.State):
             # lift_pose.position.z        += 0.1
             # lift_pose.position.x        -= 0.1
 
-            grasp_pose .position.x    = pose_goal.position.x - 0.108
-            grasp_pose .position.y    = pose_goal.position.y + 0.018
+            grasp_pose .position.x    = pose_goal.position.x - 0.105
+            grasp_pose .position.y    = pose_goal.position.y + 0.02
             grasp_pose .position.z    = pose_goal.position.z
             grasp_pose .orientation.x = pose_goal.orientation.x
             grasp_pose .orientation.y = pose_goal.orientation.y
@@ -695,8 +1113,8 @@ class Pick(smach.State):
             grasp_pose .orientation.w = pose_goal.orientation.w
 
             pregrasp_pose.position.x    = pose_goal.position.x - 0.2
-            pregrasp_pose.position.y    = pose_goal.position.y + 0.05
-            pregrasp_pose.position.z    = pose_goal.position.z 
+            pregrasp_pose.position.y    = pose_goal.position.y
+            pregrasp_pose.position.z    = pose_goal.position.z
             pregrasp_pose.orientation.x = pose_goal.orientation.x
             pregrasp_pose.orientation.y = pose_goal.orientation.y
             pregrasp_pose.orientation.z = pose_goal.orientation.z
@@ -715,30 +1133,18 @@ class Pick(smach.State):
             print(lift_pose)
             
             go_to_pose_goal(pregrasp_pose, move_group, robot)
-            rospy.sleep(3)
+            # rospy.sleep(3)
             # raw_input("enter to open gripper")
             gripper_publisher.publish(False)
             # pre(move_group)
-            rospy.sleep(3)
+            # rospy.sleep(3)
             catesian_go(grasp_pose, move_group, robot)
             # raw_input("enter to close gripper")
             gripper_publisher.publish(True)
-            rospy.sleep(3)
+            # rospy.sleep(3)
             catesian_go(lift_pose, move_group, robot)
             # rospy.sleep(3)
-            # set_home_walkie(move_group)
-            serving(move_group)
-            speak("here is your water")
-            # raw_input("enter")
-            rospy.sleep(2)
-            gripper_publisher.publish(False)
-            # raw_input("enter to home")
-            rospy.sleep(2)
-            gripper_publisher.publish(True)
-            # navigation.move("back")
-            # set_home_walkie(move_group)
-            # lift down
-            lift_command(False)
+            set_home_walkie(move_group)
             
 
             return True
@@ -746,6 +1152,7 @@ class Pick(smach.State):
             
 
         # lift up
+        rospy.logfatal("Walkie is going to pick obj")
         lift_command(True)
         rospy.sleep(5)
 
@@ -761,46 +1168,87 @@ class Pick(smach.State):
         picksucess = pick(transformed_pose)
 
         if picksucess == True:
-            # navigation.move("back") #comment 7.11PM mon 7 nov 2565
-            return 'continue_navigate_volunteer'
+            return 'G'
         else:
-            return 'continue_ABORTED'
+            return 'G'
+
+class to_me(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating state Tome')
+        smach.State.__init__(self, outcomes=['H'])
+
+    def execute(self, userdata):
+        
+        rospy.loginfo('Executing state Tome')
+        # sending object name to GetobjectName state (change string right here)
 
 
-# main
-if __name__ == "__main__":
+        # set_home_walkie(move_group)
+        serving(move_group)
+        speak("here is your water")
+        rospy.logwarn("here is your water")
+        # raw_input("enter")
+        rospy.sleep(3)
+        gripper_publisher.publish(False)
+        rospy.sleep(3)
 
-    rospy.init_node('smach_example_state_machine')
+        gripper_publisher.publish(True)
+        set_home_walkie(move_group)
+        # lift down
+        lift_command(False)
+        rospy.logfatal("task complete")
+        return 'H'
 
-    ##############################################
+
+if __name__ == '__main__':
+    rospy.init_node('hand_me_that')
+
+    object_list = []
+    count_group = 0
+    p = 3
+    point_time = 0
     OBJECT_NAME = "waterbottle"
-    # OBJECT_NAME = "bubble_tea"
-    ############################################
-    
-    #Environment Descriptor for going to person position
-    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fur_ais.yaml")
-    
-    #navigation manager
-    # global navigation
+
     navigation = go_to_Navigation()
 
+    # host
+    host = "0.0.0.0"
 
-    #Nlp and cv server
-    host = '0.0.0.0'
+    # obj detect
     port_object = 10008
     object_detection = CustomSocket(host=host, port=port_object)
     object_detection.clientConnect()
 
+    # what is that
+    port_wtf = 10002
+    what_is_that = CustomSocket(host, port_wtf)
+    what_is_that.clientConnect()
+
+    # hand raising detection
+    port_HandRaising = 10011
+    HandRaising = CustomSocket(host, port_HandRaising)
+    HandRaising.clientConnect()
+
+    # person tracker model
+    port_personTrack = 11000
+    personTrack = CustomSocket(host,port_personTrack)
+    personTrack.clientConnect()
+
+    # person description model
+    port_personDescription = 10009
+    personDescription = CustomSocket(host, port_personDescription)
+    personDescription.clientConnect()
+    
     # Flask nlp server
     stt = SpeechToText("nlp")
-    t = threading.Thread(target = stt.run ,name="nlp")
+    stt.clear()
+    t = threading.Thread(target = stt.run ,name="flask")
     t.start()
 
+    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fucku.yaml")
     scene = moveit_commander.PlanningSceneInterface()
     rospy.sleep(2)
-    add_table("table",scene)
-
-    
+    add_table("table",scene,ed)
 
     # publisher and subscriber
     lift_pub                     = rospy.Publisher('lift_command', Bool, queue_size=1)
@@ -808,27 +1256,46 @@ if __name__ == "__main__":
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',DisplayTrajectory, queue_size=1)
     gripper_publisher            = rospy.Publisher('/cr3_gripper_command',Bool,queue_size=1)
 
-    # Create a SMACH state machine
-    sm = smach.StateMachine(outcomes=['ABORTED','a'])
-    sm.userdata.string_name = ""
-    sm.userdata.object_pose = Pose()
-    # Open the container
+    rs = Realsense()
+    rs.wait() # wait for camera intrinsics
+
+    image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
+
+    
+    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fucku.yaml")
+
+    # Start state machine
+    sm = smach.StateMachine(outcomes=['H'])
     with sm:
-        # ------------------------------ Pick Object --------------------------------------
-        smach.StateMachine.add('GetObjectName', GetObjectName(),
-                               transitions={'continue_GetObjectPose': 'GetObjectPose'},
+        smach.StateMachine.add('O', Start_signal(),
+                               transitions={'A': 'A'})
+        smach.StateMachine.add('A', Walkie_Rotate(),
+                               transitions={'B': 'B'})
+        smach.StateMachine.add('B', to_bottle(),
+                               transitions={'C': 'C'})
+        smach.StateMachine.add('C', Get_pose(),
+                               transitions={'D': 'D'})
+        smach.StateMachine.add('D', Text_to_speech(),
+                               transitions={'E': 'E','continue_get_pose':'C','B':'R'})
+        smach.StateMachine.add('R', Find_operator(),
+                               transitions={'Q': 'B'})
+        smach.StateMachine.add('E', GetObjectName(),
+                               transitions={'F': 'F'},
                                remapping={'objectname_output': 'string_name'})
-        smach.StateMachine.add('GetObjectPose', GetObjectPose(),
-                               transitions={'continue_Pick': 'Pick',
-                                            'continue_ABORTED': 'ABORTED'},
+        smach.StateMachine.add('F', GetObjectPose(),
+                               transitions={'G': 'G','continue_Pick': 'Pick'},
                                remapping={'objectname_input': 'string_name',
-                                          'objectpose_output': 'object_pose',
                                           'objectpose_output': 'object_pose'})
         smach.StateMachine.add('Pick', Pick(),
-                               transitions={'continue_navigate_volunteer': 'a',
-                                            'continue_ABORTED': 'ABORTED'},
+                               transitions={'G': 'G'},
                                remapping={'objectpose_input': 'object_pose'})
-        # ----------------------------------------------------------------------------------
+        smach.StateMachine.add('G', to_me(),
+                               transitions={'H': 'H'})
 
-    # Execute SMACH plan
+        
+    # Set up
+    sis = smach_ros.IntrospectionServer('Server_name',sm,'/Root')
+    sis.start()
     outcome = sm.execute()
+    rospy.spin()
+    sis.stop()

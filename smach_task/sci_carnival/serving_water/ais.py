@@ -125,9 +125,6 @@ def lift_command(cmd) :
     
     time.sleep(1)
     lift_pub.publish(cmd)
-    rospy.sleep(0.5)
-    lift_pub.publish(cmd)
-
 
     rospy.Subscriber("done", Bool, lift_cb)
 
@@ -193,7 +190,7 @@ def serving(move_group = moveit_commander.MoveGroupCommander("arm")):
             joint_goal[2] = -0.542
             joint_goal[3] = -0.604
             joint_goal[4] = -0.2322
-            joint_goal[5] = -0.14
+            joint_goal[5] = 3.00
             
             
             # joint_goal[0] = 0.0
@@ -289,6 +286,21 @@ def catesian_go(goal_pose = Pose(),move_group = moveit_commander.MoveGroupComman
     move_group.execute(plan, wait=True)
 
 # state
+
+class to_bottle(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating state Tobottle')
+        smach.State.__init__(self, outcomes=['continue_GetObjectPose'])
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing state GetObjectName')
+        # sending object name to GetobjectName state (change string right here)
+        raw_input("enter to move")
+        speak("ok sir")
+        navigation.move("chair")
+        
+        return 'continue_GetObjectName'
+
 class GetObjectName(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state GetObjectName')
@@ -300,23 +312,6 @@ class GetObjectName(smach.State):
         userdata.objectname_output = OBJECT_NAME
         # speak("hi my name is walkie")
         # stt.listen()
-        # /////delete/////////////////
-        # a = 0
-        # while True:
-        #     if stt.body is not None:
-        #         rospy.loginfo(stt.body)
-        #         if (stt.body["object"] == "Water") or (stt.body["object"]=="water") :
-        #             speak("ok")
-        #             stt.clear()
-        #             break
-        #     elif a == 1:
-        #         break
-        #     b = raw_input("a")
-        #     if b == "a":
-        #         a = 1
-        
-        # ////////////////////////////////
-                
         return 'continue_GetObjectPose'
 
 
@@ -571,10 +566,9 @@ class GetObjectPose(smach.State):
         
 
         # realsense down
-        for i in range(10) :
-            self.pub_realsense_pitch_absolute_command.publish(-35)
-            self.pub_realsense_yaw_absolute_command.publish(0)
-            time.sleep(0.1)
+        self.pub_realsense_pitch_absolute_command.publish(-35)
+        self.pub_realsense_yaw_absolute_command.publish(0)
+        time.sleep(1)
 
         # arm sethome
         set_home_walkie()
@@ -585,19 +579,9 @@ class GetObjectPose(smach.State):
         # run_once function
         run_once()
         while not rospy.is_shutdown():
-        #     print("FUCK U")
-        #     while True:
-        #         if stt.body is not None:
-        #             # if (stt.body["object"] == "water"):
-        #             if (True):
-        #                 speak("ok")
-        #                 stt.clear()
-        #                 break
-        #             else:
-        #                 stt.clear()
             command = raw_input("Press Enter :")
-            # if command == 'q':
-            #     break
+            if command == 'q':
+                break
             rospy.loginfo("------ Running 3D detection ------")
             reset()
             if detect(): 
@@ -653,6 +637,7 @@ class Pick(smach.State):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
         def pick(pose = Pose()):
+            global move_group,robot
             group_name = "arm"
             move_group = moveit_commander.MoveGroupCommander(group_name)
             # scene = moveit_commander.PlanningSceneInterface()
@@ -686,8 +671,8 @@ class Pick(smach.State):
             # lift_pose.position.z        += 0.1
             # lift_pose.position.x        -= 0.1
 
-            grasp_pose .position.x    = pose_goal.position.x - 0.108
-            grasp_pose .position.y    = pose_goal.position.y + 0.018
+            grasp_pose .position.x    = pose_goal.position.x - 0.105
+            grasp_pose .position.y    = pose_goal.position.y + 0.02
             grasp_pose .position.z    = pose_goal.position.z
             grasp_pose .orientation.x = pose_goal.orientation.x
             grasp_pose .orientation.y = pose_goal.orientation.y
@@ -695,8 +680,8 @@ class Pick(smach.State):
             grasp_pose .orientation.w = pose_goal.orientation.w
 
             pregrasp_pose.position.x    = pose_goal.position.x - 0.2
-            pregrasp_pose.position.y    = pose_goal.position.y + 0.05
-            pregrasp_pose.position.z    = pose_goal.position.z 
+            pregrasp_pose.position.y    = pose_goal.position.y
+            pregrasp_pose.position.z    = pose_goal.position.z
             pregrasp_pose.orientation.x = pose_goal.orientation.x
             pregrasp_pose.orientation.y = pose_goal.orientation.y
             pregrasp_pose.orientation.z = pose_goal.orientation.z
@@ -715,30 +700,18 @@ class Pick(smach.State):
             print(lift_pose)
             
             go_to_pose_goal(pregrasp_pose, move_group, robot)
-            rospy.sleep(3)
+            # rospy.sleep(3)
             # raw_input("enter to open gripper")
             gripper_publisher.publish(False)
             # pre(move_group)
-            rospy.sleep(3)
+            # rospy.sleep(3)
             catesian_go(grasp_pose, move_group, robot)
             # raw_input("enter to close gripper")
             gripper_publisher.publish(True)
-            rospy.sleep(3)
+            # rospy.sleep(3)
             catesian_go(lift_pose, move_group, robot)
             # rospy.sleep(3)
-            # set_home_walkie(move_group)
-            serving(move_group)
-            speak("here is your water")
-            # raw_input("enter")
-            rospy.sleep(2)
-            gripper_publisher.publish(False)
-            # raw_input("enter to home")
-            rospy.sleep(2)
-            gripper_publisher.publish(True)
-            # navigation.move("back")
-            # set_home_walkie(move_group)
-            # lift down
-            lift_command(False)
+            set_home_walkie(move_group)
             
 
             return True
@@ -761,11 +734,34 @@ class Pick(smach.State):
         picksucess = pick(transformed_pose)
 
         if picksucess == True:
-            # navigation.move("back") #comment 7.11PM mon 7 nov 2565
             return 'continue_navigate_volunteer'
         else:
             return 'continue_ABORTED'
 
+class to_me(smach.State):
+    def __init__(self):
+        rospy.loginfo('Initiating state Tome')
+        smach.State.__init__(self, outcomes=['aa'])
+
+    def execute(self, userdata):
+        
+        rospy.loginfo('Executing state Tome')
+        # sending object name to GetobjectName state (change string right here)
+        navigation.move("me")
+
+        # set_home_walkie(move_group)
+        serving(move_group)
+        speak("here is your water")
+        # raw_input("enter")
+        rospy.sleep(3)
+        gripper_publisher.publish(False)
+        rospy.sleep(3)
+
+        gripper_publisher.publish(True)
+        set_home_walkie(move_group)
+        # lift down
+        lift_command(False)
+        return 'aa'
 
 # main
 if __name__ == "__main__":
@@ -778,7 +774,7 @@ if __name__ == "__main__":
     ############################################
     
     #Environment Descriptor for going to person position
-    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fur_ais.yaml")
+    ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/eic3_fur.yaml")
     
     #navigation manager
     # global navigation
@@ -815,6 +811,8 @@ if __name__ == "__main__":
     # Open the container
     with sm:
         # ------------------------------ Pick Object --------------------------------------
+        smach.StateMachine.add('To_bottle', to_bottle(),
+                               transitions={'continue_GetObjectName': 'GetObjectName'})
         smach.StateMachine.add('GetObjectName', GetObjectName(),
                                transitions={'continue_GetObjectPose': 'GetObjectPose'},
                                remapping={'objectname_output': 'string_name'})
@@ -822,12 +820,13 @@ if __name__ == "__main__":
                                transitions={'continue_Pick': 'Pick',
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectname_input': 'string_name',
-                                          'objectpose_output': 'object_pose',
                                           'objectpose_output': 'object_pose'})
         smach.StateMachine.add('Pick', Pick(),
-                               transitions={'continue_navigate_volunteer': 'a',
+                               transitions={'continue_navigate_volunteer': 'Tome',
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectpose_input': 'object_pose'})
+        smach.StateMachine.add('Tome', to_me(),
+                               transitions={'aa': 'a',})
         # ----------------------------------------------------------------------------------
 
     # Execute SMACH plan
