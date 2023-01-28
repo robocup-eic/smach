@@ -76,7 +76,7 @@ class go_to_Navigation():
             else:
                 return False
         
-    def nav2goal(self,pose:Pose,frame:str):
+    def nav2goal(self,pose,frame):
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = frame
         goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
@@ -94,15 +94,17 @@ class go_to_Navigation():
 class Walkie_Rotate(smach.State) :
     def __init__(self):
         rospy.loginfo('Initiating Walkie_Rotate state')
-        smach.State.__init__(self,outcomes=['continue_Walkie_Speak'],output_keys=['posesave'])
+        smach.State.__init__(self,outcomes=['To_cus'],output_keys=['posesave'])
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
         self.bridge = CvBridge()
+        self.save = ()
     
     def execute(self,userdata):
         rospy.loginfo('Executing Walkie_Rotate state')
         global image_pub, personDescription
 
         def detect(frame):
+            o = False
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
             # send frame to server and recieve the result
@@ -113,31 +115,38 @@ class Walkie_Rotate(smach.State) :
             center_pixel_list = []
             for id in detections.keys():
 
-                if not detections[id]["hand_raised"] == True:
+                print(detections[id])
+
+                if detections[id]["hand_raised"] == True:
+                    x, y, w, h, hand_raised = (detections[id][k] for k in ("x", "y", "w", "h", "hand_raised"))
+                    # max_x, min_x, max_y, min_y, hand_raised = res[id]
+                    color = (0, 255, 0) if hand_raised else (0, 0, 255)
+                    frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 3)
+                    frame = cv2.circle(frame, (x+w/2, y+h/2), 5, color, 2)
+
+                    if hand_raised == True:
+                        center_pixel_list.append((x+w/2, y+h/2,id))
+                        print(center_pixel_list)
+                        o = True
+                else:
                     # rospy.loginfo("guest not found yet")
                     image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
-                    return
-
-                x, y, w, h, hand_raised = (detections[id][k] for k in ("x", "y", "w", "h", "hand_raised"))
-                # max_x, min_x, max_y, min_y, hand_raised = res[id]
-                color = (0, 255, 0) if hand_raised else (0, 0, 255)
-                frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 3)
-                frame = cv2.circle(frame, (x+w/2, y+h/2), 5, color, 2)
-
-                if hand_raised == True:
-                    center_pixel_list.append((x+w/2, y+h/2,id))
-
-            image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
-
-            minz = 999999
-            for id in center_pixel_list:
-                x_coord, y_coord, z_coord = rs.get_coordinate(id[0],id[1], ref=(frame.shape[1], frame.shape[0]))
-                rospy.loginfo("Target person is at coordinate: {}".format((x_coord, y_coord, z_coord)))
-                if z_coord < minz:
-                    minz = z_coord
-                    self.save = (x_coord, y_coord, z_coord,id[2])
+                    return False
             
-            return True
+            if o == True:
+                image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+
+                minz = 999999
+                for id in center_pixel_list:
+                    x_coord, y_coord, z_coord = rs.get_coordinate(id[0],id[1], ref=(frame.shape[1], frame.shape[0]))
+                    rospy.loginfo("Target person is at coordinate: {}".format((x_coord, y_coord, z_coord)))
+                    if z_coord < minz:
+                        minz = z_coord
+                        self.save = (x_coord, y_coord, z_coord,id[2])
+            
+                return True
+            
+            return False
                     
 
 
@@ -154,6 +163,7 @@ class Walkie_Rotate(smach.State) :
 
         start_time = time.time()
         while True:
+            print(detect(rs.get_image()))
             if detect(rs.get_image()) == True:
                 userdata.posesave = self.save
                 break
@@ -188,7 +198,9 @@ class Walkie_Speak(smach.State) :
 class to_cutomer(smach.State):
     def __init__(self):
             rospy.loginfo('Initiating Walkie_Speak state')
-            smach.State.__init__(self,outcomes=['continue_succeed'],input_keys=['posesave'])
+            smach.State.__init__(self,outcomes=['speak'],input_keys=['posesave'])
+            self.tf_buffer =  tf2_ros.Buffer()
+            self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
         
     def execute(self,userdata):
@@ -196,7 +208,7 @@ class to_cutomer(smach.State):
         posesave = userdata.posesave
 
         # tune coordinate
-        recieved_pose = Pose
+        recieved_pose = Pose()
         recieved_pose.position.x = posesave[0]
         recieved_pose.position.y = posesave[1]
         recieved_pose.position.z = posesave[2]
@@ -231,7 +243,7 @@ class to_cutomer(smach.State):
         transformed_pose = transform_pose(
             recieved_pose, "realsense_pitch", "base_footprint")
         rospy.loginfo(transformed_pose.position.x)
-        transformed_pose.position.x -= 1000
+        # transformed_pose.position.x -= 1000
         transformed_pose.orientation.x = 0
         transformed_pose.orientation.y = 0
         transformed_pose.orientation.z = 0
@@ -252,7 +264,7 @@ if __name__ == '__main__':
 
     tf_Buffer = tf2_ros.Buffer()
     navigation = go_to_Navigation()
-    ed = EnvironmentDescriptor("../config/fur_data_onsite.yaml")
+    ed = EnvironmentDescriptor("fucku.yaml")
     # ed.visual_robotpoint()
 
     # connect to server
@@ -290,6 +302,9 @@ if __name__ == '__main__':
         smach.StateMachine.add('Turn_Around_Walkie', Walkie_Rotate(),
                                 transitions={'To_cus':'To_cus'},
                                 remapping={'posesave':'posesave'})
+
+
+
 
         smach.StateMachine.add('Walkie_Speak', Walkie_Speak(),
                                 transitions={'continue_succeed':'SUCCEEDED'})
