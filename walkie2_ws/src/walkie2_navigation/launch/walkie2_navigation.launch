@@ -4,7 +4,7 @@
 
 
     <!-- Launch Map Server -->
-    <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+    <!-- <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/> -->
 
     <!-- Launch AMCL -->
     <include file="$(find walkie2_navigation)/launch/amcl.launch"/>
@@ -20,7 +20,7 @@
         <rosparam file="$(find walkie2_navigation)/params/move_base_params.yaml" command="load" />
         <rosparam file="$(find walkie2_navigation)/params/base_local_planner_params.yaml" command="load" />
 	<rosparam file="$(find walkie2_navigation)/params/base_global_planner_params.yaml" command="load" />
-        <remap from="/cmd_vel" to="/walkie2/cmd_vel"/>
+        <remap from="/cmd_vel" to="/cmd_vel"/>
         <remap from="/odom" to="/walkie2/odom"/>
     </node>
 
