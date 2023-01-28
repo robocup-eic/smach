@@ -1,1 +1,0 @@
-open("fucku.yaml","r")
