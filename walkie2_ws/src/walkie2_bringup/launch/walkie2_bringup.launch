@@ -18,6 +18,9 @@
       <!-- <remap from="/joint_states" to="/walkie2/joint_states" /> -->
   </node>
 
+ <node name="realsense_tf" pkg="walkie2_bringup" type="realsense_tf.py" output="screen"></node>
+  
+
     <!-- Run LaserScan node -->
   <node name="urg_node" pkg="urg_node" type="urg_node">
     <param name="ip_address" value="192.168.5.4"/>
@@ -43,6 +46,8 @@
     <param name="verbose" value="true" />                       # verbose
   </node> -->
 
+
+	
  <node name="Lidar_odom" pkg="rtabmap_ros" type="icp_odometry">
     <param name="publish_tf" value="false"/>
     <param name="frame_id" value="base_footprint"/>
@@ -51,18 +56,17 @@
     <remap from="/odom" to="/walkie2/odom_lidar"/>
 </node>
 
-
-<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
-    <arg name="align_depth" value="true" />
-    <arg name="color_width" value="1280" />
-    <arg name="color_height" value="720" />
-    <arg name="color_fps" value="30" />
-    <arg name="depth_width" value="1280" />
-    <arg name="depth_height" value="720" />
-    <arg name="depth_fps" value="30" />
-    <arg name="filters" value="pointcloud"/>
-    <arg name="publish_tf" value="false"/>
-</include>
+  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+      <arg name="align_depth" value="true" />
+      <arg name="color_width" value="1280" />
+      <arg name="color_height" value="720" />
+      <arg name="color_fps" value="30" />
+      <arg name="depth_width" value="1280" />
+      <arg name="depth_height" value="720" />
+      <arg name="depth_fps" value="30" />
+      <arg name="filters" value="pointcloud"/>
+      <arg name="publish_tf" value="true"/>
+  </include>
 
   <node name="mega_pub" pkg="cr3_moveit_control" type="pub_joint_states.py"/>
 
@@ -77,9 +81,9 @@
     </node>
 
     <!-- Run serial_node for IMU data -->
-    <!-- <node name="imu_node" pkg="rosserial_python" type="serial_node.py">
-      <param name="port" value="$(arg port)"/>
-    </node> -->
+    <!--<node name="imu_node" pkg="rosserial_python" type="serial_node.py">-->
+      <!--<param name="port" value="$(arg port)"/>-->
+    <!--</node>-->
 
     <!-- Filter and fuse raw imu data  -->
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen" respawn="false" >
@@ -114,4 +118,20 @@
   </group>
 
   
+
+  <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
+
+  <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+  <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" output="screen">
+    <remap from="~input" to="/camera/depth_registered/points" />
+    <rosparam>
+      filter_field_name: z
+      filter_limit_min: 0.01
+      filter_limit_max: 5
+      filter_limit_negative: False
+      leaf_size: 0.05
+    </rosparam>
+  </node>
+
+
 </launch>
