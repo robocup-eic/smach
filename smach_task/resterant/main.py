@@ -249,11 +249,11 @@ class fake(smach.State) :
     
     def execute(self,userdata):
         rospy.loginfo('Executing Walkie_Speak state')
-        speak("hello I am walkieeee")
+        print("hello I am walkieeee")
         rospy.sleep(6)
-        speak("ok, This is the bar")
+        print("ok, This is the bar")
         rospy.sleep(6)
-        speak("ok")
+        print("ok")
 
         rotate_msg = Twist()
         rotate_msg.angular.z = 0.2
@@ -334,9 +334,10 @@ class Walkie_Rotate(smach.State) :
         rotate_msg.angular.z = 0.0
 
         # speak to start
-        speak("I'm ready")
+        print("I'm ready")
+        
         time.sleep(0.5)
-        speak("waiting for a customer to raise their hand")
+        print("waiting for a customer to raise their hand")
 
         start_time = time.time()
         while True:
@@ -348,11 +349,11 @@ class Walkie_Rotate(smach.State) :
 
 
         #desc = personDescription.req(frame_ori)
-        speak("A customer raised their hand")
+        print("A customer raised their hand")
         time.sleep(0.5)
         # speak(desc)
         # time.sleep(1.0)
-        speak("I'm coming")
+        print("I'm coming")
 
         return 'To_cus'
             
@@ -362,42 +363,47 @@ class Walkie_Speak(smach.State) :
         smach.State.__init__(self,outcomes=['to_bar'],output_keys=['order'])
     
     def execute(self,userdata):
-        global state
+        global state,order_name
         rospy.loginfo('Executing Walkie_Speak state')
         
             
         # listen
-        speak(f"Ok, I’m getting you a {res_listen['object']}")
-        userdata.order = res_listen['object']
+        # res_listen = listen()
+        # print(f"Ok, I’m getting you a {res_listen['object']}")
+        # userdata.order = res_listen['object']
 
         if state == "blank" :
-            speak("order or bill")
+            print("order or bill")
             while True :
-                state = listen()
+                # state = listen()
+                req = raw_input("req:")
                 if state == "order" or "bill" :
                     break
                 else :
-                    speak("fuck you guest, order or bill")
+                    print("fuck you guest, order or bill")
 
         if state == "order" :
-            speak("Can I get you something sir?")
-            while True:
-                res_listen = listen()
-                if res_listen["intent"] == "restaurant_order" & 'object' in res_listen:
-                    object = res_listen["object"]
-                    break
-                else:
-                    speak("Sorry I don't understand, Could you rephrase that?")
+            print("Can I get you something sir?")
+            order_name = raw_input("order")
+            userdata.order= order_name
+            
+            # while True:
+                # res_listen = listen()
+                # if res_listen["intent"] == "restaurant_order" & 'object' in res_listen:
+                #     object = res_listen["object"]
+                #     break
+                # else:
+                #     print("Sorry I don't understand, Could you rephrase that?")
                     
             return "to_bar"
         elif state == "bill" :
-            speak("your order list is orange juice 80 dollar")
-            speak("notebook 20 dollar")
-            speak("super drink 30 dollar")
-            speak("so the total price is 131 dollar")
+            print("your order list is orange juice 80 dollar")
+            print("notebook 20 dollar")
+            print("super drink 30 dollar")
+            print("so the total price is 131 dollar")
             return 'continue_ABORTED'
         elif state == "picked" :
-            speak("This is your {order_name}")
+            print("This is your {order_name}")
             return 'turn_around_walkie'
 
 class to_bar(smach.State) :
@@ -579,7 +585,7 @@ class GetObjectPose(smach.State):
             self.image_sub.unregister()
             self.depth_sub.unregister()
             rospy.loginfo("Object found!")
-            speak(" I found a water bottle")
+            print(" I found a water bottle")
             self.object_pose = find_closest_object()
             return True
 
