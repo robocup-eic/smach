@@ -169,7 +169,7 @@ class Walkie_Rotate(smach.State) :
         
 
 
-        return 'continue_Walkie_Speak'
+        return 'To_cus'
             
 class Walkie_Speak(smach.State) :
     def __init__(self):
@@ -278,6 +278,7 @@ if __name__ == '__main__':
 
     # Create a SMACH state machine
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED'])
+    sm_top.userdata.posesave = ()
 
     image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
 
@@ -287,10 +288,15 @@ if __name__ == '__main__':
         # smach.StateMachine.add('Turn_Around_Walkie', Turn_Around_Walkie(),
         #                         transitions={'continue_Find_Hand_raising':'Find_Hand_raising'})
         smach.StateMachine.add('Turn_Around_Walkie', Walkie_Rotate(),
-                                transitions={'continue_Walkie_Speak':'Walkie_Speak'})
+                                transitions={'To_cus':'To_cus'},
+                                remapping={'posesave':'posesave'})
 
         smach.StateMachine.add('Walkie_Speak', Walkie_Speak(),
                                 transitions={'continue_succeed':'SUCCEEDED'})
+
+        smach.StateMachine.add('To_cus', to_cutomer(),
+                                transitions={'speak':'Walkie_Speak'},
+                                remapping={'posesave':'posesave'})
         
 
     sis = smach_ros.IntrospectionServer('Server_name', sm_top, '/Restaurant_task')
