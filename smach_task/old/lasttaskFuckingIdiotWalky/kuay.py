@@ -352,7 +352,9 @@ class GetObjectPose(smach.State):
             while self.intrinsics is None:
                 time.sleep(0.1)
             rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
+            print("fgffff44565hj")
             object_detection.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
+            print("fghj")
 
         def reset():
             rospy.loginfo("Reseting the value")

@@ -203,7 +203,7 @@ if __name__ == '__main__':
     rospy.init_node('receptionist_task')
 
     # connect to server
-    host = '192.168.8.99'
+    host = '0.0.0.0'
     port = 11000
     personTrack = CustomSocket(host,port)
     personTrack.clientConnect()
