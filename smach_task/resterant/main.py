@@ -908,6 +908,9 @@ if __name__ == '__main__':
         # Add states to the container
         # smach.StateMachine.add('Turn_Around_Walkie', Turn_Around_Walkie(),
         #                         transitions={'continue_Find_Hand_raising':'Find_Hand_raising'})
+        smach.StateMachine.add('fake', fake(),
+                                transitions={'standby':'Turn_Around_Walkie'})
+
         smach.StateMachine.add('Turn_Around_Walkie', Walkie_Rotate(),
                                 transitions={'To_cus':'To_cus'},
                                 remapping={'posesave':'posesave'})
