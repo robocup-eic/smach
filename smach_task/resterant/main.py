@@ -46,7 +46,7 @@ import copy
 class go_to_Navigation():
     def __init__(self):
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
-        self.pubpose = rospy.Publisher('gosl',Pose,queue_size=1)
+        self.pubpose = rospy.Publisher('gosl',PoseStamped,queue_size=1)
     
     def move(self,location):
         global ed
@@ -64,13 +64,22 @@ class go_to_Navigation():
             else:
                 return False
         
-    def nav2goal(self,pose,frame):
+    def nav2goal(self,pose):
+        posl = PoseStamped()
+        posl.header.frame_id = "map"
+        posl.header.stamp = rospy.Time.now()
+
 
         goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = frame
+        goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-        goal.target_pose.pose = pose
-        self.pubpose.publish(pose)
+        goal.target_pose.pose.position = pose.position
+        goal.target_pose.pose.position.z = 0
+        goal.target_pose.pose.orientation = pose.orientation
+
+        posl.pose = goal.target_pose.pose
+        self.pubpose.publish(posl)
+
         self.move_base_client.send_goal(goal)
         self.move_base_client.wait_for_result()
         while True:
@@ -432,13 +441,19 @@ class to_cutomer(smach.State):
         posesave = userdata.posesave
 
         # tune coordinate
+        
+        x = posesave[0]
+        y = posesave[1]
+        z = posesave[2]
+
         recieved_pose = Pose()
-        recieved_pose.position.x = posesave[0]
-        recieved_pose.position.y = posesave[1]
-        recieved_pose.position.z = posesave[2]
-        recieved_pose.position.x -= 0.05
-        recieved_pose.position.y += 0.03
-        recieved_pose.position.z += 0.07
+        recieved_pose.position.x = z-0.5
+        recieved_pose.position.y = -x
+        recieved_pose.position.z = -y
+        recieved_pose.orientation.w = 1.0
+        # recieved_pose.position.x -= 0.05
+        # recieved_pose.position.y += 0.03
+        # recieved_pose.position.z += 0.07
 
         rospy.loginfo('\n-----------------------')
         rospy.loginfo(recieved_pose)
@@ -465,7 +480,7 @@ class to_cutomer(smach.State):
                 raise
         
         transformed_pose = transform_pose(
-            recieved_pose, "realsense_pitch", "base_footprint")
+            recieved_pose, "realsense_pitch", "map")
         rospy.loginfo("***------------------------------------*****")
         # transformed_pose.position.x -= 1000
         # transformed_pose.orientation.x = 0
@@ -473,14 +488,14 @@ class to_cutomer(smach.State):
         # transformed_pose.orientation.z = 0
         # transformed_pose.orientation.w = 1
 
-        gosl = Pose()
-        gosl.position.x = transformed_pose.position.z
-        gosl.position.y = transformed_pose.position.x
-        gosl.orientation.w = 1
+        # gosl = Pose()
+        # gosl.position.x = transformed_pose.position.z
+        # gosl.position.y = transformed_pose.position.x
+        # gosl.orientation.w = 1
 
         rospy.loginfo(gosl)
 
-        navigation.nav2goal(gosl,"base_footprint")
+        navigation.nav2goal(recieved_pose,"map")
         # navigation.nav2goal(recieved_pose,'realsense_pitch')
 
         return 'speak'
