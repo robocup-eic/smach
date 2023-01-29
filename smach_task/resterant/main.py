@@ -19,7 +19,7 @@ from util.custom_socket import CustomSocket
 from util.realsense import Realsense
 from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
-from nlp_client import *
+# from nlp_client import *
 
 import rospy
 import smach
@@ -46,6 +46,7 @@ import copy
 class go_to_Navigation():
     def __init__(self):
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+        self.pubpose = rospy.Publisher('gosl',Pose,queue_size=1)
     
     def move(self,location):
         global ed
@@ -64,10 +65,12 @@ class go_to_Navigation():
                 return False
         
     def nav2goal(self,pose,frame):
+
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = frame
         goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
         goal.target_pose.pose = pose
+        self.pubpose.publish(pose)
         self.move_base_client.send_goal(goal)
         self.move_base_client.wait_for_result()
         while True:
@@ -243,12 +246,12 @@ def catesian_go(goal_pose = Pose(),move_group = moveit_commander.MoveGroupComman
 
 class fake(smach.State) :
     def __init__(self):
-        rospy.loginfo('Initiating Walkie_Speak state')
+        rospy.loginfo('Initiating fake')
         smach.State.__init__(self,outcomes=['standby'])
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     
     def execute(self,userdata):
-        rospy.loginfo('Executing Walkie_Speak state')
+        rospy.loginfo('Executing fake')
         print("hello I am walkieeee")
         rospy.sleep(6)
         print("ok, This is the bar")
@@ -259,7 +262,7 @@ class fake(smach.State) :
         rotate_msg.angular.z = 0.2
 
         start = rospy.Time.now()
-        while rospy.Time.now() - start < 5 :
+        while rospy.Time.now() - start < rospy.Duration(5) :
             self.rotate_pub.publish(rotate_msg)
         
         self.rotate_pub.publish(Twist())
@@ -341,7 +344,7 @@ class Walkie_Rotate(smach.State) :
 
         start_time = time.time()
         while True:
-            print(detect(rs.get_image()))
+            # print(detect(rs.get_image()))
             if detect(rs.get_image()) == True:
                 userdata.posesave = self.save
                 break
@@ -359,8 +362,8 @@ class Walkie_Rotate(smach.State) :
             
 class Walkie_Speak(smach.State) :
     def __init__(self):
-        rospy.loginfo('Initiating Walkie_Speak state')
-        smach.State.__init__(self,outcomes=['to_bar'],output_keys=['order'])
+        rospy.loginfo('Initiating Walkie_Speak')
+        smach.State.__init__(self,outcomes=['to_bar','turn_around_walkie','continue_ABORTED'],output_keys=['order'])
     
     def execute(self,userdata):
         global state,order_name
@@ -369,64 +372,63 @@ class Walkie_Speak(smach.State) :
             
         # listen
         # res_listen = listen()
-        # print(f"Ok, I’m getting you a {res_listen['object']}")
+
         # userdata.order = res_listen['object']
 
         if state == "blank" :
             print("order or bill")
-            while True :
-                # state = listen()
-                req = raw_input("req:")
-                if state == "order" or "bill" :
-                    break
-                else :
-                    print("fuck you guest, order or bill")
+        
+            # state = listen()
+            req = raw_input("req:")
 
-        if state == "order" :
-            print("Can I get you something sir?")
-            order_name = raw_input("order")
-            userdata.order= order_name
-            
-            # while True:
-                # res_listen = listen()
-                # if res_listen["intent"] == "restaurant_order" & 'object' in res_listen:
-                #     object = res_listen["object"]
-                #     break
-                # else:
-                #     print("Sorry I don't understand, Could you rephrase that?")
-                    
-            return "to_bar"
-        elif state == "bill" :
-            print("your order list is orange juice 80 dollar")
-            print("notebook 20 dollar")
-            print("super drink 30 dollar")
-            print("so the total price is 131 dollar")
-            return 'continue_ABORTED'
+            if req == "order" :
+                print("Can I get you something sir?")
+                order_name = raw_input("order:")
+                userdata.order= order_name
+                
+                # while True:
+                    # res_listen = listen()
+                    # if res_listen["intent"] == "restaurant_order" & 'object' in res_listen:
+                    #     object = res_listen["object"]
+                    #     break
+                    # else:
+                    #     print("Sorry I don't understand, Could you rephrase that?")
+                        
+                return "to_bar"
+            elif req == "bill" :
+                print("your order list is orange juice 80 dollar")
+                print("notebook 20 dollar")
+                print("super drink 30 dollar")
+                print("so the total price is 131 dollar")
+                return 'continue_ABORTED'
+
         elif state == "picked" :
-            print("This is your {order_name}")
+            print("This is your")
             return 'turn_around_walkie'
 
 class to_bar(smach.State) :
     def __init__(self):
-        rospy.loginfo('Initiating Walkie_Speak state')
+        rospy.loginfo('Initiating tobsr')
         smach.State.__init__(self,outcomes=['obj'])
     
     def execute(self,userdata):
-        rospy.loginfo('Executing Walkie_Speak state')
-        navigation.move("bar")
+        rospy.loginfo('Executing to nsd')
+        bar = Pose()
+        bar.orientation.w = 1
+        navigation.nav2goal(bar,'map')
 
         return 'obj'
 
 class to_cutomer(smach.State):
     def __init__(self):
-            rospy.loginfo('Initiating Walkie_Speak state')
+            rospy.loginfo('Initiatin to cud')
             smach.State.__init__(self,outcomes=['speak'],input_keys=['posesave'])
             self.tf_buffer =  tf2_ros.Buffer()
             self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
         
     def execute(self,userdata):
-        rospy.loginfo('Executing Walkie_Speak state')
+        rospy.loginfo('Executing to cud')
         posesave = userdata.posesave
 
         # tune coordinate
@@ -464,14 +466,22 @@ class to_cutomer(smach.State):
         
         transformed_pose = transform_pose(
             recieved_pose, "realsense_pitch", "base_footprint")
-        rospy.loginfo(transformed_pose.position.x)
+        rospy.loginfo("***------------------------------------*****")
         # transformed_pose.position.x -= 1000
-        transformed_pose.orientation.x = 0
-        transformed_pose.orientation.y = 0
-        transformed_pose.orientation.z = 0
-        transformed_pose.orientation.w = 1
+        # transformed_pose.orientation.x = 0
+        # transformed_pose.orientation.y = 0
+        # transformed_pose.orientation.z = 0
+        # transformed_pose.orientation.w = 1
 
-        navigation.nav2goal(transform_pose,"base_footprint")
+        gosl = Pose()
+        gosl.position.x = transformed_pose.position.z
+        gosl.position.y = transformed_pose.position.x
+        gosl.orientation.w = 1
+
+        rospy.loginfo(gosl)
+
+        navigation.nav2goal(gosl,"base_footprint")
+        # navigation.nav2goal(recieved_pose,'realsense_pitch')
 
         return 'speak'
 
@@ -903,7 +913,7 @@ if __name__ == '__main__':
     rospy.sleep(2)
     add_table("table",scene)
     # Create a SMACH state machine
-    sm_top = smach.StateMachine(outcomes=['SUCCEEDED'])
+    sm_top = smach.StateMachine(outcomes=['SUCCEEDED','ABORTED'])
     sm_top.userdata.posesave = ()
     sm_top.userdata.order = ""
 
