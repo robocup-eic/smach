@@ -45,6 +45,10 @@
     <param name="freq" value="8.0"/>                           # Execution frequency.
     <param name="verbose" value="true" />                       # verbose
   </node> -->
+	
+  <node name="mega_node" pkg="rosserial_python" type="serial_node.py">
+     <param name="port" value="/dev/ttyMEGA"/>
+  </node>
 
 
 	

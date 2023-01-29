@@ -424,7 +424,7 @@ class to_bar(smach.State) :
         rospy.loginfo('Executing to nsd')
         bar = Pose()
         bar.orientation.w = 1
-        navigation.nav2goal(bar,'map')
+        navigation.nav2goal(bar)
 
         return 'obj'
 
@@ -493,9 +493,9 @@ class to_cutomer(smach.State):
         # gosl.position.y = transformed_pose.position.x
         # gosl.orientation.w = 1
 
-        rospy.loginfo(gosl)
+        rospy.loginfo(transformed_pose)
 
-        navigation.nav2goal(recieved_pose,"map")
+        navigation.nav2goal(transformed_pose)
         # navigation.nav2goal(recieved_pose,'realsense_pitch')
 
         return 'speak'
@@ -523,9 +523,6 @@ class GetObjectPose(smach.State):
         self.object_name = ""
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
         self.object_pose_list = [] # [(x1, y1, z1, id), (x1, y1, z1, id), ...] im meters
-        self.intrinsics = None
-        self.bridge = CvBridge()
-        self.frame = None
         self.object_pose = Pose()
         self.tf_stamp = None
 
@@ -538,10 +535,12 @@ class GetObjectPose(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state GetObjectPose')
-        global object_detection
+        global object_detection, rs
 
         def run_once():
-            while self.intrinsics is None:
+            print('jfhasjfnkashf')
+            while rs.intrinsics is None:
+                print('fkhjsakjdhgjio')
                 time.sleep(0.1)
             rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
             object_detection.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
@@ -713,8 +712,11 @@ class GetObjectPose(smach.State):
             lift_state.publish(0.0)
             realsense_pitch_angle.publish(-35)
 
+        print("life go")
+
         # run_once function
         run_once()
+        print("detect once")
         while not rospy.is_shutdown():
             
             rospy.loginfo("------ Running 3D detection ------")
@@ -910,7 +912,7 @@ if __name__ == '__main__':
     HandRaising = CustomSocket(host, port_HandRaising)
     HandRaising.clientConnect()
 
-    port_object = 10008
+    port_object = 10012
     object_detection = CustomSocket(host=host, port=port_object)
     object_detection.clientConnect()
 
