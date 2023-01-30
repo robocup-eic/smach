@@ -255,17 +255,20 @@ def catesian_go(goal_pose = Pose(),move_group = moveit_commander.MoveGroupComman
 
 class fake(smach.State) :
     def __init__(self):
-        rospy.loginfo('Initiating fake')
+        rospy.loginfo('Initiating ')
         smach.State.__init__(self,outcomes=['standby'])
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     
     def execute(self,userdata):
-        rospy.loginfo('Executing fake')
+        rospy.loginfo('Executing ')
         speak("hello I am walkieeee")
-        rospy.sleep(6)
+        print('\033[4mhello I am walkieeee')
+        rospy.sleep(3)
         speak("ok, This is the bar")
-        rospy.sleep(6)
+        print("\033[4mok, This is the bar")
+        rospy.sleep(3)
         speak("ok")
+        print("\033[4mok")
 
         rotate_msg = Twist()
         rotate_msg.angular.z = 0.2
@@ -347,9 +350,11 @@ class Walkie_Rotate(smach.State) :
 
         # speak to start
         speak("I'm ready")
+        print("\033[4mI'm ready")
         
         time.sleep(0.5)
-        speak("waiting for a customer to raise their hand")
+        speak("Waiting for a customer to raise their hand")
+        print("\033[4mWaiting for a customer to raise their hand")
 
         start_time = time.time()
         while True:
@@ -362,10 +367,12 @@ class Walkie_Rotate(smach.State) :
 
         #desc = personDescription.req(frame_ori)
         speak("A customer raised their hand")
+        print("\033[4mA customer raised their hand")
         time.sleep(0.5)
         # speak(desc)
         # time.sleep(1.0)
         speak("I'm coming")
+        print("\033[4mI'm coming")
 
         return 'To_cus'
             
@@ -386,12 +393,13 @@ class Walkie_Speak(smach.State) :
 
         if state == "blank" :
             speak("order or bill")
+            print("\033[4morder or bill")
         
             # state = listen()
             req = raw_input("req:")
 
             if req == "order" :
-                pr("Can I get you something sir?")
+                print("Can I get you something sir?")
                 order_name = raw_input("order:")
                 userdata.order= order_name
                 
@@ -406,13 +414,17 @@ class Walkie_Speak(smach.State) :
                 return "to_bar"
             elif req == "bill" :
                 speak("your order list is orange juice 80 dollar")
+                print("\033[4myour order list is orange juice 80 dollar")
                 speak("notebook 20 dollar")
+                print("\033[4mnotebook 20 dollar")
                 speak("super drink 30 dollar")
+                print("\033[4msuper drink 30 dollar")
                 speak("so the total price is 131 dollar")
+                print("\033[4mso the total price is 131 dollar")
                 return 'continue_ABORTED'
 
         elif state == "picked" :
-            speak("This is your")
+            speak("This is your"+order_name)
             return 'turn_around_walkie'
 
 class to_bar(smach.State) :
@@ -516,7 +528,7 @@ class GetObjectName(smach.State):
 
 class GetObjectPose(smach.State):
     def __init__(self):
-        global object_detection, navigation
+        global object_detection, navigation, rs
         rospy.loginfo('Initiating state GetObjectPose')
         smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=['objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
         # initiate variables
@@ -526,6 +538,7 @@ class GetObjectPose(smach.State):
         self.object_pose = Pose()
         self.frame = rs.frame
         self.bridge = rs.bridge
+        self.intrinsics = rs.intrinsics
         self.tf_stamp = None
 
         # connect to CV server
@@ -540,7 +553,7 @@ class GetObjectPose(smach.State):
         global object_detection, rs
 
         def run_once():
-            while rs.intrinsics is None:
+            while self.intrinsics is None:
                 time.sleep(0.1)
             rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
             object_detection.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
@@ -549,7 +562,7 @@ class GetObjectPose(smach.State):
             global object_detection
             rospy.loginfo("Start detecting")
             # scale image incase image size donot match cv server
-            self.frame = rs.check_image_size_for_cv(rs.frame)
+            self.frame = rs.check_image_size_for_cv(self.frame)
             # send frame to server and recieve the result
             result = {"n":0}
             while result['n'] == 0:
