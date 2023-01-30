@@ -19,7 +19,7 @@ from util.custom_socket import CustomSocket
 from util.realsense import Realsense
 from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
-from nlp_client import speak
+#from nlp_client import speak
 
 import rospy
 import smach
@@ -261,17 +261,17 @@ class fake(smach.State) :
     
     def execute(self,userdata):
         rospy.loginfo('Executing ')
-        speak("hello I am walkieeee")
-        print('\033[4mhello I am walkieeee')
+        # speak("hello I am walkieeee")
+        print('hello I am walkieeee')
         rospy.sleep(3)
-        speak("ok, This is the bar")
-        print("\033[4mok, This is the bar")
+        # speak("ok, This is the bar")
+        print("ok, This is the bar")
         rospy.sleep(3)
-        speak("ok")
-        print("\033[4mok")
+        # #speak("ok")
+        print("ok")
 
         rotate_msg = Twist()
-        rotate_msg.angular.z = 0.2
+        rotate_msg.angular.z = 0.5
 
         start = rospy.Time.now()
         while rospy.Time.now() - start < rospy.Duration(5) :
@@ -287,6 +287,8 @@ class Walkie_Rotate(smach.State) :
         rospy.loginfo('Initiating Walkie_Rotate state')
         smach.State.__init__(self,outcomes=['To_cus'],output_keys=['posesave'])
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        self.pub_realsense_pitch_absolute_command = rospy.Publisher("/realsense_pitch_absolute_command", Int16, queue_size=1)
+        self.pub_realsense_yaw_absolute_command = rospy.Publisher("/realsense_yaw_absolute_command", Int16, queue_size=1)
         self.bridge = CvBridge()
         self.save = ()
     
@@ -342,37 +344,55 @@ class Walkie_Rotate(smach.State) :
                     
 
 
-            
+        set_home_walkie()
+
+        # realsense down
+        for i in range(10) :
+            self.pub_realsense_pitch_absolute_command.publish(0)
+            self.pub_realsense_yaw_absolute_command.publish(0)
+            time.sleep(0.1)
+
+        # lift down
+        lift_command(False)
+        for i in range(10) :
+            lift_state.publish(0.0)
+            realsense_pitch_angle.publish(0)
+
         # find people raising hand
         rotate_msg = Twist()
         # rotate_msg.angular.z = 0.1
         rotate_msg.angular.z = 0.0
 
-        # speak to start
-        speak("I'm ready")
-        print("\033[4mI'm ready")
+        # #speak to start
+        #speak("I'm ready")
+        print("I'm ready")
         
         time.sleep(0.5)
-        speak("Waiting for a customer to raise their hand")
-        print("\033[4mWaiting for a customer to raise their hand")
+        #speak("Waiting for a customer to raise their hand")
+        print("Waiting for a customer to raise their hand")
 
         start_time = time.time()
+        count = 0
         while True:
-            # print(detect(rs.get_image()))
-            if detect(rs.get_image()) == True:
+            det = detect(rs.get_image())
+            print(det)
+            if det == True:
                 userdata.posesave = self.save
+                count += 1
+
+            if count == 2:
                 break
 
 
 
         #desc = personDescription.req(frame_ori)
-        speak("A customer raised their hand")
-        print("\033[4mA customer raised their hand")
+        #speak("A customer raised their hand")
+        print("A customer raised their hand")
         time.sleep(0.5)
-        # speak(desc)
+        # #speak(desc)
         # time.sleep(1.0)
-        speak("I'm coming")
-        print("\033[4mI'm coming")
+        #speak("I'm coming")
+        print("I'm coming")
 
         return 'To_cus'
             
@@ -380,6 +400,7 @@ class Walkie_Speak(smach.State) :
     def __init__(self):
         rospy.loginfo('Initiating Walkie_Speak')
         smach.State.__init__(self,outcomes=['to_bar','turn_around_walkie','continue_ABORTED'],output_keys=['order'])
+        self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     
     def execute(self,userdata):
         global state,order_name
@@ -392,8 +413,8 @@ class Walkie_Speak(smach.State) :
         # userdata.order = res_listen['object']
 
         if state == "blank" :
-            speak("order or bill")
-            print("\033[4morder or bill")
+            #speak("order or bill")
+            print("order or bill")
         
             # state = listen()
             req = raw_input("req:")
@@ -413,18 +434,32 @@ class Walkie_Speak(smach.State) :
                         
                 return "to_bar"
             elif req == "bill" :
-                speak("your order list is orange juice 80 dollar")
-                print("\033[4myour order list is orange juice 80 dollar")
-                speak("notebook 20 dollar")
-                print("\033[4mnotebook 20 dollar")
-                speak("super drink 30 dollar")
-                print("\033[4msuper drink 30 dollar")
-                speak("so the total price is 131 dollar")
-                print("\033[4mso the total price is 131 dollar")
+                #speak("your order list is orange juice 80 dollar")
+                print("your order list is orange juice 80 dollar")
+                #speak("notebook 20 dollar")
+                print("notebook 20 dollar")
+                #speak("super drink 30 dollar")
+                print("super drink 30 dollar")
+                #speak("so the total price is 131 dollar")
+                print("so the total price is 131 dollar")
                 return 'continue_ABORTED'
 
         elif state == "picked" :
-            speak("This is your"+order_name)
+            #speak("This is your"+order_name)
+            print("This is your"+order_name)
+            bar = Pose()
+            bar.orientation.w = 1
+            # navigation.nav2goal(bar)
+
+            rotate_msg = Twist()
+            rotate_msg.angular.z = 0.5
+
+            start = rospy.Time.now()
+            while rospy.Time.now() - start < rospy.Duration(5) :
+                self.rotate_pub.publish(rotate_msg)
+            
+            self.rotate_pub.publish(Twist())
+
             return 'turn_around_walkie'
 
 class to_bar(smach.State) :
@@ -436,7 +471,7 @@ class to_bar(smach.State) :
         rospy.loginfo('Executing to nsd')
         bar = Pose()
         bar.orientation.w = 1
-        navigation.nav2goal(bar)
+        # navigation.nav2goal(bar)
 
         return 'obj'
 
@@ -507,7 +542,7 @@ class to_cutomer(smach.State):
 
         rospy.loginfo(transformed_pose)
 
-        navigation.nav2goal(transformed_pose)
+        # navigation.nav2goal(transformed_pose)
         # navigation.nav2goal(recieved_pose,'realsense_pitch')
 
         return 'speak'
@@ -986,7 +1021,7 @@ if __name__ == '__main__':
                                           'objectpose_output': 'object_pose',
                                           'objectpose_output': 'object_pose'})
         smach.StateMachine.add('Pick', Pick(),
-                               transitions={'continue_navigate_volunteer': 'GetObjectName',
+                               transitions={'continue_navigate_volunteer': 'To_cus',
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectpose_input': 'object_pose'})
         # ----------------------------------------------------------------------------------
