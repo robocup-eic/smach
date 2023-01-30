@@ -19,7 +19,7 @@ from util.custom_socket import CustomSocket
 from util.realsense import Realsense
 from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
-# from nlp_client import *
+from nlp_client import speak
 
 import rospy
 import smach
@@ -255,17 +255,20 @@ def catesian_go(goal_pose = Pose(),move_group = moveit_commander.MoveGroupComman
 
 class fake(smach.State) :
     def __init__(self):
-        rospy.loginfo('Initiating fake')
+        rospy.loginfo('Initiating ')
         smach.State.__init__(self,outcomes=['standby'])
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     
     def execute(self,userdata):
-        rospy.loginfo('Executing fake')
-        print("hello I am walkieeee")
-        rospy.sleep(6)
-        print("ok, This is the bar")
-        rospy.sleep(6)
-        print("ok")
+        rospy.loginfo('Executing ')
+        speak("hello I am walkieeee")
+        print('\033[4mhello I am walkieeee')
+        rospy.sleep(3)
+        speak("ok, This is the bar")
+        print("\033[4mok, This is the bar")
+        rospy.sleep(3)
+        speak("ok")
+        print("\033[4mok")
 
         rotate_msg = Twist()
         rotate_msg.angular.z = 0.2
@@ -346,10 +349,12 @@ class Walkie_Rotate(smach.State) :
         rotate_msg.angular.z = 0.0
 
         # speak to start
-        print("I'm ready")
+        speak("I'm ready")
+        print("\033[4mI'm ready")
         
         time.sleep(0.5)
-        print("waiting for a customer to raise their hand")
+        speak("Waiting for a customer to raise their hand")
+        print("\033[4mWaiting for a customer to raise their hand")
 
         start_time = time.time()
         while True:
@@ -361,11 +366,13 @@ class Walkie_Rotate(smach.State) :
 
 
         #desc = personDescription.req(frame_ori)
-        print("A customer raised their hand")
+        speak("A customer raised their hand")
+        print("\033[4mA customer raised their hand")
         time.sleep(0.5)
         # speak(desc)
         # time.sleep(1.0)
-        print("I'm coming")
+        speak("I'm coming")
+        print("\033[4mI'm coming")
 
         return 'To_cus'
             
@@ -385,7 +392,8 @@ class Walkie_Speak(smach.State) :
         # userdata.order = res_listen['object']
 
         if state == "blank" :
-            print("order or bill")
+            speak("order or bill")
+            print("\033[4morder or bill")
         
             # state = listen()
             req = raw_input("req:")
@@ -405,14 +413,18 @@ class Walkie_Speak(smach.State) :
                         
                 return "to_bar"
             elif req == "bill" :
-                print("your order list is orange juice 80 dollar")
-                print("notebook 20 dollar")
-                print("super drink 30 dollar")
-                print("so the total price is 131 dollar")
+                speak("your order list is orange juice 80 dollar")
+                print("\033[4myour order list is orange juice 80 dollar")
+                speak("notebook 20 dollar")
+                print("\033[4mnotebook 20 dollar")
+                speak("super drink 30 dollar")
+                print("\033[4msuper drink 30 dollar")
+                speak("so the total price is 131 dollar")
+                print("\033[4mso the total price is 131 dollar")
                 return 'continue_ABORTED'
 
         elif state == "picked" :
-            print("This is your")
+            speak("This is your"+order_name)
             return 'turn_around_walkie'
 
 class to_bar(smach.State) :
@@ -516,7 +528,7 @@ class GetObjectName(smach.State):
 
 class GetObjectPose(smach.State):
     def __init__(self):
-        global object_detection, navigation
+        global object_detection, navigation, rs
         rospy.loginfo('Initiating state GetObjectPose')
         smach.State.__init__(self, outcomes=['continue_Pick', 'continue_ABORTED'], input_keys=['objectname_input', 'objectpose_output'], output_keys=['objectpose_output'])
         # initiate variables
@@ -524,6 +536,9 @@ class GetObjectPose(smach.State):
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
         self.object_pose_list = [] # [(x1, y1, z1, id), (x1, y1, z1, id), ...] im meters
         self.object_pose = Pose()
+        self.frame = rs.frame
+        self.bridge = rs.bridge
+        self.intrinsics = rs.intrinsics
         self.tf_stamp = None
 
         # connect to CV server
@@ -538,9 +553,7 @@ class GetObjectPose(smach.State):
         global object_detection, rs
 
         def run_once():
-            print('jfhasjfnkashf')
-            while rs.intrinsics is None:
-                print('fkhjsakjdhgjio')
+            while self.intrinsics is None:
                 time.sleep(0.1)
             rospy.loginfo("realsense image width, height = ({}, {})".format(self.intrinsics.width, self.intrinsics.height))
             object_detection.req(np.random.randint(255, size=(720, 1280, 3), dtype=np.uint8))
