@@ -322,13 +322,11 @@ class Walkie_Rotate(smach.State) :
                         center_pixel_list.append((x+w/2, y+h/2,id))
                         print(center_pixel_list)
                         o = True
-                else:
-                    # rospy.loginfo("guest not found yet")
+                    
                     image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
-                    return False
+                
             
             if o == True:
-                image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
 
                 minz = 999999
                 for id in center_pixel_list:
