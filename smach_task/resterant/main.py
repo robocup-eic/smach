@@ -391,7 +391,7 @@ class Walkie_Speak(smach.State) :
             req = raw_input("req:")
 
             if req == "order" :
-                speak("Can I get you something sir?")
+                pr("Can I get you something sir?")
                 order_name = raw_input("order:")
                 userdata.order= order_name
                 
@@ -524,6 +524,8 @@ class GetObjectPose(smach.State):
         self.center_pixel_list = [] # [(x1, y1, id), (x2, y2, id), ...] in pixels
         self.object_pose_list = [] # [(x1, y1, z1, id), (x1, y1, z1, id), ...] im meters
         self.object_pose = Pose()
+        self.frame = rs.frame
+        self.bridge = rs.bridge
         self.tf_stamp = None
 
         # connect to CV server
@@ -571,7 +573,7 @@ class GetObjectPose(smach.State):
                     self.frame = cv2.circle(self.frame, (x_pixel, y_pixel), 5, (0, 255, 0), 2)
                     self.frame = cv2.rectangle(self.frame, rs.rescale_pixel(bbox[3], bbox[4]), rs.rescale_pixel(bbox[3] + bbox[5], bbox[4] + bbox[6]), (0, 255, 0), 2)
             
-            self.image_pub.publish(rs.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
+            self.image_pub.publish(self.bridge.cv2_to_imgmsg(self.frame, "bgr8"))
 
             if len(self.center_pixel_list) == 0:
                 return False
