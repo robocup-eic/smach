@@ -417,7 +417,7 @@ class Walkie_Speak(smach.State) :
 
 class to_bar(smach.State) :
     def __init__(self):
-        rospy.loginfo('Initiating tobsr')
+        rospy.loginfo('Initiating to bar')
         smach.State.__init__(self,outcomes=['obj'])
     
     def execute(self,userdata):
