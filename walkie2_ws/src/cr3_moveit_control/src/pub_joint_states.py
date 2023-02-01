@@ -46,7 +46,7 @@ if __name__ == '__main__' :
     pub = rospy.Publisher("/realsense/joint_states", JointState, queue_size=10)
     rospy.Subscriber("/realsense_pitch_angle", Int16, realsense_pitch_cb, queue_size=1)
     rospy.Subscriber("/realsense_yaw_angle", Int16, realsense_yaw_cb, queue_size=1)
-    rospy.Subscriber("/lift_state", Float32, lift_cb)
+    rospy.Subscriber("/lift_state", Float32, lift_cb, queue_size=1)
 
     rate = rospy.Rate(50) # 10hz
     while not rospy.is_shutdown():

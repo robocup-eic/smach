@@ -19,7 +19,7 @@ from util.custom_socket import CustomSocket
 from util.realsense import Realsense
 from util.guest_name_manager import GuestNameManager
 from util.environment_descriptor import EnvironmentDescriptor
-#from nlp_client import speak
+from util.nlp_client import *
 
 import rospy
 import smach
@@ -261,17 +261,18 @@ class fake(smach.State) :
     
     def execute(self,userdata):
         rospy.loginfo('Executing ')
-        # speak("hello I am walkieeee")
-        print('hello I am walkieeee')
+        speak("Initiate task: restaurant")
+        speak("hello I am walkie")
+        print('hello I am walkie')
         rospy.sleep(3)
-        # speak("ok, This is the bar")
+        speak("ok, This is the bar")
         print("ok, This is the bar")
         rospy.sleep(3)
-        # #speak("ok")
+        speak("Understood")
         print("ok")
 
         rotate_msg = Twist()
-        rotate_msg.angular.z = 0.5
+        rotate_msg.angular.z = -0.5
 
         start = rospy.Time.now()
         while rospy.Time.now() - start < rospy.Duration(5) :
@@ -323,14 +324,16 @@ class Walkie_Rotate(smach.State) :
                         print(center_pixel_list)
                         o = True
                     
-                    image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
+            image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
                 
-            
+            print("nani")
             if o == True:
+                print('kjkmk')
 
                 minz = 999999
                 for id in center_pixel_list:
-                    x_coord, y_coord, z_coord = rs.get_coordinate(id[0],id[1], ref=(frame.shape[1], frame.shape[0]))
+                    print(id)
+                    x_coord, y_coord, z_coord = rs.get_coordinate(id[0],id[1], ref=(1280,720))
                     rospy.loginfo("Target person is at coordinate: {}".format((x_coord, y_coord, z_coord)))
                     if z_coord < minz:
                         minz = z_coord
@@ -346,7 +349,7 @@ class Walkie_Rotate(smach.State) :
 
         # realsense down
         for i in range(10) :
-            self.pub_realsense_pitch_absolute_command.publish(0)
+            self.pub_realsense_pitch_absolute_command.publish(-10)
             self.pub_realsense_yaw_absolute_command.publish(0)
             time.sleep(0.1)
 
@@ -354,7 +357,7 @@ class Walkie_Rotate(smach.State) :
         lift_command(False)
         for i in range(10) :
             lift_state.publish(0.0)
-            realsense_pitch_angle.publish(0)
+            realsense_pitch_angle.publish(-10)
 
         # find people raising hand
         rotate_msg = Twist()
@@ -362,11 +365,11 @@ class Walkie_Rotate(smach.State) :
         rotate_msg.angular.z = 0.0
 
         # #speak to start
-        #speak("I'm ready")
+        speak("I'm ready")
         print("I'm ready")
         
         time.sleep(0.5)
-        #speak("Waiting for a customer to raise their hand")
+        speak("Waiting for a customer to raise their hand")
         print("Waiting for a customer to raise their hand")
 
         start_time = time.time()
@@ -378,18 +381,18 @@ class Walkie_Rotate(smach.State) :
                 userdata.posesave = self.save
                 count += 1
 
-            if count == 2:
+            if count == 10:
                 break
 
 
 
         #desc = personDescription.req(frame_ori)
-        #speak("A customer raised their hand")
+        speak("A customer raised their hand")
         print("A customer raised their hand")
         time.sleep(0.5)
         # #speak(desc)
         # time.sleep(1.0)
-        #speak("I'm coming")
+        speak("I'm coming")
         print("I'm coming")
 
         return 'To_cus'
@@ -401,53 +404,64 @@ class Walkie_Speak(smach.State) :
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     
     def execute(self,userdata):
-        global state,order_name
+        global state,order_name, orderl
         rospy.loginfo('Executing Walkie_Speak state')
         
-            
+        orderl = []
         # listen
         # res_listen = listen()
 
         # userdata.order = res_listen['object']
 
         if state == "blank" :
-            #speak("order or bill")
+            speak("Hey, how may i help you?")
             print("order or bill")
-        
             # state = listen()
-            req = raw_input("req:")
+            # req = raw_input("req:")
+
+            while True:
+                res_listen = listen()
+                if (res_listen["intent"] == "restaurant_order") and ('object' in res_listen):
+                    if (res_listen["object"] in ["cork","cock","cook","coke"]): 
+                        obj = "coke"
+                    else:
+                        obj = res_listen["object"]
+                    req = "order"
+                    order_name = obj
+                    orderl.append(obj)
+                    break
+                elif res_listen["intent"] == "restaurant_checkout" in res_listen:
+                    req = "bill"
+                    break
+                else:
+                    print("Sorry I don't understand, Could you rephrase that?")
+
+
 
             if req == "order" :
-                print("Can I get you something sir?")
-                order_name = raw_input("order:")
-                userdata.order= order_name
-                
-                # while True:
-                    # res_listen = listen()
-                    # if res_listen["intent"] == "restaurant_order" & 'object' in res_listen:
-                    #     object = res_listen["object"]
-                    #     break
-                    # else:
-                    #     print("Sorry I don't understand, Could you rephrase that?")
+                # print("Can I get you something sir?")
+                # order_name = raw_input("order:")
+                userdata.order= obj
                         
                 return "to_bar"
+
             elif req == "bill" :
-                #speak("your order list is orange juice 80 dollar")
-                print("your order list is orange juice 80 dollar")
-                #speak("notebook 20 dollar")
-                print("notebook 20 dollar")
-                #speak("super drink 30 dollar")
-                print("super drink 30 dollar")
-                #speak("so the total price is 131 dollar")
-                print("so the total price is 131 dollar")
+                speak("your order list are ")
+                print("your order list are ")
+                for i in orderl:
+                    print(i)
+                    speak(i)
+
+                speak("that would be 99.99 dollar")
+                print("that would be 99.99 dollar")
                 return 'continue_ABORTED'
 
         elif state == "picked" :
-            #speak("This is your"+order_name)
+            speak("This is your"+order_name)
             print("This is your"+order_name)
             bar = Pose()
             bar.orientation.w = 1
-            # navigation.nav2goal(bar)
+            navigation.nav2goal(bar)
 
             rotate_msg = Twist()
             rotate_msg.angular.z = 0.5
@@ -469,7 +483,7 @@ class to_bar(smach.State) :
         rospy.loginfo('Executing to nsd')
         bar = Pose()
         bar.orientation.w = 1
-        # navigation.nav2goal(bar)
+        navigation.nav2goal(bar)
 
         return 'obj'
 
@@ -496,7 +510,7 @@ class to_cutomer(smach.State):
         recieved_pose.position.y = -x
         recieved_pose.position.z = -y
         recieved_pose.orientation.w = 1.0
-        # recieved_pose.position.x -= 0.05
+        recieved_pose.position.x -= 0.7
         # recieved_pose.position.y += 0.03
         # recieved_pose.position.z += 0.07
 
@@ -528,10 +542,10 @@ class to_cutomer(smach.State):
             recieved_pose, "realsense_pitch", "map")
         rospy.loginfo("***------------------------------------*****")
         # transformed_pose.position.x -= 1000
-        # transformed_pose.orientation.x = 0
-        # transformed_pose.orientation.y = 0
-        # transformed_pose.orientation.z = 0
-        # transformed_pose.orientation.w = 1
+        transformed_pose.orientation.x = 0
+        transformed_pose.orientation.y = 0
+        transformed_pose.orientation.z = 0
+        transformed_pose.orientation.w = 1
 
         # gosl = Pose()
         # gosl.position.x = transformed_pose.position.z
@@ -540,8 +554,8 @@ class to_cutomer(smach.State):
 
         rospy.loginfo(transformed_pose)
 
-        # navigation.nav2goal(transformed_pose)
-        # navigation.nav2goal(recieved_pose,'realsense_pitch')
+        navigation.nav2goal(transformed_pose)
+
 
         return 'speak'
 
