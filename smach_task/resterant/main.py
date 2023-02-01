@@ -317,18 +317,15 @@ class Walkie_Rotate(smach.State) :
                     # max_x, min_x, max_y, min_y, hand_raised = res[id]
                     color = (0, 255, 0) if hand_raised else (0, 0, 255)
                     frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 3)
-                    frame = cv2.circle(frame, (x+w/2, y+h/2), 5, color, 2)
+                    frame = cv2.circle(frame, (x+w/2, y+h/4), 5, color, 2)
 
                     if hand_raised == True:
-                        center_pixel_list.append((x+w/2, y+h/2,id))
-                        print(center_pixel_list)
+                        center_pixel_list.append((x+w/2, y+h/4,id))
                         o = True
                     
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
                 
-            print("nani")
             if o == True:
-                print('kjkmk')
 
                 minz = 999999
                 for id in center_pixel_list:
@@ -447,9 +444,9 @@ class Walkie_Speak(smach.State) :
 
             elif req == "bill" :
                 if first_check_bill :
-                    speak("You had one coke and one milk, that will be 8 dollars. Please pay at the counter")
+                    speak("You had one milk, that will be 5 dollars. Please pay at the counter")
                     speak("have a great day")
-                    order1 = False
+                    orderl.clear()
                 else:
                     speak("You had one coke, that will be 3 dollars. Please pay at the counter")
                     speak("have a great day")
