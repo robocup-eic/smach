@@ -489,14 +489,14 @@ class to_bar(smach.State) :
 
 class to_cutomer(smach.State):
     def __init__(self):
-            rospy.loginfo('Initiatin to cud')
+            rospy.loginfo('Initiatin to cus')
             smach.State.__init__(self,outcomes=['speak'],input_keys=['posesave'])
             self.tf_buffer =  tf2_ros.Buffer()
             self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
         
     def execute(self,userdata):
-        rospy.loginfo('Executing to cud')
+        rospy.loginfo('Executing to cus')
         posesave = userdata.posesave
 
         # tune coordinate
