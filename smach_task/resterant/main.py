@@ -264,10 +264,10 @@ class fake(smach.State) :
         speak("Initiate task: restaurant")
         speak("hello I am walkie")
         print('hello I am walkie')
-        rospy.sleep(3)
+        rospy.sleep(3) # this is a bar
         speak("ok, This is the bar")
         print("ok, This is the bar")
-        rospy.sleep(3)
+        rospy.sleep(3) # turn around and find customer
         speak("Understood")
         print("ok")
 
@@ -392,8 +392,8 @@ class Walkie_Rotate(smach.State) :
         time.sleep(0.5)
         # #speak(desc)
         # time.sleep(1.0)
-        speak("I'm coming")
-        print("I'm coming")
+        speak("I'm coming to you")
+        print("I'm coming to you")
 
         return 'To_cus'
             
@@ -404,7 +404,7 @@ class Walkie_Speak(smach.State) :
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     
     def execute(self,userdata):
-        global state,order_name, orderl
+        global state,order_name, orderl, first_check_bill
         rospy.loginfo('Executing Walkie_Speak state')
         
         orderl = []
@@ -414,7 +414,7 @@ class Walkie_Speak(smach.State) :
         # userdata.order = res_listen['object']
 
         if state == "blank" :
-            speak("Hey, how may i help you?")
+            speak("Hello, how can I help you?")
             print("order or bill")
             # state = listen()
             # req = raw_input("req:")
@@ -422,7 +422,7 @@ class Walkie_Speak(smach.State) :
             while True:
                 res_listen = listen()
                 if (res_listen["intent"] == "restaurant_order") and ('object' in res_listen):
-                    if (res_listen["object"] in ["cork","cock","cook","coke"]): 
+                    if (res_listen["object"].lower() in ["cork","cock","cook","coke"]): 
                         obj = "coke"
                     else:
                         obj = res_listen["object"]
@@ -434,7 +434,7 @@ class Walkie_Speak(smach.State) :
                     req = "bill"
                     break
                 else:
-                    print("Sorry I don't understand, Could you rephrase that?")
+                    print("Sorry I didn't get that, Could you rephrase that?")
 
 
 
@@ -446,19 +446,28 @@ class Walkie_Speak(smach.State) :
                 return "to_bar"
 
             elif req == "bill" :
-                speak("your order list are ")
-                print("your order list are ")
-                for i in orderl:
-                    print(i)
-                    speak(i)
+                if first_check_bill :
+                    speak("You had one coke and one milk, that will be 8 dollars. Please pay at the counter")
+                    speak("have a great day")
+                    order1 = False
+                else:
+                    speak("You had one coke, that will be 3 dollars. Please pay at the counter")
+                    speak("have a great day")
+                # speak("your order list are ")
+                # print("your order list are ")
+                # for i in orderl:
+                #     print(i)
+                #     speak(i)
+                # if orderl
 
-                speak("that would be 99.99 dollar")
-                print("that would be 99.99 dollar")
+                # speak("that would be 99.99 dollar")
+                # print("that would be 99.99 dollar")
+                
                 return 'continue_ABORTED'
 
         elif state == "picked" :
-            speak("This is your"+order_name)
-            print("This is your"+order_name)
+            speak("This is your "+order_name)
+            print("This is your "+order_name)
             bar = Pose()
             bar.orientation.w = 1
             navigation.nav2goal(bar)
@@ -950,6 +959,7 @@ class Pick(smach.State):
 #---------------------------------------------------------------
 
 if __name__ == '__main__':
+    first_check_bill = True
     rospy.init_node('restaurant_task')
     drag = ''
     tf_Buffer = tf2_ros.Buffer()
