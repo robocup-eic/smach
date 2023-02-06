@@ -29,7 +29,7 @@ import tf2_ros
 import tf2_msgs
 import tf2_geometry_msgs
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, PoseStamped, Vector3, TransformStamped, Pose
+from geometry_msgs.msg import Twist, PoseStamped, Vector3, TransformStamped, Pose, Quaternion
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool, Int16, Int64, Float32
@@ -40,6 +40,7 @@ import actionlib
 import moveit_commander
 import json
 import copy
+from tf.transformations import quaternion_from_euler,euler_from_quaternion
 
 
 
@@ -161,10 +162,16 @@ def set_home_walkie(move_group = moveit_commander.MoveGroupCommander("arm")):
             print(joint_goal)
             joint_goal[0] = 0.0
             joint_goal[1] = 0.0
-            joint_goal[2] = 2.267
-            joint_goal[3] = 0.875
-            joint_goal[4] = 3.14
-            joint_goal[5] = 2.355
+            joint_goal[2] = 2.044
+            joint_goal[3] = 1.11
+            joint_goal[4] = 2.968
+            joint_goal[5] = 0
+            # joint_goal[0] = 0.0
+            # joint_goal[1] = 0.0
+            # joint_goal[2] = 2.267
+            # joint_goal[3] = 0.875
+            # joint_goal[4] = 3.14
+            # joint_goal[5] = 2.355
             
             
             # joint_goal[0] = 0.0
@@ -258,27 +265,37 @@ class fake(smach.State) :
         rospy.loginfo('Initiating ')
         smach.State.__init__(self,outcomes=['standby'])
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
+        global co
+        co = 0
     
     def execute(self,userdata):
         rospy.loginfo('Executing ')
         speak("Initiate task: restaurant")
         speak("hello I am walkie")
         print('hello I am walkie')
-        rospy.sleep(3) # this is a bar
-        speak("ok, This is the bar")
+        rospy.sleep(2) # this is a bar
+        #speak("ok, This is the bar")
         print("ok, This is the bar")
-        rospy.sleep(3) # turn around and find customer
-        speak("Understood")
+        #rospy.sleep(3) # turn around and find customer
+        #speak("Understood")
         print("ok")
 
-        rotate_msg = Twist()
-        rotate_msg.angular.z = -0.5
+        yaw = 1.92
+        q = quaternion_from_euler(0,0,yaw)
+        pp = Quaternion(*q)
+        gosl = Pose()
+        gosl.orientation = pp
+        navigation.nav2goal(gosl)
 
-        start = rospy.Time.now()
-        while rospy.Time.now() - start < rospy.Duration(5) :
-            self.rotate_pub.publish(rotate_msg)
+        # rotate_msg = Twist()
+        # rotate_msg.angular.z = 0.7
+
+        # start = rospy.Time.now()
+        # while rospy.Time.now() - start < rospy.Duration(5) :
+        #     self.rotate_pub.publish(rotate_msg)
         
-        self.rotate_pub.publish(Twist())
+        # self.rotate_pub.publish(Twist())
+        
 
         return 'standby'
 
@@ -310,29 +327,28 @@ class Walkie_Rotate(smach.State) :
             center_pixel_list = []
             for id in detections.keys():
 
-                print(detections[id])
+                # print(detections[id])
 
                 if detections[id]["hand_raised"] == True:
                     x, y, w, h, hand_raised = (detections[id][k] for k in ("x", "y", "w", "h", "hand_raised"))
                     # max_x, min_x, max_y, min_y, hand_raised = res[id]
                     color = (0, 255, 0) if hand_raised else (0, 0, 255)
                     frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 3)
-                    frame = cv2.circle(frame, (x+w/2, y+h/2), 5, color, 2)
+                    frame = cv2.circle(frame, (x+w/2, y+2*h/3), 5, color, 2)
 
                     if hand_raised == True:
-                        center_pixel_list.append((x+w/2, y+h/2,id))
-                        print(center_pixel_list)
+                        #center_pixel_list.append((x+w/2, y+h/2,id))
+                        center_pixel_list.append((x+w/2, y+2*h/3,id))
+                        # print(center_pixel_list)
                         o = True
                     
             image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
                 
-            print("nani")
             if o == True:
-                print('kjkmk')
 
                 minz = 999999
                 for id in center_pixel_list:
-                    print(id)
+                    # print(id)
                     x_coord, y_coord, z_coord = rs.get_coordinate(id[0],id[1], ref=(1280,720))
                     rospy.loginfo("Target person is at coordinate: {}".format((x_coord, y_coord, z_coord)))
                     if z_coord < minz:
@@ -360,9 +376,9 @@ class Walkie_Rotate(smach.State) :
             realsense_pitch_angle.publish(-10)
 
         # find people raising hand
-        rotate_msg = Twist()
+        # rotate_msg = Twist()
         # rotate_msg.angular.z = 0.1
-        rotate_msg.angular.z = 0.0
+        # rotate_msg.angular.z = 0.0
 
         # #speak to start
         speak("I'm ready")
@@ -376,7 +392,7 @@ class Walkie_Rotate(smach.State) :
         count = 0
         while True:
             det = detect(rs.get_image())
-            print(det)
+            # print(det)
             if det == True:
                 userdata.posesave = self.save
                 count += 1
@@ -404,7 +420,42 @@ class Walkie_Speak(smach.State) :
         self.rotate_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
     
     def execute(self,userdata):
-        global state,order_name, orderl, first_check_bill
+
+        def servepls():
+            group_name = "arm"
+            move_group = moveit_commander.MoveGroupCommander(group_name)
+            joint_goal = move_group.get_current_joint_values()
+            print(joint_goal)
+            joint_goal[0] = -0.075
+            joint_goal[1] = 0.2903
+            joint_goal[2] = 1.595
+            joint_goal[3] = 1.468
+            joint_goal[4] = 1.62
+            joint_goal[5] = 2.35
+            move_group.go(joint_goal, wait=True)
+            move_group.stop()
+
+        def set_home_walkie():
+            group_name = "arm"
+            move_group = moveit_commander.MoveGroupCommander(group_name)
+            joint_goal = move_group.get_current_joint_values()
+            print(joint_goal)
+            joint_goal[0] = 0.0
+            joint_goal[1] = 0.0
+            joint_goal[2] = 2.044
+            joint_goal[3] = 1.11
+            joint_goal[4] = 2.968
+            joint_goal[5] = 0
+            # joint_goal[0] = 0.0
+            # joint_goal[1] = 0.0
+            # joint_goal[2] = 2.267
+            # joint_goal[3] = 0.875
+            # joint_goal[4] = 3.14
+            # joint_goal[5] = 2.355
+            move_group.go(joint_goal, wait=True)
+            move_group.stop()
+
+        global state,order_name, orderl, first_check_bill, co, gripper_publisher
         rospy.loginfo('Executing Walkie_Speak state')
         
         orderl = []
@@ -422,7 +473,7 @@ class Walkie_Speak(smach.State) :
             while True:
                 res_listen = listen()
                 if (res_listen["intent"] == "restaurant_order") and ('object' in res_listen):
-                    if (res_listen["object"].lower() in ["cork","cock","cook","coke"]): 
+                    if (res_listen["object"].lower() in ["cork","cock","cook","coke", "complete","coca-cola","call","c-c-cliff","colacola","cola"]): 
                         obj = "coke"
                     else:
                         obj = res_listen["object"]
@@ -430,29 +481,27 @@ class Walkie_Speak(smach.State) :
                     order_name = obj
                     orderl.append(obj)
                     break
-                elif res_listen["intent"] == "restaurant_checkout" in res_listen:
+                elif (res_listen["intent"] == "restaurant_checkout"):
                     req = "bill"
                     break
-                else:
-                    print("Sorry I didn't get that, Could you rephrase that?")
+                print("Sorry I didn't get that, Could you rephrase that?")
 
+            
 
 
             if req == "order" :
                 # print("Can I get you something sir?")
                 # order_name = raw_input("order:")
+                motherfucker = "ok, I'm getting you a " + obj
+                speak(motherfucker)
                 userdata.order= obj
                         
                 return "to_bar"
 
             elif req == "bill" :
-                if first_check_bill :
-                    speak("You had one coke and one milk, that will be 8 dollars. Please pay at the counter")
-                    speak("have a great day")
-                    order1 = False
-                else:
-                    speak("You had one coke, that will be 3 dollars. Please pay at the counter")
-                    speak("have a great day")
+                speak("You had one coke, that will be 3 dollars. Please pay at the counter")
+                speak("have a great day")
+                order1 = False
                 # speak("your order list are ")
                 # print("your order list are ")
                 # for i in orderl:
@@ -466,20 +515,50 @@ class Walkie_Speak(smach.State) :
                 return 'continue_ABORTED'
 
         elif state == "picked" :
-            speak("This is your "+order_name)
+            lift_command(True)
+            speak("Here is your "+order_name)
             print("This is your "+order_name)
+            servepls()
+            gripper_publisher.publish(False)
+            rospy.sleep(3)
+            set_home_walkie()
+            gripper_publisher.publish(True)
+            
+
+            speak("anything else?")
+            rospy.sleep(5)
+
+            if co == 2:
+                speak("You had one coke and one milk, that will be 4 dollars. Please pay at the counter")
+                speak("have a great day")
+            
+            else:
+                rospy.loginfo("repeat: None")
+                speak("ok, you can call me again by raising your hand, enjoy")
+                rospy.loginfo("back to bar")
+                co += 1
+
             bar = Pose()
+            bar.position.x = -0.05
             bar.orientation.w = 1
             navigation.nav2goal(bar)
 
-            rotate_msg = Twist()
-            rotate_msg.angular.z = 0.5
+            yaw = 1.571
+            q = quaternion_from_euler(0,0,yaw)
+            pp = Quaternion(*q)
+            gosl = Pose()
+            gosl.position = bar.position
+            gosl.orientation = pp
+            navigation.nav2goal(gosl)
 
-            start = rospy.Time.now()
-            while rospy.Time.now() - start < rospy.Duration(5) :
-                self.rotate_pub.publish(rotate_msg)
+            # rotate_msg = Twist()
+            # rotate_msg.angular.z = 0.4
+
+            # start = rospy.Time.now()
+            # while rospy.Time.now() - start < rospy.Duration(5) :
+            #     self.rotate_pub.publish(rotate_msg)
             
-            self.rotate_pub.publish(Twist())
+            # self.rotate_pub.publish(Twist())
 
             return 'turn_around_walkie'
 
@@ -491,20 +570,43 @@ class to_bar(smach.State) :
     def execute(self,userdata):
         rospy.loginfo('Executing to nsd')
         bar = Pose()
+        bar.position.x -= 0.05
         bar.orientation.w = 1
         navigation.nav2goal(bar)
 
         return 'obj'
 
+class serv(smach.State) :
+    def __init__(self):
+        rospy.loginfo('Initiating to serve')
+        smach.State.__init__(self,outcomes=['speak'],input_keys=['gosl'])
+    
+    def execute(self,userdata):
+        global gorre
+        rospy.loginfo('Executing to serve')
+        god = gorre
+        # print("*/////////////////////////////////////////////////////////")
+        # print(god)
+        yaww = 1.92
+        qq = quaternion_from_euler(0,0,yaww)
+        ppp = Quaternion(*qq)
+        gosll = Pose()
+        gosll.orientation = ppp
+        navigation.nav2goal(gosll)
+        navigation.nav2goal(god)
+
+        return 'speak'
+
 class to_cutomer(smach.State):
     def __init__(self):
             rospy.loginfo('Initiatin to cus')
-            smach.State.__init__(self,outcomes=['speak'],input_keys=['posesave'])
+            smach.State.__init__(self,outcomes=['speak'],input_keys=['posesave','gosl'])
             self.tf_buffer =  tf2_ros.Buffer()
             self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
         
     def execute(self,userdata):
+        global gorre
         rospy.loginfo('Executing to cus')
         posesave = userdata.posesave
 
@@ -519,8 +621,8 @@ class to_cutomer(smach.State):
         recieved_pose.position.y = -x
         recieved_pose.position.z = -y
         recieved_pose.orientation.w = 1.0
-        recieved_pose.position.x -= 0.7
-        # recieved_pose.position.y += 0.03
+        #recieved_pose.position.x -= 0.3
+        recieved_pose.position.y -= 0.30
         # recieved_pose.position.z += 0.07
 
         rospy.loginfo('\n-----------------------')
@@ -551,20 +653,39 @@ class to_cutomer(smach.State):
             recieved_pose, "realsense_pitch", "map")
         rospy.loginfo("***------------------------------------*****")
         # transformed_pose.position.x -= 1000
-        transformed_pose.orientation.x = 0
-        transformed_pose.orientation.y = 0
-        transformed_pose.orientation.z = 0
-        transformed_pose.orientation.w = 1
+        # transformed_pose.orientation.x = 0
+        # transformed_pose.orientation.y = 0
+        # transformed_pose.orientation.z = 0
+        # transformed_pose.orientation.w = 1
+        # transformed_pose=Pose()
+        
+        orientation_list = (transformed_pose.orientation.x,transformed_pose.orientation.y,transformed_pose.orientation.z,transformed_pose.orientation.w)
+        # print(orientation_list)
+        (roll, pitch, yaw) = euler_from_quaternion (orientation_list)
+        # print("hhhh",roll,pitch,yaw)
+        # (x,y,z,w) = quaternion_from_euler(0,0,yaw)
+        q = quaternion_from_euler(0,0,yaw)
+        pp = Quaternion(*q)
 
-        # gosl = Pose()
-        # gosl.position.x = transformed_pose.position.z
-        # gosl.position.y = transformed_pose.position.x
+        
+
+        gosl = Pose()
+        gosl.position = transformed_pose.position
+        gosl.orientation = pp
+        # gosl.orientation.x = x
+        # gosl.orientation.y = y
+        # gosl.orientation.z = z
+        # gosl.orientation.w = w
         # gosl.orientation.w = 1
 
-        rospy.loginfo(transformed_pose)
+        # rospy.loginfo(transformed_pose)
+        print("***********************************************************************")
+        rospy.loginfo(gosl)
 
-        navigation.nav2goal(transformed_pose)
-
+        # navigation.nav2goal(transformed_pose)
+        navigation.nav2goal(gosl)
+        # userdata.gosl = gosl
+        gorre = gosl
 
         return 'speak'
 
@@ -678,7 +799,7 @@ class GetObjectPose(smach.State):
             self.image_sub.unregister()
             self.depth_sub.unregister()
             rospy.loginfo("Object found!")
-            print(" I found a water bottle")
+            # print(" I found a water bottle")
             self.object_pose = find_closest_object()
             return True
 
@@ -731,10 +852,16 @@ class GetObjectPose(smach.State):
             print(joint_goal)
             joint_goal[0] = 0.0
             joint_goal[1] = 0.0
-            joint_goal[2] = 2.267
-            joint_goal[3] = 0.875
-            joint_goal[4] = 3.14
-            joint_goal[5] = 2.355
+            joint_goal[2] = 2.044
+            joint_goal[3] = 1.11
+            joint_goal[4] = 2.968
+            joint_goal[5] = 0
+            # joint_goal[0] = 0.0
+            # joint_goal[1] = 0.0
+            # joint_goal[2] = 2.267
+            # joint_goal[3] = 0.875
+            # joint_goal[4] = 3.14
+            # joint_goal[5] = 2.355
             move_group.go(joint_goal, wait=True)
             move_group.stop()
 
@@ -781,7 +908,7 @@ class GetObjectPose(smach.State):
             lift_state.publish(0.0)
             realsense_pitch_angle.publish(-35)
 
-        print("life go")
+        # print("life go")
 
         # run_once function
         run_once()
@@ -855,14 +982,19 @@ class Pick(smach.State):
             # q = quaternion_from_euler(3.14,-1.57,0)
             # pose_goal.orientation = Quaternion(*q)
             pose_goal.position.x = pose.position.x
-            pose_goal.position.y = pose.position.y-0.05
+            pose_goal.position.y = pose.position.y-0.1
             pose_goal.position.z = pose.position.z+0.05
             # q = quaternion_from_euler(0,1.57,0)
             # pose_goal.orientation = Quaternion(*q)
-            pose_goal.orientation.x = -0.6668
-            pose_goal.orientation.y = 0.24437
-            pose_goal.orientation.z = -0.6384
-            pose_goal.orientation.w = 0.29675
+            pose_goal.orientation.x = 0.297
+            pose_goal.orientation.y = 0.658
+            pose_goal.orientation.z = 0.256
+            pose_goal.orientation.w = 0.641
+
+            # pose_goal.orientation.x = -0.6668
+            # pose_goal.orientation.y = 0.24437
+            # pose_goal.orientation.z = -0.6384
+            # pose_goal.orientation.w = 0.29675
 
             grasp_pose      = Pose()
             pregrasp_pose   = Pose()
@@ -994,6 +1126,28 @@ if __name__ == '__main__':
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
 
+#test////////////////////////////////////////
+    # group_name = "arm"
+    # move_group = moveit_commander.MoveGroupCommander(group_name)
+    # joint_goal = move_group.get_current_joint_values()
+    # print(joint_goal)
+    # #new
+    # joint_goal[0] = 0.0
+    # joint_goal[1] = 0.0
+    # joint_goal[2] = 2.044
+    # joint_goal[3] = 1.11
+    # joint_goal[4] = 2.968
+    # joint_goal[5] = 0
+    #old
+    # joint_goal[0] = 0.0
+    # joint_goal[1] = 0.0
+    # joint_goal[2] = 2.267
+    # joint_goal[3] = 0.875
+    # joint_goal[4] = 3.14
+    # joint_goal[5] = 2.355
+    # move_group.go(joint_goal, wait=True)
+    # move_group.stop()
+#////////////////////////////////////////////////////////
     # Flask nlp server
 
     scene = moveit_commander.PlanningSceneInterface()
@@ -1003,6 +1157,7 @@ if __name__ == '__main__':
     sm_top = smach.StateMachine(outcomes=['SUCCEEDED','ABORTED'])
     sm_top.userdata.posesave = ()
     sm_top.userdata.order = ""
+    sm_top.userdata.gosl = Pose()
 
     image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
 
@@ -1029,7 +1184,7 @@ if __name__ == '__main__':
 
         smach.StateMachine.add('To_cus', to_cutomer(),
                                 transitions={'speak':'Walkie_Speak'},
-                                remapping={'posesave':'posesave'})
+                                remapping={'posesave':'posesave','gosl':'gosl'})
         # ------------------------------ Pick Object --------------------------------------
         smach.StateMachine.add('GetObjectName', GetObjectName(),
                                transitions={'continue_GetObjectPose': 'GetObjectPose'},
@@ -1043,10 +1198,13 @@ if __name__ == '__main__':
                                           'objectpose_output': 'object_pose',
                                           'objectpose_output': 'object_pose'})
         smach.StateMachine.add('Pick', Pick(),
-                               transitions={'continue_navigate_volunteer': 'To_cus',
+                               transitions={'continue_navigate_volunteer': 'serve',
                                             'continue_ABORTED': 'ABORTED'},
                                remapping={'objectpose_input': 'object_pose'})
         # ----------------------------------------------------------------------------------
+        smach.StateMachine.add('serve', serv(),
+                                transitions={'speak':'Walkie_Speak'},
+                                remapping={'gosl':'gosl'})
         
     sis = smach_ros.IntrospectionServer('Server_name', sm_top, '/Restaurant_task')
     sis.start()

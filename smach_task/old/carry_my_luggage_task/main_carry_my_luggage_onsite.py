@@ -244,7 +244,6 @@ class Standby(smach.State):
 
             time.sleep(0.01)
 
-
 class Ask_if_arrived(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating state Ask_if_arrived')
@@ -352,7 +351,6 @@ class Check_position(smach.State):
             if is_stop or target_lost:
                 return 'continue_stop'
             
-
 class Stop_command(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_stop'])
@@ -372,7 +370,6 @@ class Stop_command(smach.State):
             if target_lost:
                 return "continue_stop"
             time.sleep(0.01)
-
 
 class Follow_person(smach.State):  
     def __init__(self):
@@ -440,7 +437,6 @@ class Follow_person(smach.State):
                             return "continue_stop"
                     else:
                         
-                        
                         # wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
                         if target_lost:
                             navigation.move_base_client.cancel_goal()
@@ -448,7 +444,6 @@ class Follow_person(smach.State):
                             speak("I have lost you, where are you my friend.")
                             self.realsense_follow_cmd_pub.publish("stop")
                             return "continue_stop"
-
 
                 except Exception as e:
 
@@ -475,7 +470,7 @@ class Follow_person(smach.State):
                         navigation.move_base_client.cancel_goal()
                         self.follow_cmd_pub.publish("follow")
                         self.is_cancelled = True
-                        
+
                     if  is_stop:
                         self.follow_cmd_pub.publish("stop")
                         self.stop_pub.publish(self.cancel)
@@ -506,7 +501,6 @@ class Follow_person(smach.State):
                         speak("I lost you, where are you my friend.")
                         return "continue_stop"
                 
-
 class Get_bounding_box(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_stop'])
@@ -538,7 +532,6 @@ class Get_bounding_box(smach.State):
         self.tf_buffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
-
     def execute(self, userdata):
 
         def transform_pose(input_pose, from_frame, to_frame):
@@ -555,7 +548,6 @@ class Get_bounding_box(smach.State):
                 output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
 
                 return output_pose_stamped.pose
-
 
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
@@ -720,7 +712,6 @@ class Get_bounding_box(smach.State):
             
             elif is_stop == True:
                 return 'continue_stop'
-
 
 if __name__ == '__main__':
     # initiate ROS node

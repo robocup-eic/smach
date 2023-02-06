@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+
+"""
+kill flask in background
+kill -9 $(lsof -t -i:5000)
+"""
+
+# ros libraries
+import roslib
+import rospy
+import smach
+import smach_ros
+import time
+import tf
+import tf2_ros
+import tf2_msgs
+from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped, Point, PoseStamped
+from std_msgs.msg import String, Int16
+
+# import computer vision and realsense
+import cv2
+import numpy as np
+from util.realsense import Realsense
+
+# import for speech-to-text
+from flask import Flask, request
+import threading
+
+# import for text-to-speech
+import requests
+import json
+from util.nlp_server import SpeechToText, speak
+import time
+
+#Bring in the simple action client
+import actionlib
+
+#Bring in the .action file and messages used by the move based action
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from util.custom_socket import CustomSocket
+from cv_bridge import CvBridge, CvBridgeError #
+from sensor_msgs.msg import Image, CameraInfo #
+from actionlib_msgs.msg import GoalStatus
+
+# Utils function
+from math import atan, pi
+from util.environment_descriptor import EnvironmentDescriptor
+from util.realsense import Realsense
+
+if __name__ == '__main__':
+    # initiate ROS node
+    rospy.init_node('follow me')
+    # initiate the global variable
+    target_lost = False
+    is_stop = False
+    robot_inside = True
+    person_id = None
+    stop_rotate = False
+    goal_pose = None
+
+    ed = EnvironmentDescriptor('/home/eic/ros/smach/smach_task/config/fur_data_onsite.yaml')
+    ed.read_yaml()
+
+    navigation = go_to_Navigation()
+
+    # person tracker
+    host = "0.0.0.0"
+    port_personTrack = 11000
+    personTrack = CustomSocket(host,port_personTrack)
+    personTrack.clientConnect()
+
+    rs = Realsense()
+    rs.wait() # wait for camera intrinsics
+
+    # Flask nlp server
+    stt = SpeechToText("nlp")
+    t = threading.Thread(target = stt.run ,name="nlp")
+    t.start()
+
+    rs = Realsense()
+    rs.wait() # wait for camera intrinsics
+
+    realsense_pitch_reset_pub = rospy.Publisher('/realsense_pitch_absolute_command',Int16, queue_size=1)
+    realsense_yaw_reset_pub = rospy.Publisher('/realsense_yaw_absolute_command',Int16, queue_size=1)
+
+    realsense_pitch_reset_pub.publish(0)
+    realsense_yaw_reset_pub.publish(0)
+
+
+
+    # start state machine
+    sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
+    with sm:
+        smach.StateMachine.add('Start_signal',Start_signal(),
+                                transitions={'continue_Standby':'Standby'})
+        
+        # Create sub smach state machine
+        sm_follow = smach.Concurrence(outcomes=['Stop'], default_outcome = 'Stop')      
+        with sm_follow:
+            smach.Concurrence.add('Stop_command',Stop_command())
+            smach.Concurrence.add('Follow_person',Follow_person())
+            smach.Concurrence.add('Get_bounding_box',Get_bounding_box())
+            smach.Concurrence.add('Check_position',Check_position())
+        smach.StateMachine.add('FOLLOW', sm_follow, transitions={'Stop':'Ask_if_arrived'})
+    
+
+        # Set up                                                    
+        sis = smach_ros.IntrospectionServer('Server_name',sm,'/PatterRoot')
+        sis.start()
+        
+        outcome = sm.execute()
+
+        rospy.spin()
+        sis.stop()

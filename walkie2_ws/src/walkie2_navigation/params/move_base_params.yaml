@@ -4,11 +4,19 @@ planner_patience: 5.0
 controller_patience: 15.0
 conservative_reset_dist: 3.0
 planner_frequency: 5.0
-oscillation_timeout: 10.0
-oscillation_distance: 0.2
+oscillation_timeout: 1.0
+oscillation_distance: 0.05
 
 base_local_planner: "dwa_local_planner/DWAPlannerROS"
 
-base_global_planner: "global_planner/GlobalPlanner"
+base_global_planner: "asr_navfn/NavfnROS"
 
-clearing_rotation_allowed: true
+recovery_behaviours:
+  - name: costmap_reset
+    type: clear_costmap_recovery/ClearCostmapRecovery
+
+costmap_reset:
+  reset_distance: 0.0
+  layer_names: ["static_layer","obstacle_layer"]
+
+clearing_rotation_allowed: false

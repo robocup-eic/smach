@@ -1,13 +1,13 @@
 obstacle_range: 5.0
 raytrace_range: 5.0
-footprint: [[-0.38, -0.34],[-0.38, 0.34],[0.26, 0.34],[0.26, -0.34]]
-transform_tolerance: 0.5
+footprint: [[-0.30, -0.25],[-0.30, 0.25],[0.20, 0.25],[0.20, -0.25]]
+transform_tolerance: 1
 # laser_scan_sensor_2: {sensor_frame: sensor_d435_depth_frame, data_type:3 LaserScan, topic: realsense_scan, marking: true, clearing: true}
 # point_cloud_sensor: {sensor_frame: sensor_d435_depth_frame, data_type: PointCloud2, topic: /camera/depth/points, marking: true, clearing: true}
 
 rgbd_obstacle_layer:
  enabled:               true
- voxel_decay:           15     #seconds if linear, e^n if exponential
+ voxel_decay:           5     #seconds if linear, e^n if exponential
  decay_model:           0      #0=linear, 1=exponential, -1=persistent
  voxel_size:            0.05   #meters
  track_unknown_space:   true   #default space is unknown
