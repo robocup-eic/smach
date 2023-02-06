@@ -15,7 +15,7 @@ import tf
 import tf2_ros
 import tf2_msgs
 from geometry_msgs.msg import PoseStamped, Twist ,Vector3, TransformStamped, Point, PoseStamped
-from std_msgs.msg import String, Int16
+from std_msgs.msg import String
 
 # import computer vision and realsense
 import cv2
@@ -46,8 +46,6 @@ from actionlib_msgs.msg import GoalStatus
 from math import atan, pi
 from util.environment_descriptor import EnvironmentDescriptor
 from util.realsense import Realsense
-
-import tf2_geometry_msgs
 
 import math
 
@@ -168,7 +166,7 @@ class Start_signal(smach.State):
 
 class Standby(smach.State):
 
-    
+
     def __init__(self):
         rospy.loginfo('Initiating state Standby')
         smach.State.__init__(self, outcomes=['continue_follow'])
@@ -243,6 +241,7 @@ class Standby(smach.State):
                 
 
             time.sleep(0.01)
+
 
 class Ask_if_arrived(smach.State):
     def __init__(self):
@@ -333,8 +332,8 @@ class Check_position(smach.State):
             pose = self.tfBuffer.lookup_transform('map','base_footprint',rospy.Time.now()-rospy.Duration.from_sec(1.0))
 
             distance = [math.sqrt((pose.transform.translation.x-exit_position.position.x)**2 + (pose.transform.translation.y-exit_position.position.y)**2) for exit_position in exits]
-            # rospy.loginfo("Distance is {} m".format(distance))
-            # rospy.loginfo("Base footprint pose is  {}".format(pose.transform.translation))
+            rospy.loginfo("Distance is {} m".format(distance))
+            rospy.loginfo("Base footprint pose is  {}".format(pose.transform.translation))
             if distance[0]<self.detect_radius or distance[1] < self.detect_radius:
 
                 if robot_inside:
@@ -351,6 +350,7 @@ class Check_position(smach.State):
             if is_stop or target_lost:
                 return 'continue_stop'
             
+
 class Stop_command(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_stop'])
@@ -370,6 +370,7 @@ class Stop_command(smach.State):
             if target_lost:
                 return "continue_stop"
             time.sleep(0.01)
+
 
 class Follow_person(smach.State):  
     def __init__(self):
@@ -423,41 +424,43 @@ class Follow_person(smach.State):
                         # rospy.loginfo("Sending new goal: X,Y,Z is {}, {}, {}".format(pose.transform.translation.x,pose.transform.translation.y,pose.transform.translation.z))
 
                         if  is_stop:
-                            navigation.move_base_client.cancel_goal()
+                            self.client.cancel_goal()
                             self.stop_pub.publish(self.cancel)
                             self.realsense_follow_cmd_pub.publish("stop")
                             speak("I'm stopped")
                             return "continue_stop"
 
                         elif target_lost:
-                            navigation.move_base_client.cancel_goal()
+                            self.client.cancel_goal()
                             self.stop_pub.publish(self.cancel)
                             self.realsense_follow_cmd_pub.publish("stop")
                             speak("I have lost you, where are you my friend.")
                             return "continue_stop"
                     else:
                         
+                        
                         # wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
                         if target_lost:
-                            navigation.move_base_client.cancel_goal()
+                            self.client.cancel_goal()
                             self.stop_pub.publish(self.cancel)
                             speak("I have lost you, where are you my friend.")
                             self.realsense_follow_cmd_pub.publish("stop")
                             return "continue_stop"
+
 
                 except Exception as e:
 
                     # rospy.loginfo(e)
 
                     if  is_stop:
-                        navigation.move_base_client.cancel_goal()
+                        self.client.cancel_goal()
                         self.stop_pub.publish(self.cancel)
                         speak("I'm stopped")
                         self.realsense_follow_cmd_pub.publish("stop")
                         return "continue_stop"
                     
                     if target_lost:
-                        navigation.move_base_client.cancel_goal()
+                        self.client.cancel_goal()
                         self.stop_pub.publish(self.cancel)
                         speak("I have lost you, where are you my friend.")
                         self.realsense_follow_cmd_pub.publish("stop")
@@ -467,10 +470,10 @@ class Follow_person(smach.State):
                 self.realsense_follow_cmd_pub.publish("stop")
                 try:
                     if not self.is_cancelled:
-                        navigation.move_base_client.cancel_goal()
+                        self.client.cancel_goal()
                         self.follow_cmd_pub.publish("follow")
                         self.is_cancelled = True
-
+                        
                     if  is_stop:
                         self.follow_cmd_pub.publish("stop")
                         self.stop_pub.publish(self.cancel)
@@ -501,6 +504,7 @@ class Follow_person(smach.State):
                         speak("I lost you, where are you my friend.")
                         return "continue_stop"
                 
+
 class Get_bounding_box(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_stop'])
@@ -532,25 +536,9 @@ class Get_bounding_box(smach.State):
         self.tf_buffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
+
     def execute(self, userdata):
 
-        def transform_pose(input_pose, from_frame, to_frame):
-            # **Assuming /tf2 topic is being broadcasted
-            pose_stamped = PoseStamped()
-            pose_stamped.pose = input_pose
-            pose_stamped.header.frame_id = from_frame
-            pose_stamped.header.stamp = rospy.Time.now()
-            output_pose_stamped = None
-            try:
-                # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-                while not self.tf_buffer.can_transform:
-                    rospy.loginfo("Cannot transform from {} to {}".format(from_frame, to_frame))
-                output_pose_stamped = self.tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
-
-                return output_pose_stamped.pose
-
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                raise
 
         def detect(frame):
             global rs, target_lost, person_id, last_pose, personTrack
@@ -713,6 +701,7 @@ class Get_bounding_box(smach.State):
             elif is_stop == True:
                 return 'continue_stop'
 
+
 if __name__ == '__main__':
     # initiate ROS node
     rospy.init_node('carry_my_luggage')
@@ -745,14 +734,6 @@ if __name__ == '__main__':
 
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
-
-    realsense_pitch_reset_pub = rospy.Publisher('/realsense_pitch_absolute_command',Int16, queue_size=1)
-    realsense_yaw_reset_pub = rospy.Publisher('/realsense_yaw_absolute_command',Int16, queue_size=1)
-
-    realsense_pitch_reset_pub.publish(0)
-    realsense_yaw_reset_pub.publish(0)
-
-
 
     # start state machine
     sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
