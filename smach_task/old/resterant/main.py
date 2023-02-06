@@ -499,19 +499,9 @@ class Walkie_Speak(smach.State) :
                 return "to_bar"
 
             elif req == "bill" :
-<<<<<<< HEAD
                 speak("You had one coke, that will be 3 dollars. Please pay at the counter")
                 speak("have a great day")
                 order1 = False
-=======
-                if first_check_bill :
-                    speak("You had one milk, that will be 5 dollars. Please pay at the counter")
-                    speak("have a great day")
-                    orderl.clear()
-                else:
-                    speak("You had one coke, that will be 3 dollars. Please pay at the counter")
-                    speak("have a great day")
->>>>>>> 249cccfe3ba0fc5dbe7e3215142fa5519fc8a842
                 # speak("your order list are ")
                 # print("your order list are ")
                 # for i in orderl:
