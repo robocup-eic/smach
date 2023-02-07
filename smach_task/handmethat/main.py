@@ -347,14 +347,14 @@ class Text_to_speech(smach.State):
                 return 'B'
         else:
             point_time = 0
-            is_correct = False
-            for i in range(len(object_list[:4])):
-                if is_correct == True:
-                    break
-                rospy.logfatal("Walkie get pointing obj")
-                speak("You are pointing at " + object_list[i])
-                rospy.logwarn("You are pointing at " + object_list[i])
-                time.sleep(1)
+            # is_correct = False
+            # for i in range(len(object_list[:4])):
+            #     if is_correct == True:
+            #         break
+            rospy.logfatal("Walkie get pointing obj")
+            speak("You are pointing at " + object_list[0])
+            rospy.logwarn("You are pointing at " + object_list[0])
+            time.sleep(1)
                 # speak("what should I do next?")
                 # rospy.logwarn("what should I do next?")
                 # stt.listen()
@@ -363,7 +363,7 @@ class Text_to_speech(smach.State):
             if count_group < 4:
                 speak("Let's move to the next group")
                 rospy.sleep(10)
-                is_correct = False
+                # is_correct = False
                 return 'B'
             else:
                 speak("What should I do next")
