@@ -11,7 +11,7 @@ DWAPlannerROS:
   max_vel_trans:  0.4 #was 1.0
   min_vel_trans:  -0.25 #was 0.5
 
-  max_vel_theta: 1.8 #was 0.3
+  max_vel_theta: 0.8 #was 0.3
   min_vel_theta: 0.3 #was -0.3
 
   acc_lim_x: 1.5 #was 2.5
@@ -25,7 +25,7 @@ DWAPlannerROS:
 
 # Forward Simulation Parameters
   sim_time: 4.0 #4.0
-  vx_samples: 40 #40
+  vx_samples: 20 #40
   vy_samples: 0
   vth_samples: 40 # 80
 

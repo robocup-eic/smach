@@ -396,29 +396,19 @@ if __name__ == '__main__':
     host = "0.0.0.0"
 
     # obj detect
-    port_object = 10008
-    object_detection = CustomSocket(host=host, port=port_object)
-    object_detection.clientConnect()
+    # port_object = 10008
+    # object_detection = CustomSocket(host=host, port=port_object)
+    # object_detection.clientConnect()
 
     # what is that
     port_wtf = 10002
     what_is_that = CustomSocket(host, port_wtf)
     what_is_that.clientConnect()
 
-    # hand raising detection
-    port_HandRaising = 10011
-    HandRaising = CustomSocket(host, port_HandRaising)
-    HandRaising.clientConnect()
-
     # person tracker model
-    port_personTrack = 11000
+    port_personTrack = 10020
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
-
-    # person description model
-    port_personDescription = 10009
-    personDescription = CustomSocket(host, port_personDescription)
-    personDescription.clientConnect()
     
 
     ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fucku.yaml")

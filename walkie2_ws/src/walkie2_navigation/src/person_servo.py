@@ -15,7 +15,7 @@ from geometry_msgs.msg import Point
 from std_msgs.msg import String, Int16
 from nav_msgs.msg import Odometry
 
-K_LAT_DIST_TO_STEER     = 0.025 #0.025
+K_LAT_DIST_TO_STEER     = 0.25 #0.025
 K_ROBOT_STEER = 0.1
 START_OFFSET = 30
 
@@ -86,7 +86,7 @@ class ChasePerson():
         
         if self.is_detected:
             #--- Apply steering, proportional to how close is the object
-            # steer_action   = (-1)*K_LAT_DIST_TO_STEER*self.rel_x + (-1)*K_ROBOT_STEER*self.robot_angular_z
+            #steer_action   = (-1)*K_LAT_DIST_TO_STEER*self.rel_x + (-1)*K_ROBOT_STEER*self.robot_angular_z
             steer_action   = (-1)*K_LAT_DIST_TO_STEER*self.rel_x
             steer_action   = saturate(steer_action, -10, 10)
         else:

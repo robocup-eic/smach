@@ -51,7 +51,6 @@ import tf2_geometry_msgs
 
 import math
 
-
 class go_to_Navigation():
     def __init__(self):
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
@@ -110,10 +109,9 @@ class go_to_Navigation():
 class Start_signal(smach.State):
     def __init__(self):
         rospy.loginfo('Initiating Start_signal state')
-        smach.State.__init__(self,outcomes=['continue_Standby'])
+        smach.State.__init__(self,outcomes=['continue_FOLLOW'])
         self.FRAME_COUNT_LIMIT = 5
         self.close_distance = 1 # meter
-        
         
         self.moving_pub = rospy.Publisher("/walkie2/cmd_vel", Twist, queue_size=10)
 
@@ -122,6 +120,8 @@ class Start_signal(smach.State):
         rospy.loginfo('Executing Start_signal state')
 
         global ed
+
+        speak("I'm following you")
         
         self.moving_msg = Twist()
         self.moving_msg.linear.x = 0.2
@@ -132,247 +132,9 @@ class Start_signal(smach.State):
         frame_count = 0
 
         # just return
-        return 'continue_Standby'
+        return 'continue_FOLLOW'
 
-        while True:
-            rospy.sleep(0.5)
-            distance = rs.get_coordinate(x_pixel, y_pixel)[2]
-            rospy.loginfo(distance)
-            # filter lower distance
-            if distance < 0.4:
-                continue
-
-            # check if have available frame consecutively
-            if frame_count >= self.FRAME_COUNT_LIMIT:
-                speak("door open")
-
-                # move forward
-                #Moving through entrance door
-                start_time = time.time()
-                while time.time() - start_time < 0:
-                    rospy.loginfo("Moving Forward...")
-                    self.moving_pub.publish(self.moving_msg)
-                    rospy.sleep(0.1)
-
-                rospy.loginfo("Stop Moving Forward")
-                self.moving_msg.linear.x = 0
-                self.moving_pub.publish(self.moving_msg)
-                break
-
-            if distance > self.close_distance:
-                frame_count += 1
-            else:
-                frame_count = 0
-        
-        return 'continue_Standby'
-
-class Standby(smach.State):
-
-    
-    def __init__(self):
-        rospy.loginfo('Initiating state Standby')
-        smach.State.__init__(self, outcomes=['continue_follow'])
-        self.has_bag = False
-        # image publisher for visualize
-        self.image_pub = rospy.Publisher("/blob/image_blob", Image, queue_size=1)
-        self.bridge = CvBridge()
-        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
-        
-    def execute(self, userdata):
-        global stt, is_stop, target_lost, rs
-        is_stop = False
-        target_lost = False
-        rospy.loginfo('Executing state Standby')
-        start_time = 0
-
-        def go_to_Navigation(location):
-            goal = MoveBaseGoal()
-            goal.target_pose.header.frame_id = "map"
-            goal.target_pose.header.stamp = rospy.Time.now() - rospy.Duration.from_sec(1)
-            goal.target_pose.pose = ed.get_robot_pose(location)
-            self.move_base_client.send_goal(goal)
-            self.move_base_client.wait_for_result()
-            while True:
-                result = self.move_base_client.get_state()
-                rospy.loginfo("status {}".format(result))
-                if result == GoalStatus.SUCCEEDED :
-                    return True
-                else:
-                    return False
-
-        # navigate to standby position
-        # speak("I'm moving to standby")
-
-        # standby = go_to_Navigation('carry_my_luggage_standby')
-        # if standby:
-        #     rospy.loginfo('Walky stand by, Ready for order')
-        # else:
-        #     rospy.logerr('Navigation failed')
-        return "continue_follow"
-
-        speak("Please stand around 1 meter away from me")
-        time.sleep(0.5)
-        speak("when you are ready, please say follow me after the beep")
-        start_time = 0
-        while True:
-            
-            # for visualize
-            self.image_pub.publish(self.bridge.cv2_to_imgmsg(rs.get_image(), "bgr8"))
-
-            if stt.body is not None:
-                print(stt.body)
-                if stt.body["intent"] == "follow_people": # waiting for "follow me" command
-                    stt.clear()
-                    speak("I'm following you")
-                    time.sleep(0.5)
-                    speak("Please say hey walkie, and after the signal tell me to stop")
-                    # Put bag hanger position code in here TODO
-                    self.has_bag = True
-                    return "continue_follow"
-                else:
-                    stt.clear()
-                    speak("pardon?")
-                    stt.listen()
-                    start_time = time.time()
-
-            if time.time() - start_time > 7:
-                if not self.has_bag:
-                    speak("Please put your bag on my arm")
-                speak("when you are ready, please say follow me after the beep")
-                start_time = time.time()
-                stt.listen()
-                
-
-            time.sleep(0.01)
-
-class Ask_if_arrived(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating state Ask_if_arrived')
-        smach.State.__init__(self, outcomes=['continue_standby','continue_place_luggage'])
-
-        
-
-    def execute(self, userdata):
-        global stt
-        rospy.loginfo('Executing state Ask_if_arrived')
-        speak("Are we arrived?")
-        speak("the Please say yes or no after the signal")
-
-        stt.clear()
-        stt.listen()
-        start_time = time.time()
-        while True:
-            
-            if stt.body:
-                rospy.loginfo(stt.body["intent"])
-
-                if stt.body["intent"] == "affirm": # waiting for "follow me" command
-                    stt.clear()
-                    return "continue_place_luggage"
-
-                elif stt.body["intent"] == "deny": # waiting for "carry my luggage" command
-                    stt.clear()
-                    speak("Please say follow me if you want me to follow you again")
-                    return "continue_standby"
-
-                else:
-                    speak("Please say yes or no")
-                    stt.clear()
-                    stt.listen()
-
-            if time.time() - start_time > 7:
-                speak("the Please say yes or no after the signal")
-                start_time = time.time()
-                stt.listen()
-            time.sleep(0.01)
-
-class Place_luggage(smach.State):
-    def __init__(self):
-        rospy.loginfo('Initiating state Place_luggage')
-        smach.State.__init__(self, outcomes=['continue_standby'])
-        self.follow_cmd = String()
-        self.follow_cmd_pub = rospy.Publisher("/human/follow_cmd",String,queue_size=1)
-
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state Place_luggage')
-        speak("Please pick your bag from my arm")
-        time.sleep(10)
-
-        self.follow_cmd.data = "stop"
-        self.follow_cmd_pub.publish(self.follow_cmd)
-
-
-        return 'continue_standby'
-
-class Check_position(smach.State):
-    def __init__(self):
-
-        global ed
-
-        smach.State.__init__(self, outcomes=['continue_stop'])
-        rospy.loginfo('Initiating state Check_position')
-        self.detect_radius = 0.5
-        
-        self.tfBuffer = tf2_ros.Buffer()
-        self.listener = tf2_ros.TransformListener(self.tfBuffer)
-        rospy.loginfo("Exit Position: {} and {}".format(ed.get_robot_pose('exit'), ed.get_robot_pose('livingroom_exit')))
-
-
-    def execute(self, userdata):
-        
-
-        rospy.loginfo('Executing state Check_position')
-        global robot_inside, is_stop, target_lost, ed
-
-        robot_inside = True
-
-        exits = [ed.get_robot_pose("exit"), ed.get_robot_pose("livingroom_exit")]
-
-        while True:
-            
-            pose = self.tfBuffer.lookup_transform('map','base_footprint',rospy.Time.now()-rospy.Duration.from_sec(1.0))
-
-            distance = [math.sqrt((pose.transform.translation.x-exit_position.position.x)**2 + (pose.transform.translation.y-exit_position.position.y)**2) for exit_position in exits]
-            # rospy.loginfo("Distance is {} m".format(distance))
-            # rospy.loginfo("Base footprint pose is  {}".format(pose.transform.translation))
-            if distance[0]<self.detect_radius or distance[1] < self.detect_radius:
-
-                if robot_inside:
-                    if distance[0]<self.detect_radius:
-                        speak("Exiting the office room")
-                    else:
-                        speak("Exiting the living room")
-
-                robot_inside = False
-                rospy.loginfo("Robot outside exit, Switch to non-move_base person follower")
-
-
-                       
-            if is_stop or target_lost:
-                return 'continue_stop'
-            
-class Stop_command(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_stop'])
-        rospy.loginfo('Initiating state Stop_command')
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state Stop_command')
-        global target_lost, is_stop, stt
-        # Wait for "stop" command or target lost
-        while True:
-            if stt.body is not None:
-                if stt.body["intent"] == "stop":
-                    is_stop = True
-                    stt.clear()
-                    return "continue_stop"
-
-            if target_lost:
-                return "continue_stop"
-            time.sleep(0.01)
-
-class Follow_person(smach.State):  
+class Follow_person(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_stop'])
         rospy.loginfo('Initiating state Follow_person')
@@ -438,6 +200,7 @@ class Follow_person(smach.State):
                             return "continue_stop"
                     else:
                         
+                        
                         # wait = self.client.wait_for_result(rospy.Duration.from_sec(1.0))
                         if target_lost:
                             navigation.move_base_client.cancel_goal()
@@ -471,7 +234,7 @@ class Follow_person(smach.State):
                         navigation.move_base_client.cancel_goal()
                         self.follow_cmd_pub.publish("follow")
                         self.is_cancelled = True
-
+                        
                     if  is_stop:
                         self.follow_cmd_pub.publish("stop")
                         self.stop_pub.publish(self.cancel)
@@ -501,8 +264,11 @@ class Follow_person(smach.State):
                         self.stop_pub.publish(self.cancel)
                         speak("I lost you, where are you my friend.")
                         return "continue_stop"
-                
+
 class Get_bounding_box(smach.State):
+
+
+    
     def __init__(self):
         smach.State.__init__(self, outcomes=['continue_stop'])
         rospy.loginfo('Initiating state Get_bounding_box')
@@ -515,6 +281,7 @@ class Get_bounding_box(smach.State):
         # condition variable
         self.lost_frame = 0
         self.lost_threshold=30
+
 
         self.rel_pub  = rospy.Publisher("/human/rel_coor", Point, queue_size=1)
         self.abs_pub  = rospy.Publisher("/human/abs_coor", Point, queue_size=1)
@@ -533,6 +300,7 @@ class Get_bounding_box(smach.State):
         self.tf_buffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
+
     def execute(self, userdata):
 
         def transform_pose(input_pose, from_frame, to_frame):
@@ -550,6 +318,7 @@ class Get_bounding_box(smach.State):
 
                 return output_pose_stamped.pose
 
+
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
@@ -565,6 +334,8 @@ class Get_bounding_box(smach.State):
             result = personTrack.req(frame)
             # rescale pixel incase pixel donot match
             frame = rs.check_image_size_for_ros(frame)
+
+            print(person_id)
 
             # check if there aren't any person when a target is already established, increase lost_frame
             if (len(result["result"]) == 0) and (person_id!=-1):
@@ -587,10 +358,17 @@ class Get_bounding_box(smach.State):
                 for track in result["result"]:
                     self.x_pixel = int((track[2][0]+track[2][2])/2)
                     self.y_pixel = int((track[2][1]+track[2][3])/2)
+
+                    # self.x_pixel = int(track[2]+track[4])/2
+                    # self.y_pixel = int(track[3]+track[5])/2
+
                     depth = rs.get_coordinate(self.x_pixel, self.y_pixel, ref=(1280,720))[2] # numpy array
 
                     w = abs(track[2][0]-track[2][2])
                     h = abs(track[2][1]-track[2][3])
+                    # w = track[4]
+                    # h = track[5]
+
                     if (w*h < 200*100) or (self.x_pixel==1280) or (self.y_pixel == 720):
                         continue
                     
@@ -609,7 +387,7 @@ class Get_bounding_box(smach.State):
                 for track in result["result"]:
                     # track : [id, class_name, [x1,y1,x2,y2]]
                     # rospy.loginfo("Track ID: {} at {}".format(track[0],track[2]))
-                    if track[0] == person_id:
+                    if True:
 
                         self.x_pixel = int((track[2][0]+track[2][2])/2)
                         self.y_pixel = int((track[2][1]+track[2][3])/2)
@@ -696,12 +474,12 @@ class Get_bounding_box(smach.State):
         self.last_pose = None
         person_id = -1
         self.lost_frame = 0
-        rospy.sleep(0.5)
+        rospy.sleep(0.01)
 
         # reset
         rs.reset()
         while True:
-
+            
             detect(rs.get_image())
             rospy.sleep(0.01)
 
@@ -716,7 +494,7 @@ class Get_bounding_box(smach.State):
 
 if __name__ == '__main__':
     # initiate ROS node
-    rospy.init_node('carry_my_luggage')
+    rospy.init_node('follow_me')
     # initiate the global variable
     target_lost = False
     is_stop = False
@@ -732,7 +510,7 @@ if __name__ == '__main__':
 
     # person tracker
     host = "0.0.0.0"
-    port_personTrack = 11000
+    port_personTrack = 10012
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
 
@@ -753,35 +531,20 @@ if __name__ == '__main__':
     realsense_pitch_reset_pub.publish(0)
     realsense_yaw_reset_pub.publish(0)
 
-
-
     # start state machine
     sm = smach.StateMachine(outcomes=['Succeeded','Aborted'])
     with sm:
         smach.StateMachine.add('Start_signal',Start_signal(),
-                                transitions={'continue_Standby':'Standby'})
-
-        smach.StateMachine.add('Standby',Standby(),
-                                transitions={'continue_follow':'FOLLOW'})
-        
-        
-        smach.StateMachine.add('Ask_if_arrived',Ask_if_arrived(),
-                                transitions={'continue_standby':'Standby',
-                                             'continue_place_luggage':'Place_luggage'})
-
-        smach.StateMachine.add('Place_luggage',Place_luggage(),
-                                transitions={'continue_standby':'Standby'})
+                                transitions={'continue_FOLLOW':'FOLLOW'})
         
         # Create sub smach state machine
         sm_follow = smach.Concurrence(outcomes=['Stop'], default_outcome = 'Stop')      
         with sm_follow:
-            smach.Concurrence.add('Stop_command',Stop_command())
             smach.Concurrence.add('Follow_person',Follow_person())
             smach.Concurrence.add('Get_bounding_box',Get_bounding_box())
-            smach.Concurrence.add('Check_position',Check_position())
-        smach.StateMachine.add('FOLLOW', sm_follow, transitions={'Stop':'Ask_if_arrived'})
-    
 
+        smach.StateMachine.add('FOLLOW', sm_follow, transitions={'Stop':'FOLLOW'})
+    
         # Set up                                                    
         sis = smach_ros.IntrospectionServer('Server_name',sm,'/PatterRoot')
         sis.start()
