@@ -162,7 +162,7 @@ class Follow_person(smach.State):
         rospy.loginfo('Executing state Follow_person')
         global target_lost, is_stop, goal_pose, robot_inside, navigation
 
-        goal_send_interval = 1.5 # send goal at least every 5 seconds or wait until previous goal.
+        goal_send_interval =0.5 # send goal at least every 5 seconds or wait until previous goal.
         start_time = 0
 
         self.is_cancelled = False
@@ -492,6 +492,26 @@ class Get_bounding_box(smach.State):
             elif is_stop == True:
                 return 'continue_stop'
 
+class Stop_command(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['continue_stop'])
+        rospy.loginfo('Initiating state Stop_command')
+
+    def execute(self, userdata):
+        rospy.loginfo('Executing state Stop_command')
+        global target_lost, is_stop, stt
+        # Wait for "stop" command or target lost
+        while True:
+            if stt.body is not None:
+                if stt.body["intent"] == "stop":
+                    is_stop = True
+                    stt.clear()
+                    return "continue_stop"
+
+            if target_lost:
+                return "continue_stop"
+            time.sleep(0.01)
+
 if __name__ == '__main__':
     # initiate ROS node
     rospy.init_node('follow_me')
@@ -510,7 +530,7 @@ if __name__ == '__main__':
 
     # person tracker
     host = "0.0.0.0"
-    port_personTrack = 10012
+    port_personTrack = 10020
     personTrack = CustomSocket(host,port_personTrack)
     personTrack.clientConnect()
 

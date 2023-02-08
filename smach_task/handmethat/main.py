@@ -16,6 +16,7 @@ from util.nlp_client import *
 
 import rospy
 import smach
+import math
 import smach_ros
 import tf
 import tf2_ros
@@ -223,13 +224,6 @@ class Find_operator(smach.State):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 raise
 
-        def yolo_callback(data):
-            try:
-                # change subscribed data to numpy.array and save it as "frame"
-                self.frame = self.bridge.imgmsg_to_cv2(data, 'bgr8')
-            except CvBridgeError as e:
-                print(e)
-
         def detect(frame):
             # scale image incase image size donot match cv server
             frame = rs.check_image_size_for_cv(frame)
@@ -297,12 +291,7 @@ class Find_operator(smach.State):
 
                 posi.position.x, posi.position.y, posi.position.z = human_posi.position.x, human_posi.position.y, human_posi.position.z
                 posi.orientation.x, posi.orientation.y, posi.orientation.z, posi.orientation.w = tf.transformations.quaternion_from_euler(0, 0, yaw)
-                posi = transform_pose(posi, "base_footprint", "map")
-
-                navigation.nav2goal(posi)
-                # if ed.out_of_areana(posi):
-                #     rospy.loginfo("Human out of arena")
-                #     return False
+                self.posi = transform_pose(posi, "base_footprint", "map")
                 return True
 
             rospy.loginfo("Human out of range")
@@ -311,9 +300,6 @@ class Find_operator(smach.State):
         
         # rotating until find person
         # reset()
-        start_time = time.time()
-        while time.time()-start_time < 2:
-            self.rotate_pub.publish(self.rotate_msg)
         
         while True:
             self.rotate_pub.publish(self.rotate_msg)
@@ -321,6 +307,8 @@ class Find_operator(smach.State):
             if detect(rs.get_image()) :
                 speak("I found operator") 
                 self.rotate_pub.publish(self.cancel)
+                rospy.loginfo("go to operator at"+str(self.posi))
+                # navigation.nav2goal(self.posi)
                 break
             time.sleep(0.01)
         return 'Q'
@@ -388,7 +376,6 @@ if __name__ == '__main__':
     count_group = 0
     p = 3
     point_time = 0
-    OBJECT_NAME = "waterbottle"
 
     navigation = go_to_Navigation()
 
@@ -412,7 +399,7 @@ if __name__ == '__main__':
     
 
     ed = EnvironmentDescriptor("/home/eic/ros/smach/smach_task/config/fucku.yaml")
-    scene = moveit_commander.PlanningSceneInterface()
+
     rospy.sleep(2)
 
     # publisher and subscriber
