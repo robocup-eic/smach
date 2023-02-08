@@ -50,6 +50,10 @@ from util.realsense import Realsense
 import tf2_geometry_msgs
 
 import math
+from util.nlp_client import *
+stt = EmerStop("nlp")
+t = threading.Thread(target=EmerStop.run, name="EmerStopFlask")
+t.start()
 
 class go_to_Navigation():
     def __init__(self):
@@ -130,8 +134,6 @@ class Start_signal(smach.State):
         # Detect door opening
         x_pixel, y_pixel = 1280/2, 720/2
         frame_count = 0
-
-        # just return
         return 'continue_FOLLOW'
 
 class Follow_person(smach.State):
@@ -162,7 +164,7 @@ class Follow_person(smach.State):
         rospy.loginfo('Executing state Follow_person')
         global target_lost, is_stop, goal_pose, robot_inside, navigation
 
-        goal_send_interval =0.5 # send goal at least every 5 seconds or wait until previous goal.
+        goal_send_interval = 1.5 # send goal at least every 5 seconds or wait until previous goal.
         start_time = 0
 
         self.is_cancelled = False
@@ -492,27 +494,8 @@ class Get_bounding_box(smach.State):
             elif is_stop == True:
                 return 'continue_stop'
 
-class Stop_command(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['continue_stop'])
-        rospy.loginfo('Initiating state Stop_command')
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state Stop_command')
-        global target_lost, is_stop, stt
-        # Wait for "stop" command or target lost
-        while True:
-            if stt.body is not None:
-                if stt.body["intent"] == "stop":
-                    is_stop = True
-                    stt.clear()
-                    return "continue_stop"
-
-            if target_lost:
-                return "continue_stop"
-            time.sleep(0.01)
-
 if __name__ == '__main__':
+    
     # initiate ROS node
     rospy.init_node('follow_me')
     # initiate the global variable
@@ -538,9 +521,9 @@ if __name__ == '__main__':
     rs.wait() # wait for camera intrinsics
 
     # Flask nlp server
-    stt = SpeechToText("nlp")
-    t = threading.Thread(target = stt.run ,name="nlp")
-    t.start()
+    # stt = SpeechToText("nlp")
+    # t = threading.Thread(target = stt.run ,name="nlp")
+    # t.start()
 
     rs = Realsense()
     rs.wait() # wait for camera intrinsics
