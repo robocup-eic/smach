@@ -1,16 +1,10 @@
-# run with conda env: nlp
-import roslib
-import rospy
-import smach
-import smach_ros
+# run with conda env: base
 import nlp_client
 import threading
 import signal
 import time
 import os
 from ratfin import *
-from person import Person
-from smach_task_2023.core_smach.core_nlp.utils import (WakeWord, Speak, GetIntent, GetName, GetObject, GetLocation,)
 
 
 class EmergencyStop():

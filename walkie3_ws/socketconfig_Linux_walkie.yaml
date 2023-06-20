@@ -1,0 +1,91 @@
+port: 15069
+conda-exec: "conda"
+
+processes:
+  nlp_wakeword:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP"
+    exec_cmd: "python3 wakeword_server_new.py"
+  nlp_asr:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP"
+    exec_cmd: "python3 asr_server.py --deploymode"
+  nlp_AOn-asr:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP"
+    exec_cmd: "python3 asr_server.py --deploymode --always_listen"
+  nlp_rasa1:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP/rasa"
+    exec_cmd: "rasa run --enable-api"
+  nlp_rasa2:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP/rasa"
+    exec_cmd: "rasa run actions"
+  nlp_tts:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP/"
+    exec_cmd: "python3 tts_azure.py"
+  nlp_asr_cpu:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP/"
+    exec_cmd: 'export CUDA_VISABLE_DEVICE=""'
+  cv_YoloV8-Tracker:
+    conda_env: "yolov8-tracker"
+    exec_dir: "/home/walkie/cv/robocup2023-yolov8-tracker/"
+    exec_cmd: "python3 main.py"
+    port: 12301
+  cv_Pose-Estimation:
+    conda_env: "pose-estimation"
+    exec_dir: "/home/walkie/cv/robocup2023-pose-estimation/"
+    exec_cmd: "python3 main.py"
+    port: 12302
+  cv_Image-Captioning:
+    conda_env: "image-captioning"
+    exec_dir: "/home/walkie/cv/robocup2023-image-captioning/"
+    exec_cmd: "python3 main.py"
+    port: 12303
+  cv_Face-Recognition:
+    conda_env: "face-recog"
+    exec_dir: "/home/walkie/cv/robocup2023-face-recognition/"
+    exec_cmd: "python3 main.py"
+    port: 12304
+
+  #* order from longest to setup to least
+states:
+  runall:
+    - nlp_rasa1
+    - nlp_asr
+    - nlp_rasa2
+    - nlp_wakeword
+    - nlp_tts
+    - cv_YoloV8-Tracker
+    - cv_Pose-Estimation
+    - cv_Image-Captioning
+    - cv_Face-Recognition
+  
+  cv:
+    - cv_YoloV8-Tracker
+    - cv_Pose-Estimation
+    - cv_Image-Captioning
+    - cv_Face-Recognition
+
+
+  nlpall:
+    # - asr_cpu
+    - nlp_rasa1
+    # - AOn-asr
+    - nlp_asr
+    - nlp_rasa2
+    - nlp_wakeword
+    - nlp_tts
+  nlprasa:
+    # - asr_cpu
+    - nlp_rasa1
+    - nlp_rasa2
+  nlpasr:
+    # - asr_cpu
+    - nlp_AOn-asr
+    - nlp_asr
+    # - wakeword
+    - nlp_tts
