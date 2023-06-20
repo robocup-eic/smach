@@ -37,19 +37,13 @@ Consult example_smach_state.py for an ideal state
 --OPTIONAL:  
 
 """
-import sys
-sys.append('../')
+
 import rospy
 import smach
 import nlp_client
 import threading
 from ratfin import *
 import socket
-import socket
-import cv2
-from custom_socket import CustomSocket
-import json
-import time
 import cv2
 from custom_socket import CustomSocket
 
@@ -73,7 +67,6 @@ def list_available_cam(max_n):
     else:
         print(list_cam)
         return int(input("Cam index: "))
-
 
 
 
@@ -112,19 +105,16 @@ class DetectFace(smach.State):
         self.timeout_tries = timeout_tries
 
         # Setup CV Capture
-        cap = cv2.VideoCapture(list_available_cam(3))
-        cap.set(4, 720)
-        cap.set(3, 1280)
+
+        self.cap = cv2.VideoCapture(list_available_cam(10))
+        self.cap.set(4, 480)
+        self.cap.set(3, 640)
 
         # Setup socket
         host = socket.gethostname()
-        port = 12303
-
+        port = 12304
         self.c = CustomSocket(host, port, log=True)
         self.c.clientConnect()
-
-
-
 
 
 
@@ -141,28 +131,26 @@ class DetectFace(smach.State):
             print(userdata)
             try: 
                 rospy.loginfo(f'(DetectFace): Starting CV..')
-                
                 while self.cap.isOpened():
-                    
+
                     ret, frame = self.cap.read()
-                    if not ret:
-                        print("Ignoring empty camera frame.")
-                        continue
+                    cv2.imshow("face_detect", frame)
 
-                    # Sent to sever
-                    
 
-                    # Show client Frame
-                    cv2.imshow("client_cam", frame)
-
+                    res = self.c.detect(frame)
+                    if self.log:
+                        if res != {}:
+                            print(res)
+                    if res != {}:
+                        rospy.loginfo(f'(DetectFace): CV Detected known person')
+                        self.cap.release()
+                        cv2.destroyAllWindows()
+                        return "out1"
+                    # continue
                     key = cv2.waitKey(1)
                     if key == ord("q"):
                         self.cap.release()
-                    if key == ord("c"):
-                        msg = self.c.req(frame)
-                        print(msg)
-                        cv2.waitKey()
-
+                        return "out1"
 
                 cv2.destroyAllWindows()
             except:
@@ -181,10 +169,112 @@ class DetectFace(smach.State):
             return "undo"
 
 
+# # Model Smach States
+class RegisterFace(smach.State):
+    """ 
+    TemplateVersion 1.1.0 
+    """
+
+    def __init__(self, 
+                 log : bool = True,
+                 timeout_tries: int = 0 # 0 means infinite tries
+                 ):
+        self.log = log
+        
+        # Raise exceptions if any entity parameter is not of type bool
+        if not isinstance(log, bool):
+            raise ValueError("Argument 'log' must be of type bool")
+        
+        # Initialize the state
+        smach.State.__init__(self, 
+                             outcomes=['out1','undo'],
+                            #  outcomes=['out1','out2','loop','undo','timeout'],
+                             input_keys=['name'],
+                             output_keys=['name'])
+        
+        # timout configuration, (don't change)
+        if timeout_tries == 0:
+            self.timeout_bool = False
+        else:
+            self.timeout_bool = True
+        self.tries_counter = int(0) # counter for the number of tries
+        self.timeout_tries = timeout_tries
+
+        # Setup CV Capture
+
+        self.cap = cv2.VideoCapture(list_available_cam(10))
+        self.cap.set(4, 480)
+        self.cap.set(3, 640)
+
+        # Setup socket
+        host = socket.gethostname()
+        port = 12304
+        self.c = CustomSocket(host, port, log=False)
+        self.c.clientConnect()
+
+
+
+
+    def execute(self, userdata):
+        try:
+            userdata.name = "Game"
+            # Log the execution stage
+            rospy.loginfo(f'(RegisterFace): Executing..')
+
+            # Userdata verification
+            rospy.loginfo(f'(RegisterFace): Checking userdata..')
+
+            # Do something
+            if userdata.name == "":
+                raise Exception("No name given")
+            
+            print(userdata)
+            try: 
+
+                # Log the execution stage
+                rospy.loginfo(f'(RegisterFace): Starting CV Capturing..')
+
+                while self.cap.isOpened():
+
+                    ret, frame = self.cap.read()
+                    cv2.imshow("RegisterFace", frame)
+
+                    
+                    
+                    res = self.c.register(frame, userdata.name)
+                    if res: 
+                        if self.log:
+                            print(res)
+                        # Log the execution stage
+                        rospy.loginfo(f'(RegisterFace: CV Captured for {userdata.name}')
+                        return "out1"
+
+                    
+                    key = cv2.waitKey(1)
+                    if key == ord("q"):
+                        self.cap.release()
+                        return "out1"
+
+                cv2.destroyAllWindows()
+            except:
+                self.cap.release()
+                return "undo"
+
+
+            # if something goes wrong, raise exception
+            if False:
+                raise Exception(
+                    "(RegisterFace): No attribute detected in the timeout period")
+            
+            return "out1"
+        except Exception as e:
+            printclr(e, "red")
+            return "undo"
+
 
 def main():
     # Initialize the node
-    NODE_NAME = "smach_core_cv_face_recognition"
+    NODE_NAME = "smach_cv_face_recognition"
     rospy.init_node(NODE_NAME)
     
     # Create a SMACH state machine
@@ -201,7 +291,15 @@ def main():
                                          'undo': 'out1',}
                                         )
         
+        # smach.StateMachine.add('DETECT_FACE',
+        #                     DetectFace(),
+        #                     remapping={'name': 'name'},
+        #                     transitions={'out1': 'out1',
+        #                                  'undo': 'out1',}
+        #                                 )
 
+
+    
     # Create a thread to execute the smach container
     # Execute SMACH plan
     smach_thread = threading.Thread(target=sm.execute)

@@ -63,3 +63,4 @@ yolov4-416/
 
 *.zip
 *.pyc
+.history

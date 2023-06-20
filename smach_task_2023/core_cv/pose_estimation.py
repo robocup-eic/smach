@@ -81,7 +81,7 @@ def list_available_cam(max_n):
 
 
 # Model Smach States
-class ImageCaption(smach.State):
+class PoseEstimation(smach.State):
     """ 
     TemplateVersion 1.1.0 
     """
@@ -113,12 +113,12 @@ class ImageCaption(smach.State):
 
         # Setup CV Capture
         self.cap = cv2.VideoCapture(list_available_cam(3))
-        self.cap.set(4, 720)
-        self.cap.set(3, 1280)
+        self.cap.set(4, 480)
+        self.cap.set(3, 640)
 
         # Setup socket
         host = socket.gethostname()
-        port = 12303
+        port = 12302
 
         self.c = CustomSocket(host, port, log=True)
         self.c.clientConnect()
@@ -126,36 +126,31 @@ class ImageCaption(smach.State):
     def execute(self, userdata):
         try:
             # Log the execution stage
-            rospy.loginfo(f'(ImageCaption): Executing..')
+            rospy.loginfo(f'(PoseEstimation): Executing..')
 
             # Userdata verification
-            rospy.loginfo(f'(ImageCaption): Checking userdata..')
+            rospy.loginfo(f'(PoseEstimation): Checking userdata..')
 
             # Do something
             print(userdata)
             try: 
-                rospy.loginfo(f'(ImageCaption): Starting CV..')
+                rospy.loginfo(f'(PoseEstimation): Starting CV..')
                 
                 while self.cap.isOpened():
-                    
+
                     ret, frame = self.cap.read()
                     if not ret:
                         print("Ignoring empty camera frame.")
                         continue
 
-                    # Sent to sever
-                    
+                    # cv2.imshow('client_cam', frame)
 
-                    # Show client Frame
-                    cv2.imshow("client_cam", frame)
+                    msg = self.c.req(frame)
 
-                    key = cv2.waitKey(1)
-                    if key == ord("q"):
+                    print(msg)
+
+                    if cv2.waitKey(1) == ord("q"):
                         self.cap.release()
-                    if key == ord("c"): # capture part
-                        msg = self.c.req(frame)
-                        print(msg)
-                        cv2.waitKey()
 
 
                 cv2.destroyAllWindows()
@@ -167,7 +162,7 @@ class ImageCaption(smach.State):
             # if something goes wrong, raise exception
             if False:
                 raise Exception(
-                    "(ExampleState): No attribute detected in the timeout period")
+                    "(PoseEstimation): No attribute detected in the timeout period")
             
             return "out1"
         except Exception as e:
@@ -178,7 +173,7 @@ class ImageCaption(smach.State):
 
 def main():
     # Initialize the node
-    NODE_NAME = "smach_cv_image_captioning"
+    NODE_NAME = "smach_cv_pose_estimation"
     rospy.init_node(NODE_NAME)
     
     # Create a SMACH state machine
@@ -188,8 +183,8 @@ def main():
     sm.userdata.name = ""
 
     with sm:
-        smach.StateMachine.add('IMAGE_CAPTION',
-                            ImageCaption(),
+        smach.StateMachine.add('POSE_ESTMATION',
+                            PoseEstimation(),
                             remapping={'name': 'name'},
                             transitions={'out1': 'out1',
                                          'undo': 'out1',}

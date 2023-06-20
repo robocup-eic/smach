@@ -51,6 +51,7 @@ from custom_socket import CustomSocket
 import json
 import time
 import cv2
+import nunmpy as np
 from custom_socket import CustomSocket
 
 from nlp_emerStop import listen_for_kill_command
@@ -81,7 +82,7 @@ def list_available_cam(max_n):
 
 
 # Model Smach States
-class ImageCaption(smach.State):
+class YoloTracker(smach.State):
     """ 
     TemplateVersion 1.1.0 
     """
@@ -113,15 +114,25 @@ class ImageCaption(smach.State):
 
         # Setup CV Capture
         self.cap = cv2.VideoCapture(list_available_cam(3))
-        self.cap.set(4, 720)
-        self.cap.set(3, 1280)
+        self.DIM = (640, 480)
 
         # Setup socket
         host = socket.gethostname()
-        port = 12303
+        port = 12301
 
         self.c = CustomSocket(host, port, log=True)
         self.c.clientConnect()
+    def seg_frame(frame, results):
+        frame_dim = frame.shape[:-1]
+        blank = np.zeros((*frame_dim, 3), dtype="uint8")
+
+        for obj_id in results:
+            obj = results[obj_id]
+            mask = np.reshape(obj["mask"], frame_dim).astype(bool)
+            blank[mask] = frame[mask]
+
+        return blank
+
 
     def execute(self, userdata):
         try:
@@ -134,28 +145,35 @@ class ImageCaption(smach.State):
             # Do something
             print(userdata)
             try: 
-                rospy.loginfo(f'(ImageCaption): Starting CV..')
                 
                 while self.cap.isOpened():
-                    
+
                     ret, frame = self.cap.read()
                     if not ret:
                         print("Ignoring empty camera frame.")
                         continue
 
-                    # Sent to sever
+                    frame = cv2.resize(frame, self.DIM)
+
+                    msg = self.c.req(frame)
+
+                    print(len(msg))
                     
+                    for obj_id in msg:
+                        obj = msg[obj_id]
+                        print(obj['name'])
+                        print(obj['box'])
+                        print(len(obj['mask']))
 
-                    # Show client Frame
-                    cv2.imshow("client_cam", frame)
+                    seg_f = self.seg_frame(frame, msg)
+                        
+                    cv2.imshow("blank",seg_f)
+                    cv2.imshow("frame", frame)
 
-                    key = cv2.waitKey(1)
-                    if key == ord("q"):
+                    # print(msg)
+
+                    if cv2.waitKey(1) == ord("q"):
                         self.cap.release()
-                    if key == ord("c"): # capture part
-                        msg = self.c.req(frame)
-                        print(msg)
-                        cv2.waitKey()
 
 
                 cv2.destroyAllWindows()
@@ -178,7 +196,7 @@ class ImageCaption(smach.State):
 
 def main():
     # Initialize the node
-    NODE_NAME = "smach_cv_image_captioning"
+    NODE_NAME = "smach_cv_yolov8_tracker"
     rospy.init_node(NODE_NAME)
     
     # Create a SMACH state machine
@@ -188,8 +206,8 @@ def main():
     sm.userdata.name = ""
 
     with sm:
-        smach.StateMachine.add('IMAGE_CAPTION',
-                            ImageCaption(),
+        smach.StateMachine.add('YOLO_TRACKER',
+                            YoloTracker(),
                             remapping={'name': 'name'},
                             transitions={'out1': 'out1',
                                          'undo': 'out1',}
