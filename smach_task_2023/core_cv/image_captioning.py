@@ -112,6 +112,7 @@ class ImageCaption(smach.State):
         
         # Initialize the state
         smach.State.__init__(self, 
+                            #  outcomes=['out1'],
                              outcomes=['out1','undo'],
                             #  outcomes=['out1','out2','loop','undo','timeout'],
                              output_keys=['age','gender','race','hair_color','shirt_color','wearing_glasses'])
@@ -137,10 +138,10 @@ class ImageCaption(smach.State):
 
             try:
                 # Log the execution stage
-                rospy.loginfo(f'(ImageCaption): Cameria init...')
+                rospy.loginfo(f'(ImageCaption): Camera init...')
 
                 # Setup CV Capture
-                cap = cv2.VideoCapture(0)
+                cap = cv2.VideoCapture(1)
                 cap.set(4, 720)
                 cap.set(3, 1280)
 
@@ -152,9 +153,9 @@ class ImageCaption(smach.State):
                 c.clientConnect()
 
                 # Log the execution stage
-                rospy.loginfo(f'(ImageCaption): looping...')
+                rospy.loginfo(f'(ImageCaption): Capturing...')
                 if self.nlp:
-                        nlp_client.speak(f"SAY SOMETHING IDK BRO")
+                        nlp_client.speak(f"Turning on camera")
 
                 while cap.isOpened():
                     
@@ -169,7 +170,7 @@ class ImageCaption(smach.State):
                     res = c.req(frame)
                     # print(res)
                     if res != {}:
-                        rospy.loginfo(f'(ImageCaption): Captioned a person')
+                        rospy.loginfo(f'(ImageCaption): Detected a person')
                         if self.log:
                             print(res)
                         if res['age']:

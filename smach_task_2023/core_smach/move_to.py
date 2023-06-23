@@ -41,7 +41,8 @@ class MoveTo(smach.State):
         
         # Initialize the state
         smach.State.__init__(self, 
-                             outcomes=['out1','out2','loop','undo','timeout'],
+                                outcomes=['out1'],
+                            #  outcomes=['out1','out2','loop','undo','timeout'],
                              input_keys=['room','furniture','data3'],
                              output_keys=['data1','data3'])
 
@@ -57,6 +58,7 @@ class MoveTo(smach.State):
 
 
     def execute(self, userdata):
+        return 'out1'
         try:
             # Log the execution stage
             rospy.loginfo(f'(MoveTo): Executing..')

@@ -6,7 +6,7 @@ import time
 import os
 import smach
 from ratfin import *
-
+from core_nlp.utils import Speak
 
 # Task specific state
 class StopEnd(smach.State):
@@ -41,7 +41,7 @@ class EmergencyStop():
         print('(EmergencyStop): Listening for Walkie Freeze')
         if nlp_client.ww_listen(text="walkie_freeze", log=True):
             self.stop_flag = True
-
+        
         print('EmergencyStop detected')
 
         return "out1"
@@ -49,10 +49,12 @@ class EmergencyStop():
         while True:
             pid = os.getpid()
             if self.stop_flag:
-                print("fuckkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+                # Speak(text='fuck fuck fuck fuck fuck fuck fuck fuck').execute(userdata='')
+                print("fuckkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk ;)")
                 pid = pid  # Replace with your process id
                 try:
                     os.kill(pid, signal.SIGKILL)
+                    
                 except ProcessLookupError:
                     print(f"Process with id {pid} does not exist.")
                 except PermissionError:

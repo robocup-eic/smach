@@ -10,8 +10,9 @@ import threading
 from ratfin import *
 
 from core_smach.person import Person
-from utils import (WakeWord, Speak, GetIntent, GetName, GetObject, GetLocation,)
+from core_nlp.utils import (WakeWord, Speak, GetIntent, GetName, GetObject, GetLocation,)
 from core_smach.move_to import MoveTo
+from core_cv.image_captioning import ImageCaption
 
 
 """ Overall Flow 
@@ -81,35 +82,34 @@ class AddPerson(smach.State):
 
 # Task specific state
 class IntroducePeople(smach.State):
-    def __init__(self):
+    def __init__(self,people_index : int = 0, header_text : str = "", introduce_to : int = None):
         smach.State.__init__(self,
-                            outcomes=['out1', 'out0'],
+                            outcomes=['out1'],
                             input_keys=['people_list', 'people_index'],
                             output_keys=['people_index'])
-
+        self.index = people_index
+        self.header_text = header_text
+        self.introduce_to = introduce_to
     def execute(self, userdata):
 
         # Log the execution stage
         rospy.loginfo(f'(IntroducePeople): Executing..')
 
         # Extract people from userdata
-        person1 : Person = userdata.people_list[0]
-        person2 : Person = userdata.people_list[1]
-
+        person : Person = userdata.people_list[self.index]
+        age_txt = f' {person.age}'
+        if person.age == 'young':
+            age_txt = 'younger than 20'
+        elif person.age == 'elderly':
+            age_txt = 'older than 60'
         # Contruct text to speak
-        text : str = f"""Hello, {person1.name}. 
-        you are {person1.age} years old 
-        has {person1.hair_color} hair 
-        wears a {person1.shirt_color} shirt and 
-        your favorite drink is {person1.favorite_drink}. 
-        Next to you is {person2.name}. 
-        they are {person2.age} years old 
-        has {person2.hair_color} hair 
-        wears a {person2.shirt_color} shirt 
-        and their favorite drink is {person2.favorite_drink}."""
+        text : str = f"this is {person.name}, their favorite drink is {person.favorite_drink}, they are {age_txt} years old, they are wearing a {person.shirt_color} shirt, and they have {person.hair_color} hair."
         
+        introduce_to_txt = ""
+        if self.introduce_to is not None:
+            introduce_to_txt = f"Hey {userdata['people_list'][self.introduce_to].name}, "
         # Speak the text
-        nlp_client.speak(text=text)
+        nlp_client.speak(text=introduce_to_txt+self.header_text+text)
 
         return 'out1'
 
@@ -174,7 +174,17 @@ def main():
     sm.userdata.name = ""
     sm.userdata.favorite_drink = ""
     sm.userdata.couch_location = [0,1,2]
-    
+
+    host = Person(name="Game",
+                    # favorite_drink="milkies from your mom's titties",
+                    favorite_drink='human blood',
+                    age=20,
+                    shirt_color="black",
+                    hair_color="black",
+                    gender='male',
+                    race='asian',
+                    glasses=False)
+    sm.userdata.people_list.append(host)   
 
     with sm:
         smach.StateMachine.add('GREETINGS_ASK_NAME',
@@ -185,8 +195,7 @@ def main():
         
         smach.StateMachine.add('TURN_TO_PERSON_ONE',
                                MoveTo(),
-                                transitions={'out1': 'GET_NAME',
-                                            'out0': 'out0'})
+                                transitions={'out1': 'GET_NAME'})
                                
         smach.StateMachine.add('GET_NAME',
                             GetName(speak_debug=speak_debug,
@@ -213,11 +222,22 @@ def main():
                             remapping={'listen_object': 'favorite_drink'})
         
         smach.StateMachine.add('SPEAK_RESPOND_OBJECT',
-                                Speak(text="oh!, I like {} too",
+                                Speak(text="oh!, I like {} too! Can you stay still for a second so I can memorize your details?",
                                     keys=["favorite_drink"]),
                                 remapping={'favorite_drink': 'favorite_drink'},
-                                transitions={'out1': 'ADD_PERSON',
+                                transitions={'out1': 'IMAGE_CAPTION',
                                             'out0': 'out0'})
+        
+        smach.StateMachine.add('IMAGE_CAPTION',
+                               ImageCaption(),
+                               remapping = {'age':'age',
+                                            'shirt_color':'shirt_color',
+                                            'hair_color':'hair_color',
+                                            'gender':'gender',
+                                            'race':'race',
+                                            'wearing_glasses':'wearing_glasses'},
+                                transitions={'out1': 'ADD_PERSON',
+                                             'undo':'out0'})
                                                 
         smach.StateMachine.add('ADD_PERSON',
                                 AddPerson(),
@@ -234,13 +254,24 @@ def main():
         
         smach.StateMachine.add('TURN_TO_COUCH',
                                  MoveTo(),
-                                  transitions={'out1': 'SIT_TIGHT',
-                                              'out0': 'out0'})
+                                  transitions={'out1': 'SIT_TIGHT'})
         
         smach.StateMachine.add('SIT_TIGHT',
-                               Speak(text="Please have a seat. I'll be right back. This is our host Game. He likes tits."),
-                            transitions = {'out1': 'GREETINGS_ASK_NAME_2',
+                               Speak(text="Please have a seat."),
+                            transitions = {'out1': 'INTRODUCE_HOST',
                                             'out0':'out0'})
+        
+        smach.StateMachine.add('INTRODUCE_HOST',
+                               IntroducePeople(people_index=0,header_text='I am going to introduce you to our host     '),
+                               transitions = {'out1': 'TURN_TO_HOST'})
+
+        smach.StateMachine.add('TURN_TO_HOST',
+                                 MoveTo(),
+                                  transitions={'out1': 'INTRODUCE_PERSON_1'})
+
+        smach.StateMachine.add('INTRODUCE_PERSON_1',
+                               IntroducePeople(people_index=1,introduce_to=0),
+                               transitions = {'out1': 'GREETINGS_ASK_NAME_2'})
         
         smach.StateMachine.add('GREETINGS_ASK_NAME_2',
                             Speak(text="""Greetings, May I have your name please?"""),
@@ -250,8 +281,7 @@ def main():
         
         smach.StateMachine.add('TURN_TO_PERSON_TWO',
                                MoveTo(),
-                                transitions={'out1': 'GET_NAME_2',
-                                            'out0': 'out0'})
+                                transitions={'out1': 'GET_NAME_2'})
 
         smach.StateMachine.add('GET_NAME_2',
                             GetName(speak_debug=speak_debug,
@@ -278,12 +308,24 @@ def main():
                             remapping={'listen_object': 'favorite_drink'})
         
         smach.StateMachine.add('SPEAK_RESPOND_OBJECT_2',
-                                Speak(text="oh!, I like {} too",
+                                Speak(text="oh!, I like {} too! Can you stay still for a second so I can memorize your details?",
                                     keys=["favorite_drink"]),
                                 remapping={'favorite_drink': 'favorite_drink'},
-                                transitions={'out1': 'ADD_PERSON_2',
+                                transitions={'out1': 'IMAGE_CAPTION_2',
                                             'out0': 'out0'})
+
+        smach.StateMachine.add('IMAGE_CAPTION_2',
+                               ImageCaption(),
+                               remapping = {'age':'age',
+                                            'shirt_color':'shirt_color',
+                                            'hair_color':'hair_color',
+                                            'gender':'gender',
+                                            'race':'race',
+                                            'wearing_glasses':'wearing_glasses'},
+                                transitions={'out1': 'ADD_PERSON_2',
+                                             'undo':'out0' })
                                                 
+
         smach.StateMachine.add('ADD_PERSON_2',
                                 AddPerson(),
                                 transitions={'out1': 'TURN_TO_COUCH_2', 
@@ -297,20 +339,53 @@ def main():
                                         'people_index':'people_index'}
                                 )
 
-    smach.StateMachine.add('TURN_TO_COUCH_2',
+        smach.StateMachine.add('TURN_TO_COUCH_2',
+                                    MoveTo(),
+                                    transitions={'out1': 'SIT_TIGHT_2'})
+            
+        smach.StateMachine.add('SIT_TIGHT_2',
+                                Speak(text="Please have a seat."),
+                                transitions = {'out1': 'INTRODUCE_HOST_2'})
+
+        smach.StateMachine.add('INTRODUCE_HOST_2',
+                               IntroducePeople(people_index=0,header_text='I am going to introduce you to our host       '),
+                               transitions = {'out1': 'TURN_TO_HOST_2'})
+
+        smach.StateMachine.add('TURN_TO_HOST_2',
                                  MoveTo(),
-                                  transitions={'out1': 'SIT_TIGHT',
-                                              'out0': 'out0'})
+                                  transitions={'out1': 'INTRODUCE_PERSON_2'})
         
-    smach.StateMachine.add('SIT_TIGHT_2',
-                               Speak(text="Please have a seat. I'll be right back. This is our host Game. He likes tits."),
-                            transitions = {'out1': ''})
+        smach.StateMachine.add('INTRODUCE_PERSON_2',
+                               IntroducePeople(people_index=2,introduce_to=0),
+                               transitions = {'out1': 'TURN_TO_PERSON_TWO_2'})
+        
+        smach.StateMachine.add('TURN_TO_PERSON_TWO_2',
+                               MoveTo(),
+                                transitions={'out1': 'SPEAK_INTRODUCE_TO_EACH_OTHER'})
+
+        smach.StateMachine.add('SPEAK_INTRODUCE_TO_EACH_OTHER',
+                               Speak(text="Cool! now I am going to introduce you to each other "),
+                               transitions = {'out1': 'INTRODUCE_TO_EACH_OTHER_1'})
+        
+        smach.StateMachine.add('INTRODUCE_TO_EACH_OTHER_1',
+                               IntroducePeople(people_index=1,introduce_to=2),
+                               transitions = {'out1': 'TURN_TO_PERSON_ONE_2'}) 
+        
+        smach.StateMachine.add('TURN_TO_PERSON_ONE_2',
+                                 MoveTo(),
+                                  transitions={'out1': 'INTRODUCE_TO_EACH_OTHER_2'})
+        
+        smach.StateMachine.add('INTRODUCE_TO_EACH_OTHER_2',
+                                 IntroducePeople(people_index=2,introduce_to=1),
+                                 transitions = {'out1': 'out1'})
+        
+        
+               
 
 
 
 
-
-    from emerStopDumb import EmergencyStop
+    from core_nlp.emerStop import EmergencyStop
     es = EmergencyStop()
     import time
     # Create a thread to execute the smach container
@@ -318,28 +393,11 @@ def main():
     smach_thread = threading.Thread(target=sm.execute)
     smach_thread.start()
 
+    es = EmergencyStop()
     es_thread = threading.Thread(target=es.execute)
     es_thread.start()
-    
-    import os
+    es.emer_stop_handler()
 
-    while True:
-        
-        pid = os.getpid()
-        if es.stop_flag:
-            print("fuckkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-            
-
-            pid = pid  # Replace with your process id
-
-            try:
-                os.kill(pid, signal.SIGKILL)
-            except ProcessLookupError:
-                print(f"Process with id {pid} does not exist.")
-            except PermissionError:
-                print(f"You don't have permission to kill process with id {pid}.")
-            break
-        time.sleep(0.1)
 
 
     
