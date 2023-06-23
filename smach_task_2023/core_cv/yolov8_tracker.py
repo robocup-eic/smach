@@ -53,7 +53,7 @@ import time
 import cv2
 import nunmpy as np
 from custom_socket import CustomSocket
-
+ 
 from nlp_emerStop import listen_for_kill_command
 
 

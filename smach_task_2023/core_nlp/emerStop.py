@@ -4,9 +4,24 @@ import threading
 import signal
 import time
 import os
+import smach
 from ratfin import *
 
 
+# Task specific state
+class StopEnd(smach.State):
+    def __init__(self):
+        smach.State.__init__(self,
+                            outcomes=['out1'],
+                            input_keys=['stop'],
+                            output_keys=['stop'])
+        pass
+
+
+    def execute(self, userdata):
+        userdata.stop = True
+        return 'out1'
+    
 class EmergencyStop():
     """ How to use
     1. Create an instance of EmergencyStop

@@ -30,6 +30,10 @@ processes:
     conda_env: "nlp"
     exec_dir: "/home/walkie/Robocup-2023-NLP/"
     exec_cmd: 'export CUDA_VISABLE_DEVICE=""'
+  nlp_respeaker:
+    conda_env: "nlp"
+    exec_dir: "/home/walkie/Robocup-2023-NLP"
+    exec_cmd: "python respeaker/PixelRingLight.py"
   cv_YoloV8-Tracker:
     conda_env: "yolov8-tracker"
     exec_dir: "/home/walkie/cv/robocup2023-yolov8-tracker/"
@@ -53,12 +57,13 @@ processes:
 
   #* order from longest to setup to least
 states:
-  runall:
+  runall(ai-suite):
     - nlp_rasa1
     - nlp_asr
     - nlp_rasa2
     - nlp_wakeword
     - nlp_tts
+    - nlp_respeaker
     - cv_YoloV8-Tracker
     - cv_Pose-Estimation
     - cv_Image-Captioning
@@ -79,13 +84,21 @@ states:
     - nlp_rasa2
     - nlp_wakeword
     - nlp_tts
+    - nlp_respeaker
   nlprasa:
-    # - asr_cpu
+    # - asr_cpus
     - nlp_rasa1
     - nlp_rasa2
+    - nlp_respeaker
   nlpasr:
     # - asr_cpu
     - nlp_AOn-asr
     - nlp_asr
     # - wakeword
     - nlp_tts
+    - nlp_respeaker
+  nlpww*tts:
+
+    - nlp_wakeword
+    - nlp_tts
+    - nlp_respeaker

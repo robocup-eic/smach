@@ -10,15 +10,21 @@ class Person():
                     name: str = None, 
                     favorite_drink: str = None, 
                     age: int = None, 
+                    gender: str = None,
+                    race: str = None,
                     shirt_color: str = None, 
                     hair_color: str = None, 
+                    glasses: bool = None,
                     # **kwargs
                     ) -> None:
         self.name = name
         self.favorite_drink = favorite_drink
         self.age = age
+        self.gender = gender
         self.shirt_color = shirt_color
         self.hair_color = hair_color
+        self.race = race
+        self.glasses = glasses
         # Store any additional attributes as instance variables
         # for key, value in kwargs.items():
         #     setattr(self, key, value)

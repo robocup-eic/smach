@@ -32,6 +32,9 @@ class WakeWord(smach.State):
 
 class Speak(smach.State):
     def __init__(self, text, keys=None, response_debug=False):
+        """  
+        Speak(text="Hello {}, What's your favorite drink?", keys=["name"]) 
+                            """
         if keys is None:
             keys = []
 
