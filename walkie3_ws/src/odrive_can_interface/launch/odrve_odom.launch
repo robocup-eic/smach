@@ -1,0 +1,9 @@
+<launch>
+
+<node pkg="odrive_can_interface" type="odrive_can_interface.py" name="odrive_can_interface"/>
+
+<node pkg="robot_localization" type="ekf_localization_node" name="ekf_node_name" >
+    <rosparam command="load" file="$(find odrive_can_interface)/param/ekf.yaml" />
+</node>
+
+</launch>
