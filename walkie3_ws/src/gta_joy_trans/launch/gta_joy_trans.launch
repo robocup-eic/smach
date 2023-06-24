@@ -1,0 +1,7 @@
+<launch>
+
+<node pkg="joy" type="joy_node" name="joy_inteface"/>
+
+<node pkg="gta_joy_trans" type="gta_joy_trans.py" name="gta_jot_trans"/>
+<!-- run "rostopic /cmd_vel" -->
+</launch>
