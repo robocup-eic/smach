@@ -58,7 +58,6 @@ class MoveTo(smach.State):
 
 
     def execute(self, userdata):
-        return 'out1'
         try:
             # Log the execution stage
             rospy.loginfo(f'(MoveTo): Executing..')

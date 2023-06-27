@@ -174,6 +174,7 @@ def main():
     sm.userdata.name = ""
     sm.userdata.favorite_drink = ""
     sm.userdata.couch_location = [0,1,2]
+    timeout = 3
 
     host = Person(name="Game",
                     # favorite_drink="milkies from your mom's titties",
@@ -200,7 +201,7 @@ def main():
         smach.StateMachine.add('GET_NAME',
                             GetName(speak_debug=speak_debug,
                                     response_debug=response_debug,
-                                    timeout=3),
+                                    timeout=timeout),
                             transitions={'out1': 'SPEAK_ASK_OBJECT',
                                             'out0': 'out0'},
                             remapping={'listen_name': 'name'})
@@ -216,7 +217,7 @@ def main():
         smach.StateMachine.add('GET_OBJECT',
                             GetObject(speak_debug=speak_debug,
                                         response_debug=response_debug,
-                                        timeout=3),
+                                        timeout=timeout),
                             transitions={'out1': 'SPEAK_RESPOND_OBJECT',
                                             'out0': 'out0'},
                             remapping={'listen_object': 'favorite_drink'})
@@ -286,7 +287,7 @@ def main():
         smach.StateMachine.add('GET_NAME_2',
                             GetName(speak_debug=speak_debug,
                                     response_debug=response_debug,
-                                    timeout=3),
+                                    timeout=timeout),
                             transitions={'out1': 'SPEAK_ASK_OBJECT_2',
                                             'out0': 'out0'},
                             remapping={'listen_name': 'name'})
@@ -302,7 +303,7 @@ def main():
         smach.StateMachine.add('GET_OBJECT_2',
                             GetObject(speak_debug=speak_debug,
                                         response_debug=response_debug,
-                                        timeout=3),
+                                        timeout=timeout),
                             transitions={'out1': 'SPEAK_RESPOND_OBJECT_2',
                                             'out0': 'out0'},
                             remapping={'listen_object': 'favorite_drink'})

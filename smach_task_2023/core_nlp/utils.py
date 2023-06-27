@@ -89,6 +89,8 @@ class GetEntities(smach.State):
                  confidence: bool = False,
                  speak_debug: bool = False,
                  response_debug: bool = False,
+                 speak_repeat: bool = False,
+                 
                  timeout=0):
 
         # Raise exceptions if any entity parameter is not of type bool
@@ -114,6 +116,7 @@ class GetEntities(smach.State):
         self.response_debug = response_debug
         self.listen_counter = int(0)
         self.timeout = timeout
+        self.speak_repeat = speak_repeat
         self.valid_out = False  # check if the output is valid
 
         # adding enities to extract 
@@ -171,6 +174,12 @@ class GetEntities(smach.State):
                     if attr_value != "" and res_obj.confidence > min_confidence:
                         setattr(userdata, 'listen_'+a, attr_value)
                         self.valid_out = True
+                    else: # If any attribute is not found, break
+                        self.valid_out = False
+                        if self.speak_repeat: 
+                            prompt_user_repeat()
+                        
+
 
                 # If any valid attribute is found, break
                 if self.valid_out:
@@ -204,6 +213,7 @@ class GetIntent(smach.State):
     def __init__(self,
                  speak_debug=False,
                  response_debug=False,
+                 speak_repeat=True,
                  timeout=0):
 
         # Init class variables
@@ -211,6 +221,7 @@ class GetIntent(smach.State):
         self.response_debug = response_debug
         self.listen_counter = int(0)
         self.timeout = timeout
+        self.speak_repeat = speak_repeat
         self.valid_out = False  # check if the output is valid
 
         if timeout == 0:
@@ -257,7 +268,8 @@ class GetIntent(smach.State):
                     break
 
                 # Ask the user to repeat if not valid
-                prompt_user_repeat()
+                if self.speak_repeat:
+                    prompt_user_repeat()
 
             if not self.valid_out:
                 if self.speak_debug:
@@ -302,6 +314,7 @@ class GetName(smach.State):
     def __init__(self,
                  speak_debug=False,
                  response_debug=False,
+                 speak_repeat=True,
                  timeout=0):
 
         # Init class variables
@@ -310,6 +323,7 @@ class GetName(smach.State):
         self.listen_counter = int(0)
         self.counter = 0
         self.timeout = timeout
+        self.speak_repeat = speak_repeat
         self.valid_out = False  # check if the output is valid
 
         if timeout == 0:
@@ -351,6 +365,8 @@ class GetName(smach.State):
                 if (res_obj.people != "") and (res_obj.confidence > min_confidence):
                     self.valid_out = True
                     break
+                if self.speak_repeat:
+                    prompt_user_repeat()
 
             if not self.valid_out:
                 if self.speak_debug:
@@ -389,6 +405,7 @@ class GetObject(smach.State):
     def __init__(self,
                  speak_debug=False,
                  response_debug=False,
+                 speak_repeat=True,
                  timeout=0):
 
         # Init class variables
@@ -396,6 +413,7 @@ class GetObject(smach.State):
         self.response_debug = response_debug
         self.listen_counter = int(0)
         self.timeout = timeout
+        self.speak_repeat = speak_repeat
         self.valid_out = False  # check if the output is valid
 
         if timeout == 0:
@@ -442,6 +460,8 @@ class GetObject(smach.State):
                 if (res_obj.object != "") and (res_obj.confidence > min_confidence):
                     self.valid_out = True
                     break
+                if self.speak_repeat:
+                    prompt_user_repeat()
 
             if not self.valid_out:
                 if self.speak_debug:
@@ -479,6 +499,7 @@ class GetLocation(smach.State):
     def __init__(self,
                  speak_debug=False,
                  response_debug=False,
+                 speak_repeat=True,
                  timeout=0):
 
         # Init class variables
@@ -486,6 +507,7 @@ class GetLocation(smach.State):
         self.response_debug = response_debug
         self.listen_counter = int(0)
         self.timeout = timeout
+        self.speak_repeat = speak_repeat
         self.valid_out = False  # check if the output is valid
 
         if timeout == 0:
@@ -532,6 +554,8 @@ class GetLocation(smach.State):
                 if (res_obj.room != "") and (res_obj.confidence > min_confidence):
                     self.valid_out = True
                     break
+                if self.speak_repeat:
+                    prompt_user_repeat()
 
             if not self.valid_out:
                 if self.speak_debug:

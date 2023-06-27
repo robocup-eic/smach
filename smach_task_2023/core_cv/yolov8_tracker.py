@@ -221,6 +221,20 @@ def main():
 
     # listen_for_kill_command()
 
+
+def GetPosCenter(data):
+    # Get the center of the bounding box by using the x and y coordinates from ROS topic subcriber 
+    # and the width and height from the bounding box
+    # sub = rospy.Subscriber("joy", CV_MSG, joy_trans) # subscribe to the topic "joy"
+    str_json = data.string
+    dict_json = json.loads(str_json)
+    import ast 
+    dict_json = ast.literal_eval(dict_json)
+    box = dict_json['box']
+    midpoint_x = (box[0] + box[2])/2
+    # 
+
+
     
 if __name__ == '__main__':
     main()
