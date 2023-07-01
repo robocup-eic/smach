@@ -3,15 +3,22 @@
 import roslib
 import rospy
 import smach
+import threading
 import smach_ros
 from nlp_client import *
 from ratfin import *
+from geometry_msgs.msg import Twist, Vector3
+from rospy import Publisher, init_node, Rate
+
+
 
 
 def prompt_user_repeat():
     speak("Sorry I didn't get that. Please rephrase that?")
 
 # define state speak
+
+
 
 
 class WakeWord(smach.State):
@@ -31,9 +38,22 @@ class WakeWord(smach.State):
 
 
 class Speak(smach.State):
-    def __init__(self, text, keys=None, response_debug=False):
+    """ 
+    speak hello to Person1 
+      """
+    def __init__(self, 
+                 text: str, # text to speak
+                 keys = None, # replace {} with userdata keys
+                 person_name_to_track : str  = None, # track the listener while speaking
+                 response_debug :  bool = False):
         """  
-        Speak(text="Hello {}, What's your favorite drink?", keys=["name"]) 
+        >>> Speak(text="Hello {}, What's your favorite drink?", keys=["name"]) 
+
+        >>> Speak(text="Hello {}, What's your favorite drink?", 
+                  keys=["name"], 
+                  track_listener= "Sharon"
+                  )
+
                             """
         if keys is None:
             keys = []
@@ -43,15 +63,86 @@ class Speak(smach.State):
         self.response_debug = response_debug
         self.text = text
         self.keys = keys
+        self.person_name_to_track = person_name_to_track
+
+    def person_tracker(self, 
+                       userdata, 
+                       person_name_to_track,
+                       continous: bool = True ):
+        """ 
+        track the person_name_to_track
+        """
+        CAMERA_RESOLUTION = [] # width, height
+        CENTER_TOLERANCE = 0.36 # percentage of the frame from the center
+
+        # bounderies of the center
+        X1 = int(CAMERA_RESOLUTION[0]*0.5 - 0.36*0.5*CAMERA_RESOLUTION[0])
+        X2 = int(CAMERA_RESOLUTION[0]*0.5 + 0.36*0.5*CAMERA_RESOLUTION[0])
+
+
+        self.centered = False # for outside checking.
+
+
+        # init node for publishing to cmd_vel
+        rospy.init_node('person_tracker_nlp+cv')
+        cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        while True:
+            try:
+                # request to CV to track the person_name_to_track that matches the name
+
+                # CV return the list of names and [X1,Y1,X2,Y2]
+                cv_response = cv_track_person(person_name_to_track)
+                list_of_detections = cv_response.detections
+
+                # if the person is not detected, then don't move
+                for detection in list_of_detections:
+                    if detection.name == person_name_to_track:
+                        detection_midpoint = (detection.coordinates[2] - detection.coordinates[0])/2
+                        # if the person is centered, break
+                        if detection_midpoint > X1 and detection_midpoint < X2:
+                            self.centered = True
+                            # stop the robot
+                            cmd_vel_pub.publish(Twist())
+                        else:
+                            # the person is not centered, move the robot
+                            self.centered = False
+
+                            # maybe add a speed curve here
+                            angular_speed = 0.1
+
+                            # if not centered, move the robot
+                            if detection_midpoint < X1:
+                                cmd_vel_pub.publish(Twist(linear=Vector3(0.0, 0.0, 0.0), angular=Vector3(z=angular_speed)))
+                            elif detection_midpoint > X2:
+                                cmd_vel_pub.publish(Twist(linear=Vector3(0.0, 0.0, 0.0), angular=Vector3(z=-angular_speed)))
+
+            except Exception as e:
+                printclr(e, "red")
+                self.centered = False
+                break   
 
     def execute(self, userdata):
         try:
             rospy.loginfo(f'(Speak): Executing..')
 
+
             # Prepare arguments for the format string from userdata
             args = [getattr(userdata, key)
                     for key in self.keys] if self.keys else []
 
+
+            # Check if there's a person to track
+            if self.person_name_to_track is not None:
+                # create an instance thread to continously track the person
+                listener_tracker = threading.Thread(
+                    target=self.person_tracker, args=(userdata,person_name_to_track))
+                listener_tracker.start()
+            
+                while True: 
+                    if listener_tracker.centered:
+                        break
+
+                
             # Prepare the text to speak
             text = self.text.format(*args)
 
@@ -59,6 +150,10 @@ class Speak(smach.State):
 
             # speak the intent
             speak(text)
+    
+            # kill the listener thread
+            listener_tracker.join()
+
 
             return "out1"
         except Exception as e:
