@@ -1,0 +1,35 @@
+Name: save1
+Frame: map
+Station:
+- id: table
+  type: furniture
+  pose:
+    !!python/object/new:geometry_msgs.msg._Pose.Pose
+    state:
+    - !!python/object/new:geometry_msgs.msg._Point.Point
+      state:
+      - 1
+      - 2
+      - 3
+    - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+      state:
+      - 1
+      - 2
+      - 3
+      - 4
+- id: living room
+  type: room
+  pose:
+    !!python/object/new:geometry_msgs.msg._Pose.Pose
+    state:
+    - !!python/object/new:geometry_msgs.msg._Point.Point
+      state:
+      - 0
+      - 0
+      - 0
+    - !!python/object/new:geometry_msgs.msg._Quaternion.Quaternion
+      state:
+      - 0
+      - 1
+      - 2
+      - 3
