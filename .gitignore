@@ -64,3 +64,6 @@ yolov4-416/
 *.zip
 *.pyc
 .history
+smach_task/.DS_Store
+.DS_Store
+.DS_Store
